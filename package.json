@@ -1,0 +1,57 @@
+{
+  "name": "astral-money-budget-tracker",
+  "version": "1.0.0",
+  "description": "Ultimate Budget Tracker 2025 - Professional financial management application",
+  "main": "ultimate-enhanced-astral-budget-2025.html",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "serve": "serve .",
+    "deploy": "vercel"
+  },
+  "keywords": [
+    "budget",
+    "tracker",
+    "finance",
+    "money",
+    "dashboard",
+    "analytics",
+    "financial-health",
+    "bills",
+    "expenses",
+    "income"
+  ],
+  "author": "Astral Money Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/astral-money.git"
+  },
+  "bugs": {
+    "url": "https://github.com/username/astral-money/issues"
+  },
+  "homepage": "https://github.com/username/astral-money#readme",
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@neon-js/serverless": "^0.9.0",
+    "prisma": "^5.0.0",
+    "@prisma/client": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "typescript": "^5.0.0",
+    "serve": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
