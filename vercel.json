@@ -1,24 +1,6 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "out",
-  "installCommand": "npm install && (npx prisma generate || echo 'Prisma generation skipped - DATABASE_URL not configured')",
-  "devCommand": "npm run dev",
   "framework": "nextjs",
-  "functions": {
-    "pages/api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/index.html"
-    }
-  ],
+  "installCommand": "npm install && (npx prisma generate || echo 'Prisma generation skipped - DATABASE_URL not configured')",
   "headers": [
     {
       "source": "/(.*)",
