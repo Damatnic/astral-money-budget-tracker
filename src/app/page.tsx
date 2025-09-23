@@ -1561,25 +1561,189 @@ export default function Home() {
           <section id="expenses">
             <div className="section-header">
               <h1>💰 Expense Tracker</h1>
-              <button 
-                onClick={() => setShowExpenseForm(!showExpenseForm)}
-                style={{
-                  padding: '12px 24px',
-                  background: 'var(--primary)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <span>+</span>
-                <span>Add Expense</span>
-              </button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  style={{
+                    padding: '12px 16px',
+                    background: showFilters ? 'var(--primary)' : 'rgba(255, 255, 255, 0.1)',
+                    color: 'white',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  🔍 Filter
+                </button>
+                <button 
+                  onClick={() => setShowExpenseForm(!showExpenseForm)}
+                  style={{
+                    padding: '12px 24px',
+                    background: 'var(--primary)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span>+</span>
+                  <span>Add Expense</span>
+                </button>
+              </div>
             </div>
+
+            {/* Search and Filter Bar */}
+            {showFilters && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '20px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  {/* Search Bar */}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                      Search Expenses
+                    </label>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search by description..."
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Filter Options */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Category
+                      </label>
+                      <select
+                        value={filters.category}
+                        onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="food">Food & Dining</option>
+                        <option value="transportation">Transportation</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="health">Health & Medical</option>
+                        <option value="housing">Housing</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Date Range
+                      </label>
+                      <select
+                        value={filters.dateRange}
+                        onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                        <option value="year">Last Year</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Amount Range
+                      </label>
+                      <select
+                        value={filters.amountRange}
+                        onChange={(e) => setFilters(prev => ({ ...prev, amountRange: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="all">Any Amount</option>
+                        <option value="under50">Under $50</option>
+                        <option value="50to100">$50 - $100</option>
+                        <option value="100to500">$100 - $500</option>
+                        <option value="over500">Over $500</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Filter Actions */}
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setFilters({
+                          category: 'all',
+                          dateRange: 'all',
+                          amountRange: 'all',
+                          type: 'all'
+                        });
+                      }}
+                      style={{
+                        padding: '10px 16px',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Expense Form */}
             {showExpenseForm && (
@@ -1727,8 +1891,13 @@ export default function Home() {
               padding: '24px',
               backdropFilter: 'blur(10px)'
             }}>
-              <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Recent Expenses (Last 30 Days)</h3>
-              {expenses.length === 0 ? (
+              <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                {searchTerm || filters.category !== 'all' || filters.dateRange !== 'all' || filters.amountRange !== 'all' 
+                  ? `Filtered Expenses (${getFilteredExpenses().length} results)` 
+                  : 'Recent Expenses (Last 30 Days)'
+                }
+              </h3>
+              {getFilteredExpenses().length === 0 ? (
                 <div style={{
                   textAlign: 'center',
                   padding: '40px',
@@ -1740,7 +1909,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {expenses.map((expense, index) => (
+                  {getFilteredExpenses().map((expense, index) => (
                     <div key={expense.id || index} style={{
                       display: 'flex',
                       justifyContent: 'space-between',
