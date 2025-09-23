@@ -158,6 +158,71 @@ export default function Home() {
     setNotifications(newNotifications);
   };
 
+  const exportData = (format: 'csv' | 'json') => {
+    const data = {
+      balance: userBalance,
+      expenses: expenses.map(expense => ({
+        date: expense.date || expense.createdAt,
+        description: expense.description,
+        amount: expense.amount,
+        category: expense.category
+      })),
+      income: income.map(incomeItem => ({
+        date: incomeItem.date || incomeItem.createdAt,
+        description: incomeItem.description,
+        amount: incomeItem.amount,
+        source: incomeItem.category
+      })),
+      exportDate: new Date().toISOString()
+    };
+
+    if (format === 'json') {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `astral-money-data-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else if (format === 'csv') {
+      // Create CSV for transactions
+      const allTransactions = [
+        ...expenses.map(expense => ({
+          date: expense.date || expense.createdAt,
+          type: 'Expense',
+          description: expense.description,
+          category: expense.category,
+          amount: -expense.amount // Negative for expenses
+        })),
+        ...income.map(incomeItem => ({
+          date: incomeItem.date || incomeItem.createdAt,
+          type: 'Income',
+          description: incomeItem.description,
+          category: incomeItem.category,
+          amount: incomeItem.amount
+        }))
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      const csvHeaders = 'Date,Type,Description,Category,Amount\n';
+      const csvRows = allTransactions.map(transaction => 
+        `${new Date(transaction.date).toLocaleDateString()},${transaction.type},"${transaction.description}",${transaction.category},${transaction.amount}`
+      ).join('\n');
+      
+      const csvContent = csvHeaders + csvRows;
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `astral-money-transactions-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  };
+
   const fetchUserData = async () => {
     try {
       const response = await fetch('/api/user/balance');
@@ -1042,24 +1107,125 @@ export default function Home() {
               </div>
 
               <div className="analytics-card">
-                <h3>💡 Financial Insights</h3>
+                <h3>💡 AI Financial Insights</h3>
                 <div className="insights">
-                  <div className="insight-item">
-                    <span className="insight-icon">⚠️</span>
-                    <span className="insight-text">Your expenses exceed income by $2,989</span>
-                  </div>
-                  <div className="insight-item">
-                    <span className="insight-icon">💰</span>
-                    <span className="insight-text">3 paychecks in October provide extra $2,144</span>
-                  </div>
-                  <div className="insight-item">
-                    <span className="insight-icon">📊</span>
-                    <span className="insight-text">Housing costs are 57% of monthly income</span>
-                  </div>
-                  <div className="insight-item">
-                    <span className="insight-icon">🎯</span>
-                    <span className="insight-text">Reduce discretionary spending by $500/month</span>
-                  </div>
+                  {(() => {
+                    const insights = [];
+                    const now = new Date();
+                    
+                    // Calculate financial metrics
+                    const last30DaysExpenses = expenses.filter(expense => {
+                      const expenseDate = new Date(expense.date || expense.createdAt);
+                      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                      return expenseDate >= thirtyDaysAgo;
+                    });
+                    
+                    const last30DaysIncome = income.filter(incomeItem => {
+                      const incomeDate = new Date(incomeItem.date || incomeItem.createdAt);
+                      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                      return incomeDate >= thirtyDaysAgo;
+                    });
+
+                    const monthlyExpenses = last30DaysExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+                    const monthlyIncome = last30DaysIncome.reduce((sum, incomeItem) => sum + incomeItem.amount, 0);
+                    
+                    // Generate insights based on data
+                    if (expenses.length > 0) {
+                      const categoryTotals = expenses.reduce((acc, expense) => {
+                        const category = expense.category || 'other';
+                        acc[category] = (acc[category] || 0) + expense.amount;
+                        return acc;
+                      }, {} as Record<string, number>);
+
+                      const topCategory = Object.entries(categoryTotals)
+                        .sort(([,a], [,b]) => b - a)[0];
+                      
+                      if (topCategory && monthlyExpenses > 0) {
+                        const percentage = ((topCategory[1] / monthlyExpenses) * 100).toFixed(0);
+                        insights.push({
+                          icon: '📊',
+                          text: `${topCategory[0].charAt(0).toUpperCase() + topCategory[0].slice(1)} represents ${percentage}% of your spending`
+                        });
+                      }
+
+                      // Spending trend
+                      if (monthlyExpenses > 0) {
+                        const avgDaily = monthlyExpenses / 30;
+                        insights.push({
+                          icon: '📈',
+                          text: `Your average daily spending is ${formatCurrency(avgDaily)}`
+                        });
+                      }
+                    }
+
+                    // Income vs expenses
+                    if (monthlyIncome > 0 && monthlyExpenses > 0) {
+                      const savingsRate = ((monthlyIncome - monthlyExpenses) / monthlyIncome * 100).toFixed(1);
+                      if (parseFloat(savingsRate) > 0) {
+                        insights.push({
+                          icon: '💰',
+                          text: `Great! You're saving ${savingsRate}% of your income this month`
+                        });
+                      } else {
+                        const deficit = monthlyExpenses - monthlyIncome;
+                        insights.push({
+                          icon: '⚠️',
+                          text: `You're spending ${formatCurrency(deficit)} more than you earn this month`
+                        });
+                      }
+                    } else if (monthlyIncome > 0) {
+                      insights.push({
+                        icon: '💵',
+                        text: `You've earned ${formatCurrency(monthlyIncome)} this month`
+                      });
+                    }
+
+                    // Balance-based insights
+                    if (userBalance < 100) {
+                      insights.push({
+                        icon: '🚨',
+                        text: 'Critical: Consider finding additional income sources immediately'
+                      });
+                    } else if (userBalance < 1000) {
+                      insights.push({
+                        icon: '💡',
+                        text: 'Build an emergency fund - aim for at least $1,000'
+                      });
+                    } else if (userBalance > 5000) {
+                      insights.push({
+                        icon: '🎯',
+                        text: 'Strong financial position - consider investing surplus funds'
+                      });
+                    }
+
+                    // Recent spending patterns
+                    if (expenses.length >= 3) {
+                      const last3Expenses = expenses.slice(0, 3);
+                      const avgRecent = last3Expenses.reduce((sum, exp) => sum + exp.amount, 0) / 3;
+                      if (avgRecent > 100) {
+                        insights.push({
+                          icon: '🔍',
+                          text: `Your recent purchases average ${formatCurrency(avgRecent)} - track large expenses`
+                        });
+                      }
+                    }
+
+                    // Default insights if no data
+                    if (insights.length === 0) {
+                      insights.push(
+                        { icon: '🎯', text: 'Start tracking expenses to get personalized insights' },
+                        { icon: '💰', text: 'Add income sources to see your savings rate' },
+                        { icon: '📊', text: 'Build a complete financial picture for better recommendations' }
+                      );
+                    }
+
+                    return insights.slice(0, 5).map((insight, index) => (
+                      <div key={index} className="insight-item">
+                        <span className="insight-icon">{insight.icon}</span>
+                        <span className="insight-text">{insight.text}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
 
@@ -1887,9 +2053,72 @@ export default function Home() {
                 </div>
               </div>
 
+              <div className="settings-section">
+                <h3>📊 Data Export</h3>
+                <div className="settings-group">
+                  <div className="setting-item">
+                    <label>Export your financial data for backup or analysis</label>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                      <button 
+                        onClick={() => exportData('json')}
+                        style={{
+                          padding: '10px 20px',
+                          background: 'var(--primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        📋 Export JSON
+                      </button>
+                      <button 
+                        onClick={() => exportData('csv')}
+                        style={{
+                          padding: '10px 20px',
+                          background: 'var(--success)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        📊 Export CSV
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                      JSON includes all data, CSV is optimized for spreadsheet analysis
+                    </div>
+                  </div>
+                  <div className="setting-item">
+                    <label>Data Summary</label>
+                    <div style={{
+                      padding: '12px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '14px',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      <div>• {expenses.length} expense records</div>
+                      <div>• {income.length} income records</div>
+                      <div>• Current balance: {formatCurrency(userBalance)}</div>
+                      <div>• Data as of: {new Date().toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="settings-actions">
                 <button className="btn btn-primary">Save Changes</button>
-                <button className="btn btn-secondary">Export Data</button>
                 <button className="btn btn-danger">Reset Settings</button>
               </div>
             </div>
