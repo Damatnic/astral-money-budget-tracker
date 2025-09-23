@@ -9,13 +9,23 @@ export default function Home() {
   const [bills, setBills] = useState<any[]>([]);
   const [goals, setGoals] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [income, setIncome] = useState<any[]>([]);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [showIncomeForm, setShowIncomeForm] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
     amount: '',
     description: '',
     category: 'food',
     date: new Date().toISOString().split('T')[0]
   });
+  const [incomeForm, setIncomeForm] = useState({
+    amount: '',
+    description: '',
+    source: 'salary',
+    date: new Date().toISOString().split('T')[0]
+  });
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [state, setState] = useState({
     startBalance: 11.29,
     paycheckAmount: 2143.73,
@@ -32,8 +42,121 @@ export default function Home() {
   useEffect(() => {
     fetchUserData();
     fetchExpenses();
+    fetchIncome();
     updateKPIs();
-  }, []);
+    generateNotifications();
+  }, [userBalance, expenses, income]);
+
+  // Close notifications when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showNotifications && !target.closest('[data-notifications]')) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications]);
+
+  const generateNotifications = () => {
+    const newNotifications = [];
+    const now = new Date();
+
+    // Low balance alert
+    if (userBalance < 100) {
+      newNotifications.push({
+        id: 'low_balance',
+        type: 'warning',
+        title: 'Low Balance Alert',
+        message: `Your balance is critically low at ${formatCurrency(userBalance)}`,
+        timestamp: now,
+        priority: 'high'
+      });
+    } else if (userBalance < 500) {
+      newNotifications.push({
+        id: 'balance_warning',
+        type: 'info',
+        title: 'Balance Warning',
+        message: `Your balance is getting low at ${formatCurrency(userBalance)}`,
+        timestamp: now,
+        priority: 'medium'
+      });
+    }
+
+    // Spending alerts
+    const last7DaysExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date || expense.createdAt);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return expenseDate >= sevenDaysAgo;
+    });
+
+    const weeklySpending = last7DaysExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    if (weeklySpending > 500) {
+      newNotifications.push({
+        id: 'high_spending',
+        type: 'warning',
+        title: 'High Spending Alert',
+        message: `You've spent ${formatCurrency(weeklySpending)} in the last 7 days`,
+        timestamp: now,
+        priority: 'medium'
+      });
+    }
+
+    // Category spending alerts
+    if (expenses.length > 0) {
+      const categoryTotals = expenses.reduce((acc, expense) => {
+        const category = expense.category || 'other';
+        acc[category] = (acc[category] || 0) + expense.amount;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const totalExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+      
+      Object.entries(categoryTotals).forEach(([category, amount]) => {
+        const percentage = (amount / totalExpenses) * 100;
+        if (percentage > 40) {
+          newNotifications.push({
+            id: `category_${category}`,
+            type: 'info',
+            title: 'Category Spending Alert',
+            message: `${category.charAt(0).toUpperCase() + category.slice(1)} represents ${percentage.toFixed(1)}% of your spending`,
+            timestamp: now,
+            priority: 'low'
+          });
+        }
+      });
+    }
+
+    // Positive alerts
+    const last30DaysIncome = income.filter(incomeItem => {
+      const incomeDate = new Date(incomeItem.date || incomeItem.createdAt);
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return incomeDate >= thirtyDaysAgo;
+    });
+
+    const monthlyIncome = last30DaysIncome.reduce((sum, incomeItem) => sum + incomeItem.amount, 0);
+    const monthlyExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date || expense.createdAt);
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return expenseDate >= thirtyDaysAgo;
+    }).reduce((sum, expense) => sum + expense.amount, 0);
+
+    if (monthlyIncome > monthlyExpenses && monthlyIncome > 0) {
+      const surplus = monthlyIncome - monthlyExpenses;
+      newNotifications.push({
+        id: 'surplus',
+        type: 'success',
+        title: 'Great Job!',
+        message: `You have a surplus of ${formatCurrency(surplus)} this month`,
+        timestamp: now,
+        priority: 'low'
+      });
+    }
+
+    setNotifications(newNotifications);
+  };
 
   const fetchUserData = async () => {
     try {
@@ -57,6 +180,18 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error fetching expenses:', error);
+    }
+  };
+
+  const fetchIncome = async () => {
+    try {
+      const response = await fetch('/api/income');
+      const data = await response.json();
+      if (data.income) {
+        setIncome(data.income);
+      }
+    } catch (error) {
+      console.error('Error fetching income:', error);
     }
   };
 
@@ -96,6 +231,45 @@ export default function Home() {
     } catch (error) {
       console.error('Error adding expense:', error);
       alert('Failed to add expense');
+    }
+  };
+
+  const handleIncomeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/income', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: parseFloat(incomeForm.amount),
+          description: incomeForm.description,
+          source: incomeForm.source,
+          date: incomeForm.date,
+        }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        setIncome(prev => [data.income, ...prev]);
+        if (data.newBalance !== undefined) {
+          setUserBalance(data.newBalance);
+        }
+        setIncomeForm({
+          amount: '',
+          description: '',
+          source: 'salary',
+          date: new Date().toISOString().split('T')[0]
+        });
+        setShowIncomeForm(false);
+        fetchUserData(); // Refresh balance
+      } else {
+        alert(data.error || 'Failed to add income');
+      }
+    } catch (error) {
+      console.error('Error adding income:', error);
+      alert('Failed to add income');
     }
   };
 
@@ -281,6 +455,16 @@ export default function Home() {
             </li>
             <li className="nav-item">
               <a 
+                href="#income" 
+                className={`nav-link ${currentSection === 'income' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('income'); }}
+              >
+                <span className="nav-icon">💵</span>
+                <span>Income</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
                 href="#goals" 
                 className={`nav-link ${currentSection === 'goals' ? 'active' : ''}`}
                 onClick={(e) => { e.preventDefault(); showSection('goals'); }}
@@ -332,25 +516,193 @@ export default function Home() {
                 <div className="current-balance">
                   Balance: <span id="currentBalance" className="negative">{formatCurrency(userBalance)}</span>
                 </div>
-                <button 
-                  onClick={() => showSection('expenses')}
-                  style={{
-                    padding: '8px 16px',
-                    background: 'var(--primary)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontWeight: '500',
-                    fontSize: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <span>+</span>
-                  <span>Add Expense</span>
-                </button>
+                
+                {/* Notifications */}
+                <div style={{ position: 'relative' }} data-notifications>
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    style={{
+                      padding: '8px',
+                      background: notifications.length > 0 ? 'var(--warning)' : 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '36px',
+                      height: '36px'
+                    }}
+                  >
+                    🔔
+                    {notifications.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-4px',
+                        right: '-4px',
+                        background: 'var(--danger)',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '18px',
+                        height: '18px',
+                        fontSize: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold'
+                      }}>
+                        {notifications.length > 9 ? '9+' : notifications.length}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Notifications Dropdown */}
+                  {showNotifications && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: '0',
+                      marginTop: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      minWidth: '300px',
+                      maxWidth: '400px',
+                      maxHeight: '400px',
+                      overflowY: 'auto',
+                      zIndex: 1000,
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '12px',
+                        paddingBottom: '8px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <h4 style={{ margin: 0, color: 'var(--text)' }}>Notifications</h4>
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={() => setNotifications([])}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </div>
+                      
+                      {notifications.length === 0 ? (
+                        <div style={{
+                          textAlign: 'center',
+                          padding: '20px',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <div style={{ fontSize: '24px', marginBottom: '8px' }}>✅</div>
+                          <p style={{ margin: 0, fontSize: '14px' }}>No notifications</p>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              style={{
+                                padding: '12px',
+                                background: notification.type === 'warning' ? 'rgba(255, 193, 7, 0.1)' :
+                                          notification.type === 'success' ? 'rgba(40, 167, 69, 0.1)' :
+                                          'rgba(13, 110, 253, 0.1)',
+                                border: `1px solid ${notification.type === 'warning' ? 'var(--warning)' :
+                                                   notification.type === 'success' ? 'var(--success)' :
+                                                   'var(--primary)'}`,
+                                borderRadius: '8px'
+                              }}
+                            >
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                marginBottom: '4px'
+                              }}>
+                                <div style={{
+                                  fontWeight: '600',
+                                  fontSize: '14px',
+                                  color: 'var(--text)'
+                                }}>
+                                  {notification.title}
+                                </div>
+                                <div style={{
+                                  fontSize: '12px',
+                                  color: 'var(--text-secondary)'
+                                }}>
+                                  {notification.priority === 'high' ? '🔴' : 
+                                   notification.priority === 'medium' ? '🟡' : '🔵'}
+                                </div>
+                              </div>
+                              <div style={{
+                                fontSize: '13px',
+                                color: 'var(--text-secondary)',
+                                lineHeight: '1.4'
+                              }}>
+                                {notification.message}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    onClick={() => showSection('expenses')}
+                    style={{
+                      padding: '8px 16px',
+                      background: 'var(--danger)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>-</span>
+                    <span>Add Expense</span>
+                  </button>
+                  <button 
+                    onClick={() => showSection('income')}
+                    style={{
+                      padding: '8px 16px',
+                      background: 'var(--success)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>+</span>
+                    <span>Add Income</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -565,41 +917,71 @@ export default function Home() {
               <div className="analytics-card">
                 <h3>📊 Spending by Category</h3>
                 <div className="category-breakdown">
-                  <div className="category-item">
-                    <span className="category-name">🏠 Housing</span>
-                    <div className="category-bar">
-                      <div className="bar-fill" style={{width: '40%', background: 'var(--danger)'}}></div>
-                    </div>
-                    <span className="category-amount">$3,700</span>
-                  </div>
-                  <div className="category-item">
-                    <span className="category-name">🚗 Insurance</span>
-                    <div className="category-bar">
-                      <div className="bar-fill" style={{width: '15%', background: 'var(--warning)'}}></div>
-                    </div>
-                    <span className="category-amount">$289</span>
-                  </div>
-                  <div className="category-item">
-                    <span className="category-name">⚡ Utilities</span>
-                    <div className="category-bar">
-                      <div className="bar-fill" style={{width: '25%', background: 'var(--primary)'}}></div>
-                    </div>
-                    <span className="category-amount">$547</span>
-                  </div>
-                  <div className="category-item">
-                    <span className="category-name">🍔 Food</span>
-                    <div className="category-bar">
-                      <div className="bar-fill" style={{width: '12%', background: 'var(--success)'}}></div>
-                    </div>
-                    <span className="category-amount">$250</span>
-                  </div>
-                  <div className="category-item">
-                    <span className="category-name">🎬 Entertainment</span>
-                    <div className="category-bar">
-                      <div className="bar-fill" style={{width: '8%', background: 'var(--secondary)'}}></div>
-                    </div>
-                    <span className="category-amount">$169</span>
-                  </div>
+                  {(() => {
+                    if (expenses.length === 0) {
+                      return (
+                        <div style={{
+                          textAlign: 'center',
+                          padding: '40px 20px',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <div style={{ fontSize: '36px', marginBottom: '12px' }}>📊</div>
+                          <p>No expense data to analyze</p>
+                          <p style={{ fontSize: '14px', marginTop: '8px' }}>Add expenses to see category breakdown</p>
+                        </div>
+                      );
+                    }
+
+                    // Calculate category totals from actual expense data
+                    const categoryTotals = expenses.reduce((acc, expense) => {
+                      const category = expense.category || 'other';
+                      acc[category] = (acc[category] || 0) + expense.amount;
+                      return acc;
+                    }, {} as Record<string, number>);
+
+                    const totalExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+                    const sortedCategories = Object.entries(categoryTotals)
+                      .sort(([,a], [,b]) => b - a)
+                      .slice(0, 8); // Show top 8 categories
+
+                    const categoryIcons: Record<string, string> = {
+                      'food': '🍔',
+                      'transportation': '🚗',
+                      'entertainment': '🎬',
+                      'shopping': '🛒',
+                      'utilities': '⚡',
+                      'health': '🏥',
+                      'housing': '🏠',
+                      'insurance': '🛡️',
+                      'other': '📦'
+                    };
+
+                    const categoryColors = [
+                      'var(--danger)', 'var(--warning)', 'var(--primary)', 
+                      'var(--success)', 'var(--secondary)', '#9c27b0', '#ff5722', '#795548'
+                    ];
+
+                    return sortedCategories.map(([category, amount], index) => {
+                      const percentage = (amount / totalExpenses) * 100;
+                      return (
+                        <div key={category} className="category-item">
+                          <span className="category-name">
+                            {categoryIcons[category] || '📦'} {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </span>
+                          <div className="category-bar">
+                            <div 
+                              className="bar-fill" 
+                              style={{
+                                width: `${Math.max(percentage, 5)}%`, 
+                                background: categoryColors[index % categoryColors.length]
+                              }}
+                            ></div>
+                          </div>
+                          <span className="category-amount">{formatCurrency(amount)}</span>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
@@ -679,6 +1061,79 @@ export default function Home() {
                     <span className="insight-text">Reduce discretionary spending by $500/month</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Recent Income Analytics */}
+              <div className="analytics-card">
+                <h3>💵 Recent Income Activity</h3>
+                {income.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    <div style={{ fontSize: '36px', marginBottom: '12px' }}>💼</div>
+                    <p>No income data available</p>
+                    <p style={{ fontSize: '14px', marginTop: '8px' }}>Visit the Income section to start tracking</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '16px'
+                    }}>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Last {Math.min(income.length, 5)} income entries
+                      </span>
+                      <span style={{ 
+                        color: 'var(--success)', 
+                        fontWeight: '600',
+                        fontSize: '16px'
+                      }}>
+                        Total: +{formatCurrency(income.slice(0, 5).reduce((sum, inc) => sum + inc.amount, 0))}
+                      </span>
+                    </div>
+                    {income.slice(0, 5).map((incomeItem, index) => (
+                      <div key={incomeItem.id || index} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: 'rgba(40, 167, 69, 0.1)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(40, 167, 69, 0.3)'
+                      }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontWeight: '500', color: 'var(--text)', fontSize: '14px' }}>
+                            {incomeItem.description}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                            {incomeItem.category} • {new Date(incomeItem.date || incomeItem.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontWeight: '600',
+                          color: 'var(--success)',
+                          fontSize: '14px'
+                        }}>
+                          +{formatCurrency(incomeItem.amount)}
+                        </div>
+                      </div>
+                    ))}
+                    {income.length > 5 && (
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '12px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '14px'
+                      }}>
+                        And {income.length - 5} more income entries...
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Recent Expenses Analytics */}
@@ -965,6 +1420,245 @@ export default function Home() {
                         fontSize: '18px'
                       }}>
                         -{formatCurrency(expense.amount)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Income Section */}
+        {currentSection === 'income' && (
+          <section id="income">
+            <div className="section-header">
+              <h1>💵 Income Tracker</h1>
+              <button 
+                onClick={() => setShowIncomeForm(!showIncomeForm)}
+                style={{
+                  padding: '12px 24px',
+                  background: 'var(--success)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>+</span>
+                <span>Add Income</span>
+              </button>
+            </div>
+
+            {/* Income Form */}
+            {showIncomeForm && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '24px',
+                marginBottom: '24px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Add New Income</h3>
+                <form onSubmit={handleIncomeSubmit} style={{ display: 'grid', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Amount ($)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={incomeForm.amount}
+                        onChange={(e) => setIncomeForm(prev => ({ ...prev, amount: e.target.value }))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Source
+                      </label>
+                      <select
+                        value={incomeForm.source}
+                        onChange={(e) => setIncomeForm(prev => ({ ...prev, source: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="salary">Salary/Wages</option>
+                        <option value="freelance">Freelance Work</option>
+                        <option value="business">Business Income</option>
+                        <option value="investment">Investment Returns</option>
+                        <option value="rental">Rental Income</option>
+                        <option value="bonus">Bonus</option>
+                        <option value="gift">Gift/Monetary Gift</option>
+                        <option value="refund">Refund</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={incomeForm.description}
+                      onChange={(e) => setIncomeForm(prev => ({ ...prev, description: e.target.value }))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                      placeholder="What income did you receive?"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={incomeForm.date}
+                      onChange={(e) => setIncomeForm(prev => ({ ...prev, date: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowIncomeForm(false)}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '12px 24px',
+                        background: 'var(--success)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Add Income
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Recent Income */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '24px',
+              marginBottom: '24px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Recent Income (Last 30 Days)</h3>
+              {income.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>💼</div>
+                  <p>No income recorded yet</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>Click "Add Income" to start tracking your earnings</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '16px',
+                    padding: '12px 16px',
+                    background: 'rgba(40, 167, 69, 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--success)'
+                  }}>
+                    <span style={{ color: 'var(--text)', fontWeight: '600' }}>
+                      Total Income (30 days)
+                    </span>
+                    <span style={{
+                      color: 'var(--success)',
+                      fontWeight: '700',
+                      fontSize: '18px'
+                    }}>
+                      +{formatCurrency(income.reduce((sum, item) => sum + item.amount, 0))}
+                    </span>
+                  </div>
+                  {income.map((incomeItem, index) => (
+                    <div key={incomeItem.id || index} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '16px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--text)' }}>
+                          {incomeItem.description}
+                        </div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                          {incomeItem.category} • {new Date(incomeItem.date || incomeItem.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontWeight: '600',
+                        color: 'var(--success)',
+                        fontSize: '18px'
+                      }}>
+                        +{formatCurrency(incomeItem.amount)}
                       </div>
                     </div>
                   ))}

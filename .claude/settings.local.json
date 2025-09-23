@@ -17,7 +17,8 @@
       "Bash(npx dotenv:*)",
       "WebFetch(domain:astral-budget-50gtit2is-astral-productions.vercel.app)",
       "WebFetch(domain:astral-budget.vercel.app)",
-      "WebFetch(domain:astral-budget-d63ddqaoa-astral-productions.vercel.app)"
+      "WebFetch(domain:astral-budget-d63ddqaoa-astral-productions.vercel.app)",
+      "WebFetch(domain:astral-budget-o7bsmg00y-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []
