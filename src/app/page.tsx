@@ -26,6 +26,16 @@ export default function Home() {
   });
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [recurringBills, setRecurringBills] = useState<any[]>([]);
+  const [showRecurringForm, setShowRecurringForm] = useState(false);
+  const [recurringForm, setRecurringForm] = useState({
+    name: '',
+    amount: '',
+    frequency: 'monthly',
+    category: 'utilities',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: ''
+  });
   const [state, setState] = useState({
     startBalance: 11.29,
     paycheckAmount: 2143.73,
@@ -43,6 +53,7 @@ export default function Home() {
     fetchUserData();
     fetchExpenses();
     fetchIncome();
+    fetchRecurringBills();
     updateKPIs();
     generateNotifications();
   }, [userBalance, expenses, income]);
@@ -260,6 +271,18 @@ export default function Home() {
     }
   };
 
+  const fetchRecurringBills = async () => {
+    try {
+      const response = await fetch('/api/recurring');
+      const data = await response.json();
+      if (data.recurring) {
+        setRecurringBills(data.recurring);
+      }
+    } catch (error) {
+      console.error('Error fetching recurring bills:', error);
+    }
+  };
+
   const handleExpenseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -335,6 +358,64 @@ export default function Home() {
     } catch (error) {
       console.error('Error adding income:', error);
       alert('Failed to add income');
+    }
+  };
+
+  const handleRecurringSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/recurring', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: recurringForm.name,
+          amount: parseFloat(recurringForm.amount),
+          frequency: recurringForm.frequency,
+          category: recurringForm.category,
+          startDate: recurringForm.startDate,
+          endDate: recurringForm.endDate || null,
+        }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        setRecurringBills(prev => [data.recurring, ...prev]);
+        setRecurringForm({
+          name: '',
+          amount: '',
+          frequency: 'monthly',
+          category: 'utilities',
+          startDate: new Date().toISOString().split('T')[0],
+          endDate: ''
+        });
+        setShowRecurringForm(false);
+        fetchRecurringBills(); // Refresh list
+      } else {
+        alert(data.error || 'Failed to add recurring bill');
+      }
+    } catch (error) {
+      console.error('Error adding recurring bill:', error);
+      alert('Failed to add recurring bill');
+    }
+  };
+
+  const toggleRecurringBill = async (id: string, isActive: boolean) => {
+    try {
+      const response = await fetch('/api/recurring', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, isActive: !isActive }),
+      });
+      
+      if (response.ok) {
+        fetchRecurringBills(); // Refresh list
+      }
+    } catch (error) {
+      console.error('Error toggling recurring bill:', error);
     }
   };
 
@@ -526,6 +607,16 @@ export default function Home() {
               >
                 <span className="nav-icon">💵</span>
                 <span>Income</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                href="#recurring" 
+                className={`nav-link ${currentSection === 'recurring' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('recurring'); }}
+              >
+                <span className="nav-icon">🔄</span>
+                <span>Recurring</span>
               </a>
             </li>
             <li className="nav-item">
@@ -1825,6 +1916,306 @@ export default function Home() {
                         fontSize: '18px'
                       }}>
                         +{formatCurrency(incomeItem.amount)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Recurring Bills Section */}
+        {currentSection === 'recurring' && (
+          <section id="recurring">
+            <div className="section-header">
+              <h1>🔄 Recurring Bills & Subscriptions</h1>
+              <button 
+                onClick={() => setShowRecurringForm(!showRecurringForm)}
+                style={{
+                  padding: '12px 24px',
+                  background: 'var(--primary)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>+</span>
+                <span>Add Recurring Bill</span>
+              </button>
+            </div>
+
+            {/* Recurring Bill Form */}
+            {showRecurringForm && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '24px',
+                marginBottom: '24px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Add New Recurring Bill</h3>
+                <form onSubmit={handleRecurringSubmit} style={{ display: 'grid', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Bill Name
+                      </label>
+                      <input
+                        type="text"
+                        value={recurringForm.name}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, name: e.target.value }))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                        placeholder="e.g., Netflix, Rent, Electric Bill"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Amount ($)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={recurringForm.amount}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, amount: e.target.value }))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Frequency
+                      </label>
+                      <select
+                        value={recurringForm.frequency}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, frequency: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Bi-Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Category
+                      </label>
+                      <select
+                        value={recurringForm.category}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, category: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="utilities">Utilities</option>
+                        <option value="housing">Housing</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="software">Software/Subscriptions</option>
+                        <option value="transportation">Transportation</option>
+                        <option value="health">Health & Medical</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={recurringForm.startDate}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, startDate: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        End Date (Optional)
+                      </label>
+                      <input
+                        type="date"
+                        value={recurringForm.endDate}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, endDate: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowRecurringForm(false)}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '12px 24px',
+                        background: 'var(--primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Add Recurring Bill
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Recurring Bills List */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '24px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Your Recurring Bills</h3>
+              {recurringBills.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔄</div>
+                  <p>No recurring bills set up yet</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>Click "Add Recurring Bill" to start automating your regular expenses</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {recurringBills.map((bill, index) => (
+                    <div key={bill.id || index} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '16px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '8px',
+                      border: `1px solid ${bill.isActive ? 'rgba(40, 167, 69, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+                      opacity: bill.isActive ? 1 : 0.6
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ 
+                          fontWeight: '600', 
+                          color: 'var(--text)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}>
+                          {bill.name}
+                          <span style={{
+                            fontSize: '12px',
+                            padding: '2px 8px',
+                            background: bill.isActive ? 'var(--success)' : 'var(--secondary)',
+                            color: 'white',
+                            borderRadius: '12px'
+                          }}>
+                            {bill.isActive ? 'Active' : 'Paused'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                          {bill.category} • {bill.frequency} • ${bill.amount}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          Started: {new Date(bill.startDate).toLocaleDateString()}
+                          {bill.endDate && ` • Ends: ${new Date(bill.endDate).toLocaleDateString()}`}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          fontWeight: '600',
+                          color: 'var(--danger)',
+                          fontSize: '18px'
+                        }}>
+                          {formatCurrency(bill.amount)}
+                        </div>
+                        <button
+                          onClick={() => toggleRecurringBill(bill.id, bill.isActive)}
+                          style={{
+                            padding: '6px 12px',
+                            background: bill.isActive ? 'var(--warning)' : 'var(--success)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}
+                        >
+                          {bill.isActive ? 'Pause' : 'Resume'}
+                        </button>
                       </div>
                     </div>
                   ))}
