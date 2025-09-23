@@ -11,7 +11,10 @@
       "Bash(vercel:*)",
       "Bash(git rm:*)",
       "Bash(curl:*)",
-      "Bash(npx create-next-app:*)"
+      "Bash(npx create-next-app:*)",
+      "Bash(npx dotenv -e .env.local -- npx prisma db push:*)",
+      "Bash(npm install:*)",
+      "Bash(npx dotenv:*)"
     ],
     "deny": [],
     "ask": []

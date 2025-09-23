@@ -56,17 +56,20 @@ async function main() {
 
   // Create recurring bills
   for (const bill of recurringBills) {
-    await prisma.recurringBill.upsert({
-      where: { 
-        name: bill.name,
-      },
-      update: {},
-      create: {
-        ...bill,
-        startDate: new Date('2025-10-01'),
-        isActive: true,
-      },
+    // Check if bill already exists
+    const existing = await prisma.recurringBill.findFirst({
+      where: { name: bill.name }
     });
+    
+    if (!existing) {
+      await prisma.recurringBill.create({
+        data: {
+          ...bill,
+          startDate: new Date('2025-10-01'),
+          isActive: true,
+        },
+      });
+    }
   }
 
   console.log('✅ Recurring bills created');
