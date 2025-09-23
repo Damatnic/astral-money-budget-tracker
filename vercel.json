@@ -1,6 +1,4 @@
 {
-  "framework": "nextjs",
-  "installCommand": "npm install && (npx prisma generate || echo 'Prisma generation skipped - DATABASE_URL not configured')",
   "headers": [
     {
       "source": "/(.*)",
