@@ -8,6 +8,14 @@ export default function Home() {
   const [userBalance, setUserBalance] = useState(11.29);
   const [bills, setBills] = useState<any[]>([]);
   const [goals, setGoals] = useState<any[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({
+    amount: '',
+    description: '',
+    category: 'food',
+    date: new Date().toISOString().split('T')[0]
+  });
   const [state, setState] = useState({
     startBalance: 11.29,
     paycheckAmount: 2143.73,
@@ -23,6 +31,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchUserData();
+    fetchExpenses();
     updateKPIs();
   }, []);
 
@@ -36,6 +45,57 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
+    }
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      const response = await fetch('/api/expenses');
+      const data = await response.json();
+      if (data.expenses) {
+        setExpenses(data.expenses);
+      }
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+    }
+  };
+
+  const handleExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: parseFloat(expenseForm.amount),
+          description: expenseForm.description,
+          category: expenseForm.category,
+          date: expenseForm.date,
+        }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        setExpenses(prev => [data.expense, ...prev]);
+        if (data.newBalance !== undefined) {
+          setUserBalance(data.newBalance);
+        }
+        setExpenseForm({
+          amount: '',
+          description: '',
+          category: 'food',
+          date: new Date().toISOString().split('T')[0]
+        });
+        setShowExpenseForm(false);
+        fetchUserData(); // Refresh balance
+      } else {
+        alert(data.error || 'Failed to add expense');
+      }
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      alert('Failed to add expense');
     }
   };
 
@@ -211,6 +271,16 @@ export default function Home() {
             </li>
             <li className="nav-item">
               <a 
+                href="#expenses" 
+                className={`nav-link ${currentSection === 'expenses' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('expenses'); }}
+              >
+                <span className="nav-icon">💰</span>
+                <span>Expenses</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
                 href="#goals" 
                 className={`nav-link ${currentSection === 'goals' ? 'active' : ''}`}
                 onClick={(e) => { e.preventDefault(); showSection('goals'); }}
@@ -258,8 +328,29 @@ export default function Home() {
           <section id="dashboard">
             <div className="section-header">
               <h1>💰 Financial Dashboard</h1>
-              <div className="current-balance">
-                Balance: <span id="currentBalance" className="negative">{formatCurrency(userBalance)}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div className="current-balance">
+                  Balance: <span id="currentBalance" className="negative">{formatCurrency(userBalance)}</span>
+                </div>
+                <button 
+                  onClick={() => showSection('expenses')}
+                  style={{
+                    padding: '8px 16px',
+                    background: 'var(--primary)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>+</span>
+                  <span>Add Expense</span>
+                </button>
               </div>
             </div>
 
@@ -589,6 +680,296 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+
+              {/* Recent Expenses Analytics */}
+              <div className="analytics-card">
+                <h3>💳 Recent Expense Activity</h3>
+                {expenses.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    <div style={{ fontSize: '36px', marginBottom: '12px' }}>📊</div>
+                    <p>No expense data available</p>
+                    <p style={{ fontSize: '14px', marginTop: '8px' }}>Visit the Expenses section to start tracking</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '16px'
+                    }}>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Last {Math.min(expenses.length, 5)} expenses
+                      </span>
+                      <span style={{ 
+                        color: 'var(--danger)', 
+                        fontWeight: '600',
+                        fontSize: '16px'
+                      }}>
+                        Total: -{formatCurrency(expenses.slice(0, 5).reduce((sum, exp) => sum + exp.amount, 0))}
+                      </span>
+                    </div>
+                    {expenses.slice(0, 5).map((expense, index) => (
+                      <div key={expense.id || index} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontWeight: '500', color: 'var(--text)', fontSize: '14px' }}>
+                            {expense.description}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                            {expense.category} • {new Date(expense.date || expense.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontWeight: '600',
+                          color: 'var(--danger)',
+                          fontSize: '14px'
+                        }}>
+                          -{formatCurrency(expense.amount)}
+                        </div>
+                      </div>
+                    ))}
+                    {expenses.length > 5 && (
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '12px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '14px'
+                      }}>
+                        And {expenses.length - 5} more expenses...
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Expenses Section */}
+        {currentSection === 'expenses' && (
+          <section id="expenses">
+            <div className="section-header">
+              <h1>💰 Expense Tracker</h1>
+              <button 
+                onClick={() => setShowExpenseForm(!showExpenseForm)}
+                style={{
+                  padding: '12px 24px',
+                  background: 'var(--primary)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>+</span>
+                <span>Add Expense</span>
+              </button>
+            </div>
+
+            {/* Expense Form */}
+            {showExpenseForm && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '24px',
+                marginBottom: '24px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Add New Expense</h3>
+                <form onSubmit={handleExpenseSubmit} style={{ display: 'grid', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Amount ($)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={expenseForm.amount}
+                        onChange={(e) => setExpenseForm(prev => ({ ...prev, amount: e.target.value }))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Category
+                      </label>
+                      <select
+                        value={expenseForm.category}
+                        onChange={(e) => setExpenseForm(prev => ({ ...prev, category: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="food">Food & Dining</option>
+                        <option value="transportation">Transportation</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="health">Health & Medical</option>
+                        <option value="housing">Housing</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={expenseForm.description}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, description: e.target.value }))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                      placeholder="What did you spend money on?"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={expenseForm.date}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, date: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowExpenseForm(false)}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '12px 24px',
+                        background: 'var(--primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Add Expense
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Recent Expenses */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '24px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Recent Expenses (Last 30 Days)</h3>
+              {expenses.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>💳</div>
+                  <p>No expenses recorded yet</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>Click "Add Expense" to start tracking your spending</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {expenses.map((expense, index) => (
+                    <div key={expense.id || index} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '16px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--text)' }}>
+                          {expense.description}
+                        </div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                          {expense.category} • {new Date(expense.date || expense.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontWeight: '600',
+                        color: 'var(--danger)',
+                        fontSize: '18px'
+                      }}>
+                        -{formatCurrency(expense.amount)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
         )}
