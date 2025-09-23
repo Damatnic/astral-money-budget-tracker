@@ -9,7 +9,14 @@
     "start": "next start",
     "lint": "next lint",
     "serve": "serve .",
-    "deploy": "vercel"
+    "deploy": "node scripts/deploy.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset",
+    "vercel:deploy": "vercel --prod",
+    "postinstall": "prisma generate"
   },
   "keywords": [
     "budget",
