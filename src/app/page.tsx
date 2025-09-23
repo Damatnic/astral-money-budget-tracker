@@ -112,7 +112,7 @@ export default function Home() {
         return acc;
       }, {} as Record<string, number>);
 
-      const totalExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+      const totalExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + (amount as number), 0);
       
       Object.entries(categoryTotals).forEach(([category, amount]) => {
         const percentage = (amount / totalExpenses) * 100;
@@ -1004,7 +1004,7 @@ export default function Home() {
                       return acc;
                     }, {} as Record<string, number>);
 
-                    const totalExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+                    const totalExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + (amount as number), 0);
                     const sortedCategories = Object.entries(categoryTotals)
                       .sort(([,a], [,b]) => b - a)
                       .slice(0, 8); // Show top 8 categories
