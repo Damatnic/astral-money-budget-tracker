@@ -36,6 +36,14 @@ export default function Home() {
     startDate: new Date().toISOString().split('T')[0],
     endDate: ''
   });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    category: 'all',
+    dateRange: 'all',
+    amountRange: 'all',
+    type: 'all' // all, expense, income
+  });
+  const [showFilters, setShowFilters] = useState(false);
   const [state, setState] = useState({
     startBalance: 11.29,
     paycheckAmount: 2143.73,
@@ -417,6 +425,85 @@ export default function Home() {
     } catch (error) {
       console.error('Error toggling recurring bill:', error);
     }
+  };
+
+  const filterTransactions = (transactions: any[], type: 'expense' | 'income' | 'all' = 'all') => {
+    return transactions.filter(transaction => {
+      // Search term filter
+      if (searchTerm && !transaction.description.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      
+      // Category filter
+      if (filters.category !== 'all' && transaction.category !== filters.category) {
+        return false;
+      }
+      
+      // Type filter
+      if (filters.type !== 'all') {
+        if (filters.type === 'expense' && type !== 'expense') return false;
+        if (filters.type === 'income' && type !== 'income') return false;
+      }
+      
+      // Date range filter
+      if (filters.dateRange !== 'all') {
+        const transactionDate = new Date(transaction.date || transaction.createdAt);
+        const now = new Date();
+        
+        switch (filters.dateRange) {
+          case 'today':
+            if (transactionDate.toDateString() !== now.toDateString()) return false;
+            break;
+          case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            if (transactionDate < weekAgo) return false;
+            break;
+          case 'month':
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            if (transactionDate < monthAgo) return false;
+            break;
+          case 'year':
+            const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+            if (transactionDate < yearAgo) return false;
+            break;
+        }
+      }
+      
+      // Amount range filter
+      if (filters.amountRange !== 'all') {
+        const amount = transaction.amount;
+        switch (filters.amountRange) {
+          case 'under50':
+            if (amount >= 50) return false;
+            break;
+          case '50to100':
+            if (amount < 50 || amount >= 100) return false;
+            break;
+          case '100to500':
+            if (amount < 100 || amount >= 500) return false;
+            break;
+          case 'over500':
+            if (amount < 500) return false;
+            break;
+        }
+      }
+      
+      return true;
+    });
+  };
+
+  const getFilteredExpenses = () => filterTransactions(expenses, 'expense');
+  const getFilteredIncome = () => filterTransactions(income, 'income');
+  const getFilteredRecurring = () => {
+    return recurringBills.filter(bill => {
+      if (searchTerm && !bill.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      if (filters.category !== 'all' && bill.category !== filters.category) {
+        return false;
+      }
+      return true;
+    });
   };
 
   const updateKPIs = () => {
@@ -2933,6 +3020,201 @@ export default function Home() {
         }
         .btn-danger:hover {
           background: #dc2626;
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+          .container {
+            margin: 0;
+            padding: 8px;
+          }
+          
+          .header {
+            padding: 16px 8px;
+          }
+          
+          .nav-menu {
+            display: flex;
+            overflow-x: auto;
+            padding: 8px;
+            gap: 8px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          
+          .nav-menu::-webkit-scrollbar {
+            display: none;
+          }
+          
+          .nav-item {
+            flex: 0 0 auto;
+          }
+          
+          .nav-link {
+            padding: 10px 14px;
+            font-size: 13px;
+            min-width: 80px;
+            text-align: center;
+          }
+          
+          .nav-link span {
+            display: block;
+          }
+          
+          .nav-icon {
+            font-size: 18px;
+            margin-bottom: 2px;
+          }
+          
+          .main-content {
+            padding: 16px 8px;
+          }
+          
+          .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          
+          .section-header h1 {
+            font-size: 22px;
+          }
+          
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          
+          .analytics-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          
+          .goals-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          
+          .current-balance {
+            font-size: 16px;
+          }
+          
+          .dashboard-card {
+            padding: 16px;
+          }
+          
+          .analytics-card {
+            padding: 16px;
+          }
+          
+          .goal-card {
+            padding: 16px;
+          }
+          
+          /* Mobile Form Styles */
+          form {
+            gap: 12px !important;
+          }
+          
+          form > div[style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          
+          input, select, textarea {
+            font-size: 16px !important; /* Prevents zoom on iOS */
+          }
+          
+          /* Mobile Button Styles */
+          button {
+            min-height: 44px; /* Touch target size */
+            font-size: 14px;
+          }
+          
+          /* Mobile Settings */
+          .settings-container {
+            gap: 16px;
+          }
+          
+          .settings-section {
+            padding: 16px;
+          }
+          
+          .settings-actions {
+            flex-direction: column;
+            gap: 12px;
+          }
+          
+          .settings-actions button {
+            width: 100%;
+          }
+        }
+        
+        /* Tablet Styles */
+        @media (max-width: 1024px) and (min-width: 769px) {
+          .dashboard-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .analytics-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .goals-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .nav-menu {
+            gap: 12px;
+            padding: 0 16px;
+          }
+          
+          .main-content {
+            padding: 24px 16px;
+          }
+        }
+        
+        /* Small Mobile Styles */
+        @media (max-width: 480px) {
+          .header {
+            padding: 12px 8px;
+          }
+          
+          .header h1 {
+            font-size: 20px;
+          }
+          
+          .section-header h1 {
+            font-size: 20px;
+          }
+          
+          .current-balance {
+            font-size: 14px;
+          }
+          
+          .dashboard-card .card-value {
+            font-size: 20px;
+          }
+          
+          .nav-link {
+            padding: 8px 10px;
+            font-size: 12px;
+            min-width: 70px;
+          }
+          
+          .nav-icon {
+            font-size: 16px;
+          }
+          
+          button {
+            padding: 8px 12px !important;
+            font-size: 13px !important;
+          }
+          
+          input, select, textarea {
+            padding: 10px !important;
+            font-size: 16px !important;
+          }
         }
       `}</style>
     </div>
