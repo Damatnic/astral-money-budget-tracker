@@ -138,3 +138,145 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const { id, amount, description, source, date } = await request.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({
+        message: 'Simulated update - database not configured',
+        income: { id, amount, description, source, date }
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: 'user@astralmoney.com' }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get the old income to calculate balance adjustment
+    const oldIncome = await prisma.transaction.findUnique({
+      where: { id }
+    });
+
+    if (!oldIncome) {
+      return NextResponse.json(
+        { error: 'Income not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update income
+    const updatedIncome = await prisma.transaction.update({
+      where: { id },
+      data: {
+        amount: amount || oldIncome.amount,
+        description: description || oldIncome.description,
+        category: source || oldIncome.category,
+        date: date ? new Date(date) : oldIncome.date,
+      }
+    });
+
+    // Update user balance (adjust for the difference)
+    const balanceAdjustment = (updatedIncome.amount as number) - (oldIncome.amount as number);
+    const newBalance = user.balance + balanceAdjustment;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { balance: newBalance }
+    });
+
+    return NextResponse.json({
+      income: updatedIncome,
+      newBalance,
+      source: 'database'
+    });
+
+  } catch (error) {
+    console.error('Income update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update income entry' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { id } = await request.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({
+        message: 'Simulated delete - database not configured'
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: 'user@astralmoney.com' }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get the income to adjust the balance
+    const income = await prisma.transaction.findUnique({
+      where: { id }
+    });
+
+    if (!income) {
+      return NextResponse.json(
+        { error: 'Income not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete income
+    await prisma.transaction.delete({
+      where: { id }
+    });
+
+    // Adjust balance (subtract the income)
+    const newBalance = user.balance - (income.amount as number);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { balance: newBalance }
+    });
+
+    return NextResponse.json({
+      message: 'Income deleted successfully',
+      newBalance,
+      source: 'database'
+    });
+
+  } catch (error) {
+    console.error('Income deletion error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete income entry' },
+      { status: 500 }
+    );
+  }
+}

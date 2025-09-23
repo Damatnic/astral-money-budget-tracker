@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { id, isActive } = await request.json();
+    const { id, name, amount, frequency, category, startDate, endDate, isActive } = await request.json();
 
     if (!id) {
       return NextResponse.json(
@@ -120,14 +120,25 @@ export async function PUT(request: Request) {
 
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
-        message: 'Simulated update - database not configured'
+        message: 'Simulated update - database not configured',
+        recurring: { id, name, amount, frequency, category, startDate, endDate, isActive }
       });
     }
 
-    // Update recurring bill active status
+    // Prepare update data
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (amount !== undefined) updateData.amount = amount;
+    if (frequency !== undefined) updateData.frequency = frequency;
+    if (category !== undefined) updateData.category = category;
+    if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null;
+    if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    // Update recurring bill
     const updatedBill = await prisma.recurringBill.update({
       where: { id },
-      data: { isActive }
+      data: updateData
     });
 
     return NextResponse.json({
@@ -139,6 +150,42 @@ export async function PUT(request: Request) {
     console.error('Recurring bill update error:', error);
     return NextResponse.json(
       { error: 'Failed to update recurring bill' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { id } = await request.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.DATABASE_URL) {
+      return NextResponse.json({
+        message: 'Simulated delete - database not configured'
+      });
+    }
+
+    // Delete recurring bill
+    await prisma.recurringBill.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({
+      message: 'Recurring bill deleted successfully',
+      source: 'database'
+    });
+
+  } catch (error) {
+    console.error('Recurring bill delete error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete recurring bill' },
       { status: 500 }
     );
   }

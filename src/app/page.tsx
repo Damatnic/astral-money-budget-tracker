@@ -7,7 +7,37 @@ export default function Home() {
   const [currentMonth, setCurrentMonth] = useState('october');
   const [userBalance, setUserBalance] = useState(11.29);
   const [bills, setBills] = useState<any[]>([]);
-  const [goals, setGoals] = useState<any[]>([]);
+  const [goals, setGoals] = useState<any[]>([
+    {
+      id: 'emergency_fund',
+      icon: '🚨',
+      name: 'Emergency Fund',
+      current: 11.29,
+      target: 10000,
+      targetDate: '2025-12-31',
+      type: 'savings'
+    },
+    {
+      id: 'debt_payoff',
+      icon: '💳',
+      name: 'Debt Payoff',
+      current: 1500,
+      target: 5000,
+      targetDate: '2025-06-30',
+      type: 'debt'
+    },
+    {
+      id: 'vacation_fund',
+      icon: '✈️',
+      name: 'Vacation Fund',
+      current: 750,
+      target: 3000,
+      targetDate: '2025-07-01',
+      type: 'savings'
+    }
+  ]);
+  const [editingGoal, setEditingGoal] = useState<any>(null);
+  const [showGoalForm, setShowGoalForm] = useState(false);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [income, setIncome] = useState<any[]>([]);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -44,6 +74,9 @@ export default function Home() {
     type: 'all' // all, expense, income
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [editingIncome, setEditingIncome] = useState<any>(null);
+  const [editingRecurringBill, setEditingRecurringBill] = useState<any>(null);
   const [state, setState] = useState({
     startBalance: 11.29,
     paycheckAmount: 2143.73,
@@ -83,28 +116,80 @@ export default function Home() {
     const newNotifications = [];
     const now = new Date();
 
-    // Low balance alert
-    if (userBalance < 100) {
+    // Advanced financial calculations
+    const last30DaysExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date || expense.createdAt);
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return expenseDate >= thirtyDaysAgo;
+    });
+
+    const last30DaysIncome = income.filter(incomeItem => {
+      const incomeDate = new Date(incomeItem.date || incomeItem.createdAt);
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return incomeDate >= thirtyDaysAgo;
+    });
+
+    const monthlyExpenses = last30DaysExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const monthlyIncome = last30DaysIncome.reduce((sum, incomeItem) => sum + incomeItem.amount, 0);
+    const avgDailySpending = monthlyExpenses / 30;
+    const emergencyFundTarget = monthlyExpenses * 3;
+
+    const upcomingBillTotal = calculateUpcomingBills(recurringBills);
+
+    // CRITICAL ALERTS (High Priority)
+    
+    // Critical balance level
+    if (userBalance < avgDailySpending * 7) {
       newNotifications.push({
-        id: 'low_balance',
-        type: 'warning',
-        title: 'Low Balance Alert',
-        message: `Your balance is critically low at ${formatCurrency(userBalance)}`,
+        id: 'critical_balance',
+        type: 'error',
+        title: '🚨 Critical Balance Alert',
+        message: `Only ${Math.floor(userBalance / avgDailySpending)} days of spending left at current rate`,
         timestamp: now,
-        priority: 'high'
-      });
-    } else if (userBalance < 500) {
-      newNotifications.push({
-        id: 'balance_warning',
-        type: 'info',
-        title: 'Balance Warning',
-        message: `Your balance is getting low at ${formatCurrency(userBalance)}`,
-        timestamp: now,
-        priority: 'medium'
+        priority: 'critical'
       });
     }
 
-    // Spending alerts
+    // Upcoming bill strain
+    if (upcomingBillTotal > userBalance * 0.8) {
+      newNotifications.push({
+        id: 'bill_strain',
+        type: 'error',
+        title: '📅 Upcoming Bills Warning',
+        message: `${formatCurrency(upcomingBillTotal)} in bills will strain your ${formatCurrency(userBalance)} balance`,
+        timestamp: now,
+        priority: 'critical'
+      });
+    }
+
+    // Negative cash flow alert
+    if (monthlyExpenses > monthlyIncome && monthlyIncome > 0) {
+      const deficit = monthlyExpenses - monthlyIncome;
+      newNotifications.push({
+        id: 'negative_cashflow',
+        type: 'error',
+        title: '🔥 Negative Cash Flow',
+        message: `Spending ${formatCurrency(deficit)} more than earning - immediate action required`,
+        timestamp: now,
+        priority: 'critical'
+      });
+    }
+
+    // HIGH PRIORITY ALERTS
+
+    // Balance vs Emergency Fund
+    if (userBalance < emergencyFundTarget * 0.3) {
+      newNotifications.push({
+        id: 'emergency_fund_low',
+        type: 'warning',
+        title: '⚠️ Emergency Fund Critical',
+        message: `Need ${formatCurrency(emergencyFundTarget - userBalance)} more for 3-month emergency fund`,
+        timestamp: now,
+        priority: 'high'
+      });
+    }
+
+    // Predictive spending alerts - High spending weeks ahead
     const last7DaysExpenses = expenses.filter(expense => {
       const expenseDate = new Date(expense.date || expense.createdAt);
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -112,18 +197,20 @@ export default function Home() {
     });
 
     const weeklySpending = last7DaysExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-    if (weeklySpending > 500) {
+    const avgWeeklySpending = monthlyExpenses / 4.33;
+    
+    if (weeklySpending > avgWeeklySpending * 1.5) {
       newNotifications.push({
-        id: 'high_spending',
+        id: 'high_spending_week',
         type: 'warning',
-        title: 'High Spending Alert',
-        message: `You've spent ${formatCurrency(weeklySpending)} in the last 7 days`,
+        title: '📈 High Spending Period',
+        message: `This week's ${formatCurrency(weeklySpending)} is 50% above average - consider slowing down`,
         timestamp: now,
-        priority: 'medium'
+        priority: 'high'
       });
     }
 
-    // Category spending alerts
+    // Debt avalanche alert for high categories
     if (expenses.length > 0) {
       const categoryTotals = expenses.reduce((acc, expense) => {
         const category = expense.category || 'other';
@@ -131,48 +218,129 @@ export default function Home() {
         return acc;
       }, {} as Record<string, number>);
 
-      const totalExpenses = Object.values(categoryTotals).reduce((sum: number, amount: number) => sum + amount, 0);
+      const sortedCategories = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number));
+      const topCategory = sortedCategories[0];
       
-      Object.entries(categoryTotals).forEach(([category, amount]) => {
-        const percentage = (amount / totalExpenses) * 100;
-        if (percentage > 40) {
-          newNotifications.push({
-            id: `category_${category}`,
-            type: 'info',
-            title: 'Category Spending Alert',
-            message: `${category.charAt(0).toUpperCase() + category.slice(1)} represents ${percentage.toFixed(1)}% of your spending`,
-            timestamp: now,
-            priority: 'low'
-          });
-        }
+      if (topCategory && monthlyIncome > 0 && (topCategory[1] as number) > monthlyIncome * 0.4) {
+        newNotifications.push({
+          id: 'category_dominance',
+          type: 'warning',
+          title: '⚡ Category Alert',
+          message: `${topCategory[0]} consumes ${(((topCategory[1] as number)/monthlyIncome)*100).toFixed(0)}% of income - focus reduction here`,
+          timestamp: now,
+          priority: 'high'
+        });
+      }
+    }
+
+    // MEDIUM PRIORITY ALERTS
+
+    // Balance runway prediction
+    if (avgDailySpending > 0 && userBalance / avgDailySpending < 30) {
+      const daysLeft = Math.floor(userBalance / avgDailySpending);
+      newNotifications.push({
+        id: 'balance_runway',
+        type: 'warning',
+        title: '⏰ Balance Runway',
+        message: `Current balance will last ${daysLeft} days at current spending rate`,
+        timestamp: now,
+        priority: 'medium'
       });
     }
 
-    // Positive alerts
-    const last30DaysIncome = income.filter(incomeItem => {
-      const incomeDate = new Date(incomeItem.date || incomeItem.createdAt);
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      return incomeDate >= thirtyDaysAgo;
-    });
+    // Savings rate optimization
+    if (monthlyIncome > 0 && monthlyExpenses > 0) {
+      const savingsRate = ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100;
+      if (savingsRate < 10 && savingsRate > 0) {
+        newNotifications.push({
+          id: 'low_savings_rate',
+          type: 'info',
+          title: '📊 Savings Rate Alert',
+          message: `${savingsRate.toFixed(1)}% savings rate is below recommended 10-20% target`,
+          timestamp: now,
+          priority: 'medium'
+        });
+      }
+    }
 
-    const monthlyIncome = last30DaysIncome.reduce((sum, incomeItem) => sum + incomeItem.amount, 0);
-    const monthlyExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date || expense.createdAt);
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      return expenseDate >= thirtyDaysAgo;
-    }).reduce((sum, expense) => sum + expense.amount, 0);
+    // Income diversification alert
+    if (income.length > 0) {
+      const incomeSources = income.reduce((acc, inc) => {
+        acc[inc.category] = (acc[inc.category] || 0) + inc.amount;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      if (Object.keys(incomeSources).length === 1) {
+        newNotifications.push({
+          id: 'income_diversification',
+          type: 'info',
+          title: '🌐 Income Diversification',
+          message: 'Single income source detected - consider adding backup income streams',
+          timestamp: now,
+          priority: 'medium'
+        });
+      }
+    }
 
-    if (monthlyIncome > monthlyExpenses && monthlyIncome > 0) {
-      const surplus = monthlyIncome - monthlyExpenses;
+    // LOW PRIORITY / POSITIVE ALERTS
+
+    // Emergency fund progress
+    if (userBalance >= emergencyFundTarget * 0.5 && userBalance < emergencyFundTarget) {
+      const progress = (userBalance / emergencyFundTarget * 100).toFixed(0);
       newNotifications.push({
-        id: 'surplus',
+        id: 'emergency_progress',
         type: 'success',
-        title: 'Great Job!',
-        message: `You have a surplus of ${formatCurrency(surplus)} this month`,
+        title: '🎯 Emergency Fund Progress',
+        message: `${progress}% towards 3-month emergency fund goal - keep going!`,
         timestamp: now,
         priority: 'low'
       });
     }
+
+    // Excellent financial health
+    if (monthlyIncome > monthlyExpenses && userBalance > emergencyFundTarget && monthlyIncome > 0) {
+      const surplus = monthlyIncome - monthlyExpenses;
+      const surplusBalance = userBalance - emergencyFundTarget;
+      newNotifications.push({
+        id: 'financial_health',
+        type: 'success',
+        title: '🏆 Excellent Financial Health',
+        message: `Emergency fund complete + ${formatCurrency(surplus)}/mo surplus. Consider investment opportunities!`,
+        timestamp: now,
+        priority: 'low'
+      });
+    }
+
+    // Good savings rate celebration
+    if (monthlyIncome > 0 && monthlyExpenses > 0) {
+      const savingsRate = ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100;
+      if (savingsRate >= 20) {
+        newNotifications.push({
+          id: 'excellent_savings',
+          type: 'success',
+          title: '💪 Outstanding Savings Rate',
+          message: `${savingsRate.toFixed(1)}% savings rate exceeds recommendations - you're crushing it!`,
+          timestamp: now,
+          priority: 'low'
+        });
+      }
+    }
+
+    // Weekly spending on track
+    if (weeklySpending > 0 && weeklySpending <= avgWeeklySpending * 0.8) {
+      newNotifications.push({
+        id: 'controlled_spending',
+        type: 'success',
+        title: '✅ Controlled Spending',
+        message: `This week's spending is 20% below average - excellent self-control!`,
+        timestamp: now,
+        priority: 'low'
+      });
+    }
+
+    // Sort notifications by priority for display
+    const priorityOrder = { 'critical': 0, 'high': 1, 'medium': 2, 'low': 3 };
+    newNotifications.sort((a, b) => (priorityOrder[a.priority as keyof typeof priorityOrder] || 3) - (priorityOrder[b.priority as keyof typeof priorityOrder] || 3));
 
     setNotifications(newNotifications);
   };
@@ -294,22 +462,42 @@ export default function Home() {
   const handleExpenseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const isEditing = editingExpense !== null;
+      const method = isEditing ? 'PUT' : 'POST';
+      const body = isEditing 
+        ? JSON.stringify({
+            id: editingExpense.id,
+            amount: parseFloat(expenseForm.amount),
+            description: expenseForm.description,
+            category: expenseForm.category,
+            date: expenseForm.date,
+          })
+        : JSON.stringify({
+            amount: parseFloat(expenseForm.amount),
+            description: expenseForm.description,
+            category: expenseForm.category,
+            date: expenseForm.date,
+          });
+
       const response = await fetch('/api/expenses', {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          amount: parseFloat(expenseForm.amount),
-          description: expenseForm.description,
-          category: expenseForm.category,
-          date: expenseForm.date,
-        }),
+        body,
       });
       
       const data = await response.json();
       if (response.ok) {
-        setExpenses(prev => [data.expense, ...prev]);
+        if (isEditing) {
+          setExpenses(prev => prev.map(exp => 
+            exp.id === editingExpense.id ? data.expense : exp
+          ));
+          setEditingExpense(null);
+        } else {
+          setExpenses(prev => [data.expense, ...prev]);
+        }
+        
         if (data.newBalance !== undefined) {
           setUserBalance(data.newBalance);
         }
@@ -322,11 +510,105 @@ export default function Home() {
         setShowExpenseForm(false);
         fetchUserData(); // Refresh balance
       } else {
-        alert(data.error || 'Failed to add expense');
+        alert(data.error || `Failed to ${isEditing ? 'update' : 'add'} expense`);
       }
     } catch (error) {
-      console.error('Error adding expense:', error);
-      alert('Failed to add expense');
+      console.error(`Error ${editingExpense ? 'updating' : 'adding'} expense:`, error);
+      alert(`Failed to ${editingExpense ? 'update' : 'add'} expense`);
+    }
+  };
+
+  const markBillAsPaid = async (bill: any) => {
+    if (!confirm(`Mark ${bill.name} as paid for ${formatCurrency(bill.amount)}?`)) {
+      return;
+    }
+
+    try {
+      // Create an expense entry for the bill payment
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: bill.amount,
+          description: `${bill.name} - Recurring Bill Payment`,
+          category: bill.category,
+          date: new Date().toISOString().split('T')[0],
+        }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        setExpenses(prev => [data.expense, ...prev]);
+        if (data.newBalance !== undefined) {
+          setUserBalance(data.newBalance);
+        }
+        fetchUserData(); // Refresh balance
+        alert(`✅ ${bill.name} marked as paid! Added ${formatCurrency(bill.amount)} expense.`);
+      } else {
+        alert(data.error || 'Failed to mark bill as paid');
+      }
+    } catch (error) {
+      console.error('Error marking bill as paid:', error);
+      alert('Failed to mark bill as paid');
+    }
+  };
+
+  const deleteRecurringBill = async (billId: string) => {
+    if (!confirm('Are you sure you want to delete this recurring bill? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/recurring', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: billId }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        setRecurringBills(prev => prev.filter(bill => bill.id !== billId));
+        alert('✅ Recurring bill deleted successfully!');
+      } else {
+        alert(data.error || 'Failed to delete recurring bill');
+      }
+    } catch (error) {
+      console.error('Error deleting recurring bill:', error);
+      alert('Failed to delete recurring bill');
+    }
+  };
+
+  const deleteExpense = async (expenseId: string) => {
+    if (!confirm('Are you sure you want to delete this expense?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/expenses', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: expenseId }),
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        setExpenses(prev => prev.filter(exp => exp.id !== expenseId));
+        if (data.newBalance !== undefined) {
+          setUserBalance(data.newBalance);
+        }
+        fetchUserData(); // Refresh balance
+      } else {
+        alert(data.error || 'Failed to delete expense');
+      }
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      alert('Failed to delete expense');
     }
   };
 
@@ -372,24 +654,46 @@ export default function Home() {
   const handleRecurringSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const isEditing = editingRecurringBill !== null;
+      const method = isEditing ? 'PUT' : 'POST';
+      const body = isEditing 
+        ? JSON.stringify({
+            id: editingRecurringBill.id,
+            name: recurringForm.name,
+            amount: parseFloat(recurringForm.amount),
+            frequency: recurringForm.frequency,
+            category: recurringForm.category,
+            startDate: recurringForm.startDate,
+            endDate: recurringForm.endDate || null,
+          })
+        : JSON.stringify({
+            name: recurringForm.name,
+            amount: parseFloat(recurringForm.amount),
+            frequency: recurringForm.frequency,
+            category: recurringForm.category,
+            startDate: recurringForm.startDate,
+            endDate: recurringForm.endDate || null,
+          });
+
       const response = await fetch('/api/recurring', {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: recurringForm.name,
-          amount: parseFloat(recurringForm.amount),
-          frequency: recurringForm.frequency,
-          category: recurringForm.category,
-          startDate: recurringForm.startDate,
-          endDate: recurringForm.endDate || null,
-        }),
+        body,
       });
       
       const data = await response.json();
       if (response.ok) {
-        setRecurringBills(prev => [data.recurring, ...prev]);
+        if (isEditing) {
+          setRecurringBills(prev => prev.map(bill => 
+            bill.id === editingRecurringBill.id ? data.recurring : bill
+          ));
+          setEditingRecurringBill(null);
+        } else {
+          setRecurringBills(prev => [data.recurring, ...prev]);
+        }
+        
         setRecurringForm({
           name: '',
           amount: '',
@@ -401,11 +705,11 @@ export default function Home() {
         setShowRecurringForm(false);
         fetchRecurringBills(); // Refresh list
       } else {
-        alert(data.error || 'Failed to add recurring bill');
+        alert(data.error || `Failed to ${isEditing ? 'update' : 'add'} recurring bill`);
       }
     } catch (error) {
-      console.error('Error adding recurring bill:', error);
-      alert('Failed to add recurring bill');
+      console.error(`Error ${editingRecurringBill ? 'updating' : 'adding'} recurring bill:`, error);
+      alert(`Failed to ${editingRecurringBill ? 'update' : 'add'} recurring bill`);
     }
   };
 
@@ -425,6 +729,56 @@ export default function Home() {
     } catch (error) {
       console.error('Error toggling recurring bill:', error);
     }
+  };
+
+  // Calculate accurate upcoming bills for next N days
+  const calculateUpcomingBills = (bills: any[], daysAhead = 30) => {
+    const now = new Date();
+    const endDate = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    let total = 0;
+    
+    bills.filter(bill => bill.isActive).forEach(bill => {
+      const startDate = new Date(bill.startDate || bill.createdAt || now);
+      const currentDate = new Date(Math.max(startDate.getTime(), now.getTime()));
+      
+      while (currentDate <= endDate) {
+        let nextDate: Date;
+        
+        switch (bill.frequency) {
+          case 'weekly':
+            nextDate = new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 'biweekly':
+            nextDate = new Date(currentDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+            break;
+          case 'monthly':
+            nextDate = new Date(currentDate);
+            nextDate.setMonth(nextDate.getMonth() + 1);
+            break;
+          case 'quarterly':
+            nextDate = new Date(currentDate);
+            nextDate.setMonth(nextDate.getMonth() + 3);
+            break;
+          case 'yearly':
+            nextDate = new Date(currentDate);
+            nextDate.setFullYear(nextDate.getFullYear() + 1);
+            break;
+          default:
+            return; // Skip unknown frequencies
+        }
+        
+        if (currentDate >= now && currentDate <= endDate) {
+          total += bill.amount;
+        }
+        
+        currentDate.setTime(nextDate.getTime());
+        
+        // Prevent infinite loops
+        if (nextDate <= currentDate) break;
+      }
+    });
+    
+    return total;
   };
 
   const filterTransactions = (transactions: any[], type: 'expense' | 'income' | 'all' = 'all') => {
@@ -860,44 +1214,71 @@ export default function Home() {
                             <div
                               key={notification.id}
                               style={{
-                                padding: '12px',
-                                background: notification.type === 'warning' ? 'rgba(255, 193, 7, 0.1)' :
+                                padding: '14px',
+                                background: notification.type === 'error' ? 'rgba(220, 53, 69, 0.1)' :
+                                          notification.type === 'warning' ? 'rgba(255, 193, 7, 0.1)' :
                                           notification.type === 'success' ? 'rgba(40, 167, 69, 0.1)' :
                                           'rgba(13, 110, 253, 0.1)',
-                                border: `1px solid ${notification.type === 'warning' ? 'var(--warning)' :
+                                border: `1px solid ${notification.type === 'error' ? 'var(--danger)' :
+                                                   notification.type === 'warning' ? 'var(--warning)' :
                                                    notification.type === 'success' ? 'var(--success)' :
                                                    'var(--primary)'}`,
-                                borderRadius: '8px'
+                                borderRadius: '8px',
+                                borderLeft: `4px solid ${notification.type === 'error' ? 'var(--danger)' :
+                                                       notification.type === 'warning' ? 'var(--warning)' :
+                                                       notification.type === 'success' ? 'var(--success)' :
+                                                       'var(--primary)'}`,
+                                animation: notification.priority === 'critical' ? 'pulse 2s infinite' : 'none'
                               }}
                             >
                               <div style={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'flex-start',
-                                marginBottom: '4px'
+                                marginBottom: '6px'
                               }}>
                                 <div style={{
-                                  fontWeight: '600',
-                                  fontSize: '14px',
-                                  color: 'var(--text)'
+                                  fontWeight: notification.priority === 'critical' ? '700' : '600',
+                                  fontSize: notification.priority === 'critical' ? '15px' : '14px',
+                                  color: notification.type === 'error' ? 'var(--danger)' :
+                                         notification.type === 'warning' ? 'var(--warning)' :
+                                         notification.type === 'success' ? 'var(--success)' :
+                                         'var(--text)'
                                 }}>
                                   {notification.title}
                                 </div>
                                 <div style={{
-                                  fontSize: '12px',
-                                  color: 'var(--text-secondary)'
+                                  fontSize: '14px',
+                                  fontWeight: '600'
                                 }}>
-                                  {notification.priority === 'high' ? '🔴' : 
-                                   notification.priority === 'medium' ? '🟡' : '🔵'}
+                                  {notification.priority === 'critical' ? '🔥' :
+                                   notification.priority === 'high' ? '🔴' : 
+                                   notification.priority === 'medium' ? '🟡' : 
+                                   notification.priority === 'low' ? '🟢' : '🔵'}
                                 </div>
                               </div>
                               <div style={{
                                 fontSize: '13px',
                                 color: 'var(--text-secondary)',
-                                lineHeight: '1.4'
+                                lineHeight: '1.4',
+                                fontWeight: notification.priority === 'critical' ? '500' : '400'
                               }}>
                                 {notification.message}
                               </div>
+                              {notification.priority === 'critical' && (
+                                <div style={{
+                                  marginTop: '8px',
+                                  padding: '6px 10px',
+                                  background: 'rgba(220, 53, 69, 0.2)',
+                                  borderRadius: '4px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  color: 'var(--danger)',
+                                  textAlign: 'center'
+                                }}>
+                                  IMMEDIATE ACTION REQUIRED
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1182,9 +1563,9 @@ export default function Home() {
                       return acc;
                     }, {} as Record<string, number>);
 
-                    const totalExpenses = Object.values(categoryTotals).reduce((sum: number, amount: number) => sum + amount, 0);
+                    const totalExpenses = (Object.values(categoryTotals) as number[]).reduce((sum: number, amount: number) => sum + amount, 0);
                     const sortedCategories = Object.entries(categoryTotals)
-                      .sort(([,a], [,b]) => b - a)
+                      .sort(([,a], [,b]) => (b as number) - (a as number))
                       .slice(0, 8); // Show top 8 categories
 
                     const categoryIcons: Record<string, string> = {
@@ -1205,7 +1586,7 @@ export default function Home() {
                     ];
 
                     return sortedCategories.map(([category, amount], index) => {
-                      const percentage = (amount / totalExpenses) * 100;
+                      const percentage = ((amount as number) / totalExpenses) * 100;
                       return (
                         <div key={category} className="category-item">
                           <span className="category-name">
@@ -1220,7 +1601,7 @@ export default function Home() {
                               }}
                             ></div>
                           </div>
-                          <span className="category-amount">{formatCurrency(amount)}</span>
+                          <span className="category-amount">{formatCurrency(amount as number)}</span>
                         </div>
                       );
                     });
@@ -1307,7 +1688,15 @@ export default function Home() {
                     const monthlyExpenses = last30DaysExpenses.reduce((sum, expense) => sum + expense.amount, 0);
                     const monthlyIncome = last30DaysIncome.reduce((sum, incomeItem) => sum + incomeItem.amount, 0);
                     
-                    // Generate insights based on data
+                    // Advanced Cash Flow Recovery Strategies
+                    const netCashFlow = monthlyIncome - monthlyExpenses;
+                    const emergencyFundTarget = monthlyExpenses * 3; // 3-month emergency fund
+                    const criticalBalanceThreshold = monthlyExpenses * 0.5; // Half month expenses
+                    
+                    // Calculate accurate upcoming bills for next 30 days
+                    const upcomingBillTotal = calculateUpcomingBills(recurringBills);
+
+                    // Generate enhanced insights based on comprehensive analysis
                     if (expenses.length > 0) {
                       const categoryTotals = expenses.reduce((acc, expense) => {
                         const category = expense.category || 'other';
@@ -1315,75 +1704,161 @@ export default function Home() {
                         return acc;
                       }, {} as Record<string, number>);
 
-                      const topCategory = Object.entries(categoryTotals)
-                        .sort(([,a], [,b]) => b - a)[0];
+                      const sortedCategories = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number));
+                      const topCategory = sortedCategories[0];
                       
-                      if (topCategory && monthlyExpenses > 0) {
-                        const percentage = ((topCategory[1] / monthlyExpenses) * 100).toFixed(0);
+                      // Cash Flow Recovery Strategies
+                      if (netCashFlow < 0) {
+                        const deficit = Math.abs(netCashFlow);
+                        if (deficit > monthlyIncome * 0.2) {
+                          insights.push({
+                            icon: '🆘',
+                            text: `Critical deficit: ${formatCurrency(deficit)}. Immediate action needed - consider gig work or expense cuts`
+                          });
+                        }
+                        
+                        // Category-specific reduction suggestions
+                        if (topCategory && (topCategory[1] as number) > monthlyIncome * 0.3) {
+                          const potentialSavings = (topCategory[1] as number) * 0.2; // 20% reduction
+                          insights.push({
+                            icon: '✂️',
+                            text: `Cut ${topCategory[0]} spending by 20% to save ${formatCurrency(potentialSavings)}/month`
+                          });
+                        }
+                        
+                        // Income boost suggestions
+                        const incomeNeed = deficit + (emergencyFundTarget / 12);
                         insights.push({
-                          icon: '📊',
-                          text: `${topCategory[0].charAt(0).toUpperCase() + topCategory[0].slice(1)} represents ${percentage}% of your spending`
+                          icon: '💼',
+                          text: `Target ${formatCurrency(incomeNeed)} additional monthly income through side work or skills upgrade`
                         });
                       }
 
-                      // Spending trend
-                      if (monthlyExpenses > 0) {
-                        const avgDaily = monthlyExpenses / 30;
+                      if (topCategory && monthlyExpenses > 0) {
+                        const percentage = (((topCategory[1] as number) / monthlyExpenses) * 100).toFixed(0);
                         insights.push({
-                          icon: '📈',
-                          text: `Your average daily spending is ${formatCurrency(avgDaily)}`
+                          icon: '📊',
+                          text: `${topCategory[0].charAt(0).toUpperCase() + topCategory[0].slice(1)} dominates at ${percentage}% - optimize this category first`
+                        });
+                      }
+
+                      // Predictive spending alerts
+                      const weeklyAvg = monthlyExpenses / 4.33;
+                      const projectedWeekly = weeklyAvg * 1.1; // 10% buffer
+                      if (userBalance < projectedWeekly * 2) {
+                        insights.push({
+                          icon: '⏰',
+                          text: `Warning: Current balance covers only ${Math.floor(userBalance / weeklyAvg)} weeks at current spending rate`
                         });
                       }
                     }
 
-                    // Income vs expenses
+                    // Enhanced Emergency Fund Recommendations
+                    if (userBalance < emergencyFundTarget) {
+                      const monthsOfExpenses = userBalance / (monthlyExpenses || 1);
+                      const monthlyTarget = (emergencyFundTarget - userBalance) / 12;
+                      
+                      if (monthsOfExpenses < 0.5) {
+                        insights.push({
+                          icon: '🚨',
+                          text: `Critical: Emergency fund covers ${monthsOfExpenses.toFixed(1)} months. Save ${formatCurrency(monthlyTarget)}/month to reach 3-month target`
+                        });
+                      } else if (monthsOfExpenses < 1) {
+                        insights.push({
+                          icon: '⚠️',
+                          text: `Low emergency cushion: ${monthsOfExpenses.toFixed(1)} months covered. Target ${formatCurrency(monthlyTarget)}/month savings`
+                        });
+                      } else if (monthsOfExpenses < 3) {
+                        insights.push({
+                          icon: '🎯',
+                          text: `Building emergency fund: ${monthsOfExpenses.toFixed(1)}/3 months. Add ${formatCurrency(monthlyTarget)}/month`
+                        });
+                      }
+                    }
+
+                    // Debt Reduction Strategy
                     if (monthlyIncome > 0 && monthlyExpenses > 0) {
-                      const savingsRate = ((monthlyIncome - monthlyExpenses) / monthlyIncome * 100).toFixed(1);
-                      if (parseFloat(savingsRate) > 0) {
+                      const savingsRate = ((monthlyIncome - monthlyExpenses) / monthlyIncome * 100);
+                      if (savingsRate > 20) {
+                        insights.push({
+                          icon: '🏆',
+                          text: `Excellent ${savingsRate.toFixed(1)}% savings rate! Consider debt payoff or investment acceleration`
+                        });
+                      } else if (savingsRate > 10) {
                         insights.push({
                           icon: '💰',
-                          text: `Great! You're saving ${savingsRate}% of your income this month`
+                          text: `Good ${savingsRate.toFixed(1)}% savings rate. Focus on debt reduction or emergency fund growth`
+                        });
+                      } else if (savingsRate > 0) {
+                        insights.push({
+                          icon: '📈',
+                          text: `Saving ${savingsRate.toFixed(1)}% of income. Target 10-20% for financial stability`
                         });
                       } else {
                         const deficit = monthlyExpenses - monthlyIncome;
                         insights.push({
-                          icon: '⚠️',
-                          text: `You're spending ${formatCurrency(deficit)} more than you earn this month`
+                          icon: '🔥',
+                          text: `Spending ${formatCurrency(deficit)} above income. Immediate budget restructuring required`
                         });
+                        
+                        // Debt avalanche strategy for high-cost categories
+                        if (expenses.length > 0) {
+                          const categoryTotals = expenses.reduce((acc, expense) => {
+                            const category = expense.category || 'other';
+                            acc[category] = (acc[category] || 0) + expense.amount;
+                            return acc;
+                          }, {} as Record<string, number>);
+                          const sortedCategories = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number));
+                          const highestSpend = sortedCategories[0];
+                          if (highestSpend && (highestSpend[1] as number) > monthlyIncome * 0.4) {
+                            insights.push({
+                              icon: '⚡',
+                              text: `Focus: ${highestSpend[0]} costs ${(((highestSpend[1] as number)/monthlyIncome)*100).toFixed(0)}% of income - prioritize reduction here`
+                            });
+                          }
+                        }
                       }
-                    } else if (monthlyIncome > 0) {
+                    }
+
+                    // Upcoming expense warnings based on recurring bills
+                    if (upcomingBillTotal > userBalance * 0.8) {
                       insights.push({
-                        icon: '💵',
-                        text: `You've earned ${formatCurrency(monthlyIncome)} this month`
+                        icon: '📅',
+                        text: `Upcoming bills (${formatCurrency(upcomingBillTotal)}) will strain current balance - prepare now`
                       });
                     }
 
-                    // Balance-based insights
-                    if (userBalance < 100) {
+                    // Advanced balance-based strategies
+                    if (userBalance < criticalBalanceThreshold) {
                       insights.push({
-                        icon: '🚨',
-                        text: 'Critical: Consider finding additional income sources immediately'
+                        icon: '🆘',
+                        text: 'Critical balance level! Freeze non-essential spending and activate emergency protocols'
                       });
-                    } else if (userBalance < 1000) {
+                    } else if (userBalance > emergencyFundTarget && monthlyIncome > monthlyExpenses) {
+                      const surplus = userBalance - emergencyFundTarget;
                       insights.push({
-                        icon: '💡',
-                        text: 'Build an emergency fund - aim for at least $1,000'
-                      });
-                    } else if (userBalance > 5000) {
-                      insights.push({
-                        icon: '🎯',
-                        text: 'Strong financial position - consider investing surplus funds'
+                        icon: '🚀',
+                        text: `Emergency fund complete! Consider investing ${formatCurrency(surplus)} surplus for growth`
                       });
                     }
 
-                    // Recent spending patterns
-                    if (expenses.length >= 3) {
-                      const last3Expenses = expenses.slice(0, 3);
-                      const avgRecent = last3Expenses.reduce((sum, exp) => sum + exp.amount, 0) / 3;
-                      if (avgRecent > 100) {
+                    // Income diversification insights
+                    if (income.length > 0) {
+                      const incomeSources = income.reduce((acc, inc) => {
+                        acc[inc.category] = (acc[inc.category] || 0) + inc.amount;
+                        return acc;
+                      }, {} as Record<string, number>);
+                      
+                      const sourceCount = Object.keys(incomeSources).length;
+                      if (sourceCount === 1) {
                         insights.push({
-                          icon: '🔍',
-                          text: `Your recent purchases average ${formatCurrency(avgRecent)} - track large expenses`
+                          icon: '🌐',
+                          text: 'Single income source detected - consider diversifying for financial security'
+                        });
+                      } else if (sourceCount > 3) {
+                        insights.push({
+                          icon: '💪',
+                          text: `Great income diversification across ${sourceCount} sources - strong financial resilience`
                         });
                       }
                     }
@@ -1755,7 +2230,9 @@ export default function Home() {
                 marginBottom: '24px',
                 backdropFilter: 'blur(10px)'
               }}>
-                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Add New Expense</h3>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                  {editingExpense ? 'Edit Expense' : 'Add New Expense'}
+                </h3>
                 <form onSubmit={handleExpenseSubmit} style={{ display: 'grid', gap: '16px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
@@ -1852,7 +2329,16 @@ export default function Home() {
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => setShowExpenseForm(false)}
+                      onClick={() => {
+                        setShowExpenseForm(false);
+                        setEditingExpense(null);
+                        setExpenseForm({
+                          amount: '',
+                          description: '',
+                          category: 'food',
+                          date: new Date().toISOString().split('T')[0]
+                        });
+                      }}
                       style={{
                         padding: '12px 24px',
                         background: 'transparent',
@@ -1876,7 +2362,7 @@ export default function Home() {
                         fontWeight: '600'
                       }}
                     >
-                      Add Expense
+                      {editingExpense ? 'Update Expense' : 'Add Expense'}
                     </button>
                   </div>
                 </form>
@@ -1919,7 +2405,7 @@ export default function Home() {
                       borderRadius: '8px',
                       border: '1px solid rgba(255, 255, 255, 0.1)'
                     }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
                         <div style={{ fontWeight: '600', color: 'var(--text)' }}>
                           {expense.description}
                         </div>
@@ -1927,12 +2413,53 @@ export default function Home() {
                           {expense.category} • {new Date(expense.date || expense.createdAt).toLocaleDateString()}
                         </div>
                       </div>
-                      <div style={{
-                        fontWeight: '600',
-                        color: 'var(--danger)',
-                        fontSize: '18px'
-                      }}>
-                        -{formatCurrency(expense.amount)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          fontWeight: '600',
+                          color: 'var(--danger)',
+                          fontSize: '18px'
+                        }}>
+                          -{formatCurrency(expense.amount)}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => {
+                              setEditingExpense(expense);
+                              setExpenseForm({
+                                amount: expense.amount.toString(),
+                                description: expense.description,
+                                category: expense.category,
+                                date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : ''
+                              });
+                              setShowExpenseForm(true);
+                            }}
+                            style={{
+                              padding: '6px 8px',
+                              background: 'var(--primary)',
+                              border: 'none',
+                              borderRadius: '4px',
+                              color: 'white',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => deleteExpense(expense.id)}
+                            style={{
+                              padding: '6px 8px',
+                              background: 'var(--danger)',
+                              border: 'none',
+                              borderRadius: '4px',
+                              color: 'white',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2216,7 +2743,9 @@ export default function Home() {
                 marginBottom: '24px',
                 backdropFilter: 'blur(10px)'
               }}>
-                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Add New Recurring Bill</h3>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                  {editingRecurringBill ? 'Edit Recurring Bill' : 'Add New Recurring Bill'}
+                </h3>
                 <form onSubmit={handleRecurringSubmit} style={{ display: 'grid', gap: '16px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
@@ -2359,7 +2888,18 @@ export default function Home() {
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => setShowRecurringForm(false)}
+                      onClick={() => {
+                        setShowRecurringForm(false);
+                        setEditingRecurringBill(null);
+                        setRecurringForm({
+                          name: '',
+                          amount: '',
+                          frequency: 'monthly',
+                          category: 'utilities',
+                          startDate: new Date().toISOString().split('T')[0],
+                          endDate: ''
+                        });
+                      }}
                       style={{
                         padding: '12px 24px',
                         background: 'transparent',
@@ -2383,7 +2923,7 @@ export default function Home() {
                         fontWeight: '600'
                       }}
                     >
-                      Add Recurring Bill
+                      {editingRecurringBill ? 'Update Bill' : 'Add Recurring Bill'}
                     </button>
                   </div>
                 </form>
@@ -2411,70 +2951,233 @@ export default function Home() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {recurringBills.map((bill, index) => (
-                    <div key={bill.id || index} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '16px',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: '8px',
-                      border: `1px solid ${bill.isActive ? 'rgba(40, 167, 69, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
-                      opacity: bill.isActive ? 1 : 0.6
-                    }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ 
-                          fontWeight: '600', 
-                          color: 'var(--text)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}>
-                          {bill.name}
-                          <span style={{
-                            fontSize: '12px',
-                            padding: '2px 8px',
-                            background: bill.isActive ? 'var(--success)' : 'var(--secondary)',
+                  {recurringBills.map((bill, index) => {
+                    // Calculate next due date
+                    const getNextDueDate = (bill: any) => {
+                      const startDate = new Date(bill.startDate || bill.createdAt);
+                      const now = new Date();
+                      let nextDue = new Date(startDate);
+
+                      while (nextDue <= now) {
+                        switch (bill.frequency) {
+                          case 'weekly':
+                            nextDue.setDate(nextDue.getDate() + 7);
+                            break;
+                          case 'biweekly':
+                            nextDue.setDate(nextDue.getDate() + 14);
+                            break;
+                          case 'monthly':
+                            nextDue.setMonth(nextDue.getMonth() + 1);
+                            break;
+                          case 'quarterly':
+                            nextDue.setMonth(nextDue.getMonth() + 3);
+                            break;
+                          case 'yearly':
+                            nextDue.setFullYear(nextDue.getFullYear() + 1);
+                            break;
+                        }
+                      }
+                      return nextDue;
+                    };
+
+                    const nextDue = getNextDueDate(bill);
+                    const daysUntilDue = Math.ceil((nextDue.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000));
+                    const isOverdue = daysUntilDue < 0;
+                    const isDueSoon = daysUntilDue <= 3 && daysUntilDue >= 0;
+
+                    return (
+                      <div key={bill.id || index} style={{
+                        padding: '20px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: '12px',
+                        border: `1px solid ${isOverdue ? 'var(--danger)' : isDueSoon ? 'var(--warning)' : bill.isActive ? 'rgba(40, 167, 69, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+                        opacity: bill.isActive ? 1 : 0.6,
+                        position: 'relative'
+                      }}>
+                        {/* Due Date Alert Banner */}
+                        {bill.isActive && (isOverdue || isDueSoon) && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            background: isOverdue ? 'var(--danger)' : 'var(--warning)',
                             color: 'white',
-                            borderRadius: '12px'
+                            padding: '4px 8px',
+                            borderRadius: '12px 12px 0 0',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            textAlign: 'center'
                           }}>
-                            {bill.isActive ? 'Active' : 'Paused'}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                          {bill.category} • {bill.frequency} • ${bill.amount}
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                          Started: {new Date(bill.startDate).toLocaleDateString()}
-                          {bill.endDate && ` • Ends: ${new Date(bill.endDate).toLocaleDateString()}`}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                          fontWeight: '600',
-                          color: 'var(--danger)',
-                          fontSize: '18px'
+                            {isOverdue ? `OVERDUE by ${Math.abs(daysUntilDue)} days` : `DUE in ${daysUntilDue} day${daysUntilDue === 1 ? '' : 's'}`}
+                          </div>
+                        )}
+
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'flex-start',
+                          marginTop: (isOverdue || isDueSoon) ? '16px' : '0'
                         }}>
-                          {formatCurrency(bill.amount)}
+                          {/* Bill Information */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                            <div style={{ 
+                              fontWeight: '700', 
+                              color: 'var(--text)',
+                              fontSize: '18px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px'
+                            }}>
+                              {bill.name}
+                              <span style={{
+                                fontSize: '12px',
+                                padding: '4px 8px',
+                                background: bill.isActive ? 'var(--success)' : 'var(--secondary)',
+                                color: 'white',
+                                borderRadius: '12px',
+                                fontWeight: '500'
+                              }}>
+                                {bill.isActive ? 'Active' : 'Paused'}
+                              </span>
+                            </div>
+                            
+                            <div style={{ 
+                              fontSize: '16px', 
+                              color: 'var(--text-secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '16px'
+                            }}>
+                              <span style={{ 
+                                padding: '4px 8px', 
+                                background: 'rgba(255, 255, 255, 0.1)', 
+                                borderRadius: '6px',
+                                fontSize: '14px'
+                              }}>
+                                {bill.category}
+                              </span>
+                              <span>{bill.frequency}</span>
+                              <span style={{ fontWeight: '600', color: 'var(--danger)' }}>
+                                {formatCurrency(bill.amount)}
+                              </span>
+                            </div>
+
+                            {/* Due Date Information */}
+                            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                              <div style={{ marginBottom: '4px' }}>
+                                <strong>Next Due:</strong> {nextDue.toLocaleDateString()} 
+                                {bill.isActive && (
+                                  <span style={{ 
+                                    marginLeft: '8px',
+                                    color: isOverdue ? 'var(--danger)' : isDueSoon ? 'var(--warning)' : 'var(--success)'
+                                  }}>
+                                    ({isOverdue ? `${Math.abs(daysUntilDue)} days overdue` : 
+                                      isDueSoon ? `${daysUntilDue} days remaining` : 
+                                      `${daysUntilDue} days away`})
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <strong>Started:</strong> {new Date(bill.startDate || bill.createdAt).toLocaleDateString()}
+                                {bill.endDate && (
+                                  <span style={{ marginLeft: '16px' }}>
+                                    <strong>Ends:</strong> {new Date(bill.endDate).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              {/* Mark as Paid Button */}
+                              {bill.isActive && (
+                                <button
+                                  onClick={() => markBillAsPaid(bill)}
+                                  style={{
+                                    padding: '8px 12px',
+                                    background: 'var(--success)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    fontWeight: '600'
+                                  }}
+                                >
+                                  💳 Mark Paid
+                                </button>
+                              )}
+                              
+                              {/* Edit Button */}
+                              <button
+                                onClick={() => {
+                                  setEditingRecurringBill(bill);
+                                  setRecurringForm({
+                                    name: bill.name,
+                                    amount: bill.amount.toString(),
+                                    frequency: bill.frequency,
+                                    category: bill.category,
+                                    startDate: bill.startDate ? new Date(bill.startDate).toISOString().split('T')[0] : '',
+                                    endDate: bill.endDate ? new Date(bill.endDate).toISOString().split('T')[0] : ''
+                                  });
+                                  setShowRecurringForm(true);
+                                }}
+                                style={{
+                                  padding: '8px 12px',
+                                  background: 'var(--primary)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                ✏️ Edit
+                              </button>
+
+                              {/* Pause/Resume Button */}
+                              <button
+                                onClick={() => toggleRecurringBill(bill.id, bill.isActive)}
+                                style={{
+                                  padding: '8px 12px',
+                                  background: bill.isActive ? 'var(--warning)' : 'var(--success)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                {bill.isActive ? '⏸️ Pause' : '▶️ Resume'}
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => deleteRecurringBill(bill.id)}
+                                style={{
+                                  padding: '8px 12px',
+                                  background: 'var(--danger)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => toggleRecurringBill(bill.id, bill.isActive)}
-                          style={{
-                            padding: '6px 12px',
-                            background: bill.isActive ? 'var(--warning)' : 'var(--success)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: '500'
-                          }}
-                        >
-                          {bill.isActive ? 'Pause' : 'Resume'}
-                        </button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -2489,86 +3192,82 @@ export default function Home() {
             </div>
 
             <div className="goals-grid">
-              <div className="goal-card">
-                <div className="goal-header">
-                  <span className="goal-icon">🚨</span>
-                  <h3>Emergency Fund</h3>
-                </div>
-                <div className="goal-target">
-                  <span className="current">{formatCurrency(11.29)}</span>
-                  <span className="separator"> / </span>
-                  <span className="target">{formatCurrency(10000)}</span>
-                </div>
-                <div className="goal-progress">
-                  <div className="progress-bar-container">
-                    <div className="progress-bar-fill" style={{width: '0.11%', background: 'var(--danger)'}}></div>
-                  </div>
-                  <span className="progress-text">0.11% Complete</span>
-                </div>
-                <div className="goal-deadline">
-                  <span className="deadline-label">Target Date:</span>
-                  <span className="deadline-date">Dec 31, 2025</span>
-                </div>
-                <div className="goal-monthly">
-                  <span className="monthly-label">Monthly Savings Needed:</span>
-                  <span className="monthly-amount">{formatCurrency(3329.57)}</span>
-                </div>
-              </div>
+              {goals.map((goal) => {
+                const progressPercentage = Math.min((goal.current / goal.target) * 100, 100);
+                const targetDate = new Date(goal.targetDate);
+                const today = new Date();
+                const monthsRemaining = Math.max(1, Math.ceil((targetDate.getTime() - today.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+                const monthlyNeeded = goal.type === 'debt' 
+                  ? (goal.target - goal.current) / monthsRemaining 
+                  : (goal.target - goal.current) / monthsRemaining;
+                
+                const progressColor = progressPercentage < 25 ? 'var(--danger)' : 
+                                    progressPercentage < 75 ? 'var(--warning)' : 'var(--success)';
 
-              <div className="goal-card">
-                <div className="goal-header">
-                  <span className="goal-icon">💳</span>
-                  <h3>Debt Payoff</h3>
-                </div>
-                <div className="goal-target">
-                  <span className="current">{formatCurrency(1500)}</span>
-                  <span className="separator"> / </span>
-                  <span className="target">{formatCurrency(5000)}</span>
-                </div>
-                <div className="goal-progress">
-                  <div className="progress-bar-container">
-                    <div className="progress-bar-fill" style={{width: '30%', background: 'var(--warning)'}}></div>
+                return (
+                  <div 
+                    key={goal.id} 
+                    className="goal-card"
+                    style={{
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onClick={() => {
+                      setEditingGoal(goal);
+                      setShowGoalForm(true);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <div className="goal-header">
+                      <span className="goal-icon">{goal.icon}</span>
+                      <h3>{goal.name}</h3>
+                      <div style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        ✏️ Click to edit
+                      </div>
+                    </div>
+                    <div className="goal-target">
+                      <span className="current">{formatCurrency(goal.current)}</span>
+                      <span className="separator"> / </span>
+                      <span className="target">{formatCurrency(goal.target)}</span>
+                    </div>
+                    <div className="goal-progress">
+                      <div className="progress-bar-container">
+                        <div className="progress-bar-fill" style={{
+                          width: `${progressPercentage}%`, 
+                          background: progressColor
+                        }}></div>
+                      </div>
+                      <span className="progress-text">{progressPercentage.toFixed(1)}% Complete</span>
+                    </div>
+                    <div className="goal-deadline">
+                      <span className="deadline-label">Target Date:</span>
+                      <span className="deadline-date">{targetDate.toLocaleDateString()}</span>
+                    </div>
+                    <div className="goal-monthly">
+                      <span className="monthly-label">
+                        {goal.type === 'debt' ? 'Monthly Payment Needed:' : 'Monthly Savings Needed:'}
+                      </span>
+                      <span className="monthly-amount">{formatCurrency(Math.max(0, monthlyNeeded))}</span>
+                    </div>
                   </div>
-                  <span className="progress-text">30% Complete</span>
-                </div>
-                <div className="goal-deadline">
-                  <span className="deadline-label">Target Date:</span>
-                  <span className="deadline-date">Jun 30, 2025</span>
-                </div>
-                <div className="goal-monthly">
-                  <span className="monthly-label">Monthly Payment Needed:</span>
-                  <span className="monthly-amount">{formatCurrency(389)}</span>
-                </div>
-              </div>
-
-              <div className="goal-card">
-                <div className="goal-header">
-                  <span className="goal-icon">✈️</span>
-                  <h3>Vacation Fund</h3>
-                </div>
-                <div className="goal-target">
-                  <span className="current">{formatCurrency(0)}</span>
-                  <span className="separator"> / </span>
-                  <span className="target">{formatCurrency(3000)}</span>
-                </div>
-                <div className="goal-progress">
-                  <div className="progress-bar-container">
-                    <div className="progress-bar-fill" style={{width: '0%', background: 'var(--primary)'}}></div>
-                  </div>
-                  <span className="progress-text">0% Complete</span>
-                </div>
-                <div className="goal-deadline">
-                  <span className="deadline-label">Target Date:</span>
-                  <span className="deadline-date">Aug 1, 2025</span>
-                </div>
-                <div className="goal-monthly">
-                  <span className="monthly-label">Monthly Savings Needed:</span>
-                  <span className="monthly-amount">{formatCurrency(300)}</span>
-                </div>
-              </div>
+                );
+              })}
 
               <div className="goal-card add-goal">
-                <button className="add-goal-btn">
+                <button 
+                  className="add-goal-btn"
+                  onClick={() => {
+                    setEditingGoal(null);
+                    setShowGoalForm(true);
+                  }}
+                >
                   <span className="plus-icon">+</span>
                   <span>Add New Goal</span>
                 </button>
@@ -2596,6 +3295,191 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* Goal Form */}
+            {showGoalForm && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}>
+                <div style={{
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--glass-border)',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  maxWidth: '500px',
+                  width: '90%',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                    {editingGoal ? 'Edit Goal' : 'Add New Goal'}
+                  </h3>
+                  <form style={{ display: 'grid', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Goal Name
+                        </label>
+                        <input
+                          type="text"
+                          defaultValue={editingGoal?.name || ''}
+                          placeholder="e.g., Emergency Fund"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Icon
+                        </label>
+                        <input
+                          type="text"
+                          defaultValue={editingGoal?.icon || '🎯'}
+                          placeholder="🎯"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Current Amount ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          defaultValue={editingGoal?.current || 0}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Target Amount ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          defaultValue={editingGoal?.target || 0}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Target Date
+                        </label>
+                        <input
+                          type="date"
+                          defaultValue={editingGoal?.targetDate || ''}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Goal Type
+                        </label>
+                        <select
+                          defaultValue={editingGoal?.type || 'savings'}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        >
+                          <option value="savings">Savings Goal</option>
+                          <option value="debt">Debt Payoff</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowGoalForm(false);
+                          setEditingGoal(null);
+                        }}
+                        style={{
+                          padding: '12px 24px',
+                          background: 'transparent',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        style={{
+                          padding: '12px 24px',
+                          background: 'var(--primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        {editingGoal ? 'Update Goal' : 'Add Goal'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
@@ -2774,6 +3658,11 @@ export default function Home() {
       </main>
 
       <style jsx>{`
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.02); opacity: 0.9; }
+          100% { transform: scale(1); opacity: 1; }
+        }
         .month-selector {
           display: flex;
           gap: 12px;
