@@ -181,15 +181,6 @@ function Home() {
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [editingIncome, setEditingIncome] = useState<any>(null);
   const [editingRecurringBill, setEditingRecurringBill] = useState<any>(null);
-  const [selectedBillForHistory, setSelectedBillForHistory] = useState<any>(null);
-  const [showBillHistoryModal, setShowBillHistoryModal] = useState(false);
-  const [billHistoryForm, setBillHistoryForm] = useState({
-    actualAmount: '',
-    estimatedAmount: '',
-    billDate: new Date().toISOString().split('T')[0],
-    isPaid: false,
-    notes: ''
-  });
   // Loading and Error States
   const [loading, setLoading] = useState<LoadingState>({
     userData: false,
@@ -1784,17 +1775,24 @@ function Home() {
       return true;
     }).map(bill => {
       // Calculate the next due date for this bill in the target month
-      const startDate = new Date(bill.startDate);
-      let dueDate = new Date(startDate);
-      
-      // Move to target month/year
-      dueDate.setFullYear(targetYear);
-      dueDate.setMonth(targetMonth);
-      
-      // For monthly bills, use the same day of month as start date
-      if (bill.frequency === 'monthly') {
-        dueDate.setDate(startDate.getDate());
-      }
+      const getNextDueDate = (bill: any, targetMonth: number, targetYear: number) => {
+        const startDate = new Date(bill.startDate);
+        let dueDate = new Date(startDate);
+        
+        // Move to target month/year
+        dueDate.setFullYear(targetYear);
+        dueDate.setMonth(targetMonth);
+        
+        // For monthly bills, use the same day of month as start date
+        if (bill.frequency === 'monthly') {
+          dueDate.setDate(startDate.getDate());
+        }
+        // For other frequencies, we can expand this logic
+        
+        return dueDate;
+      };
+
+      const dueDate = getNextDueDate(bill, targetMonth, targetYear);
       
       return {
         id: `recurring-${bill.id}-${targetMonth}`,
@@ -1803,14 +1801,14 @@ function Home() {
         date: dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         category: bill.category,
         isIncome: false,
-        isPaid: false,
+        isPaid: false, // Recurring bills are projected, not yet paid
         type: 'recurring',
         originalData: bill,
         dueDate: dueDate
       };
     });
 
-    // Get the original hardcoded bills for the selected month
+    // Get the original hardcoded bills for the selected month (for any remaining bills not yet converted to recurring)
     const getHardcodedBills = () => {
       switch(currentMonth) {
         case 'october': return octoberBills;
@@ -1836,7 +1834,7 @@ function Home() {
         date: new Date(expense.date || expense.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         category: expense.category,
         isIncome: false,
-        isPaid: true,
+        isPaid: true, // Expenses are always "paid" since they're recorded
         type: 'expense',
         originalData: expense
       })),
@@ -1848,25 +1846,3577 @@ function Home() {
         date: new Date(incomeItem.date || incomeItem.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         category: incomeItem.category,
         isIncome: true,
-        isPaid: true,
+        isPaid: true, // Income is always "paid" since it's recorded
         type: 'income',
         originalData: incomeItem
       })),
       // Projected recurring bills
       ...projectedRecurringBills,
-      // Hardcoded bills
+      // Hardcoded bills (temporary, until all are converted to recurring)
       ...hardcodedBills
-    ];
+    ].sort((a, b) => {
+      // Sort by date
+      const getDateForSorting = (item: any) => {
+        if (item.dueDate) return item.dueDate;
+        if (item.originalData?.date) return new Date(item.originalData.date);
+        if (item.originalData?.createdAt) return new Date(item.originalData.createdAt);
+        return new Date();
+      };
+      
+      return getDateForSorting(a).getTime() - getDateForSorting(b).getTime();
+    });
 
     return combinedData;
   };
 
-  const combinedData = getCurrentMonthData();
-  console.log('Home function executing, combinedData length:', combinedData.length);
-
   return (
-    <div>
-      <h1>Test</h1>
+    <div className="app-container">
+      {/* Toast Notifications */}
+      <div className="toast-container">
+        {toasts.map(toast => (
+          <Toast 
+            key={toast.id} 
+            notification={toast} 
+            onClose={() => removeToast(toast.id)} 
+          />
+        ))}
+      </div>
+
+      {/* Offline Indicator */}
+      {isOffline && (
+        <div className="fixed top-0 left-0 right-0 bg-orange-500 text-white text-center py-2 z-40">
+          ⚠️ You're offline. Some features may be limited.
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {(loading.userData || loading.expenses || loading.income || loading.recurringBills) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center">
+            <LoadingSpinner size="large" />
+            <p className="mt-4 text-gray-600">Loading your financial data...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {Object.values(errors).some(error => error !== null) && (
+        <div className="fixed top-20 left-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 z-40">
+          <h4 className="text-red-800 font-semibold mb-2">⚠️ Some issues occurred:</h4>
+          <ul className="text-red-600 text-sm space-y-1">
+            {Object.entries(errors).map(([key, error]) => 
+              error && <li key={key}>• {key}: {error}</li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {/* Budget Alerts */}
+      {budgetAlerts.length > 0 && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-30">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg max-w-md">
+            <h4 className="text-yellow-800 font-semibold mb-2">💰 Budget Alerts</h4>
+            <div className="space-y-2">
+              {budgetAlerts.slice(0, 3).map((alert, index) => (
+                <div key={index} className="text-yellow-700 text-sm">
+                  <strong>{alert.category}:</strong> {alert.message}
+                </div>
+              ))}
+              {budgetAlerts.length > 3 && (
+                <p className="text-yellow-600 text-xs">+{budgetAlerts.length - 3} more alerts</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Indicator */}
+      {activeTooltip && (
+        <div className="fixed bottom-4 right-4 bg-gray-800 text-white rounded-lg p-3 text-sm z-30">
+          <h5 className="font-semibold mb-2">🚀 Keyboard Shortcuts</h5>
+          <div className="space-y-1">
+            <div>Ctrl+K: Search</div>
+            <div>Ctrl+N: New Expense</div>
+            <div>Ctrl+I: New Income</div>
+            <div>Ctrl+B: New Bill</div>
+            <div>Ctrl+S: Settings</div>
+            <div>ESC: Close modals</div>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Sidebar */}
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div className="logo">
+            <span>🌟</span>
+            <span>Astral Money</span>
+          </div>
+        </div>
+
+        <nav>
+          <ul className="nav-menu">
+            <li className="nav-item">
+              <a 
+                href="#dashboard" 
+                className={`nav-link ${currentSection === 'dashboard' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('dashboard'); }}
+              >
+                <span className="nav-icon">📊</span>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                href="#months" 
+                className={`nav-link ${currentSection === 'months' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('months'); }}
+              >
+                <span className="nav-icon">📅</span>
+                <span>Monthly View</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                href="#analytics" 
+                className={`nav-link ${currentSection === 'analytics' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('analytics'); }}
+              >
+                <span className="nav-icon">📈</span>
+                <span>Analytics</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                href="#expenses" 
+                className={`nav-link ${currentSection === 'expenses' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('expenses'); }}
+              >
+                <span className="nav-icon">💰</span>
+                <span>Expenses</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                href="#income" 
+                className={`nav-link ${currentSection === 'income' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('income'); }}
+              >
+                <span className="nav-icon">💵</span>
+                <span>Income</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                href="#recurring" 
+                className={`nav-link ${currentSection === 'recurring' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('recurring'); }}
+              >
+                <span className="nav-icon">🔄</span>
+                <span>Recurring</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                href="#goals" 
+                className={`nav-link ${currentSection === 'goals' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('goals'); }}
+              >
+                <span className="nav-icon">🎯</span>
+                <span>Goals & Targets</span>
+              </a>
+            </li>
+            <li className="nav-item">
+              <a 
+                href="#settings" 
+                className={`nav-link ${currentSection === 'settings' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); showSection('settings'); }}
+              >
+                <span className="nav-icon">⚙️</span>
+                <span>Settings</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        {/* Financial Health Widget */}
+        <div className="health-widget">
+          <div className="health-header">
+            <div className="health-title">Financial Health</div>
+            <div className="health-score critical">{state.healthScore}</div>
+          </div>
+          <div className="health-bar">
+            <div className="health-progress critical" style={{width: `${state.healthScore}%`}}></div>
+          </div>
+          <div className="health-status">
+            <span className="status-dot critical"></span>
+            <span>Critical - Action Needed</span>
+          </div>
+          <div className="health-tips">
+            💡 Current balance critically low. Prioritize income sources.
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="main-content">
+        {/* Dashboard Section */}
+        {currentSection === 'dashboard' && (
+          <section id="dashboard">
+            <div className="section-header">
+              <h1>💰 Financial Dashboard</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div className="current-balance">
+                  Balance: <span id="currentBalance" className="negative">{formatCurrency(userBalance)}</span>
+                </div>
+                
+                {/* Notifications */}
+                <div style={{ position: 'relative' }} data-notifications>
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    style={{
+                      padding: '8px',
+                      background: notifications.length > 0 ? 'var(--warning)' : 'rgba(255, 255, 255, 0.1)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '36px',
+                      height: '36px'
+                    }}
+                  >
+                    🔔
+                    {notifications.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-4px',
+                        right: '-4px',
+                        background: 'var(--danger)',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '18px',
+                        height: '18px',
+                        fontSize: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 'bold'
+                      }}>
+                        {notifications.length > 9 ? '9+' : notifications.length}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Notifications Dropdown */}
+                  {showNotifications && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: '0',
+                      marginTop: '8px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      minWidth: '300px',
+                      maxWidth: '400px',
+                      maxHeight: '400px',
+                      overflowY: 'auto',
+                      zIndex: 1000,
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '12px',
+                        paddingBottom: '8px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <h4 style={{ margin: 0, color: 'var(--text)' }}>Notifications</h4>
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={() => setNotifications([])}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </div>
+                      
+                      {notifications.length === 0 ? (
+                        <div style={{
+                          textAlign: 'center',
+                          padding: '20px',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <div style={{ fontSize: '24px', marginBottom: '8px' }}>✅</div>
+                          <p style={{ margin: 0, fontSize: '14px' }}>No notifications</p>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              style={{
+                                padding: '14px',
+                                background: notification.type === 'error' ? 'rgba(220, 53, 69, 0.1)' :
+                                          notification.type === 'warning' ? 'rgba(255, 193, 7, 0.1)' :
+                                          notification.type === 'success' ? 'rgba(40, 167, 69, 0.1)' :
+                                          'rgba(13, 110, 253, 0.1)',
+                                border: `1px solid ${notification.type === 'error' ? 'var(--danger)' :
+                                                   notification.type === 'warning' ? 'var(--warning)' :
+                                                   notification.type === 'success' ? 'var(--success)' :
+                                                   'var(--primary)'}`,
+                                borderRadius: '8px',
+                                borderLeft: `4px solid ${notification.type === 'error' ? 'var(--danger)' :
+                                                       notification.type === 'warning' ? 'var(--warning)' :
+                                                       notification.type === 'success' ? 'var(--success)' :
+                                                       'var(--primary)'}`,
+                                animation: notification.priority === 'critical' ? 'pulse 2s infinite' : 'none'
+                              }}
+                            >
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                marginBottom: '6px'
+                              }}>
+                                <div style={{
+                                  fontWeight: notification.priority === 'critical' ? '700' : '600',
+                                  fontSize: notification.priority === 'critical' ? '15px' : '14px',
+                                  color: notification.type === 'error' ? 'var(--danger)' :
+                                         notification.type === 'warning' ? 'var(--warning)' :
+                                         notification.type === 'success' ? 'var(--success)' :
+                                         'var(--text)'
+                                }}>
+                                  {notification.title}
+                                </div>
+                                <div style={{
+                                  fontSize: '14px',
+                                  fontWeight: '600'
+                                }}>
+                                  {notification.priority === 'critical' ? '🔥' :
+                                   notification.priority === 'high' ? '🔴' : 
+                                   notification.priority === 'medium' ? '🟡' : 
+                                   notification.priority === 'low' ? '🟢' : '🔵'}
+                                </div>
+                              </div>
+                              <div style={{
+                                fontSize: '13px',
+                                color: 'var(--text-secondary)',
+                                lineHeight: '1.4',
+                                fontWeight: notification.priority === 'critical' ? '500' : '400'
+                              }}>
+                                {notification.message}
+                              </div>
+                              {notification.priority === 'critical' && (
+                                <div style={{
+                                  marginTop: '8px',
+                                  padding: '6px 10px',
+                                  background: 'rgba(220, 53, 69, 0.2)',
+                                  borderRadius: '4px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  color: 'var(--danger)',
+                                  textAlign: 'center'
+                                }}>
+                                  IMMEDIATE ACTION REQUIRED
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    onClick={() => showSection('expenses')}
+                    style={{
+                      padding: '8px 16px',
+                      background: 'var(--danger)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>-</span>
+                    <span>Add Expense</span>
+                  </button>
+                  <button 
+                    onClick={() => showSection('income')}
+                    style={{
+                      padding: '8px 16px',
+                      background: 'var(--success)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>+</span>
+                    <span>Add Income</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-grid">
+              {/* Total Income Card */}
+              <div className="dashboard-card">
+                <div className="card-header">
+                  <div className="card-title">Total Income (Oct)</div>
+                  <div className="card-icon">💰</div>
+                </div>
+                <div className="card-value positive">{formatCurrency(state.totalIncome)}</div>
+                <div className="progress-container">
+                  <div className="progress-bar success" style={{width: '85%'}}></div>
+                </div>
+                <div className="card-trend">
+                  <span>📈</span>
+                  <span>3 Paychecks this month</span>
+                </div>
+              </div>
+
+              {/* Total Expenses Card */}
+              <div className="dashboard-card">
+                <div className="card-header">
+                  <div className="card-title">Total Expenses Remaining</div>
+                  <div className="card-icon">💸</div>
+                </div>
+                <div className="card-value negative">{formatCurrency(state.totalExpenses)}</div>
+                <div className="progress-container">
+                  <div className="progress-bar danger" style={{width: '65%'}}></div>
+                </div>
+                <div className="card-trend clickable" onClick={expandHellWeek} style={{cursor: 'pointer'}}>
+                  <span>⚠️</span>
+                  <span>Hell Week: Oct 8-15 ($870 in bills) - Click to view</span>
+                  <span id="hellWeekArrow" style={{marginLeft: '8px'}}>▼</span>
+                </div>
+                <div id="hellWeekExpanded" style={{display: 'none', marginTop: '16px', padding: '16px', background: 'rgba(255, 193, 7, 0.1)', border: '1px solid var(--warning)', borderRadius: '8px'}}>
+                  <div style={{fontWeight: '600', marginBottom: '12px', color: 'var(--warning)'}}>⚠️ Heavy Bill Period (Oct 8-15)</div>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 8 - GitHub</span>
+                      <span style={{color: 'var(--danger)'}}>$43</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 9 - Adobe Creative Suite</span>
+                      <span style={{color: 'var(--danger)'}}>$52.99</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 10 - Netflix</span>
+                      <span style={{color: 'var(--danger)'}}>$15.49</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 11 - Spotify Premium</span>
+                      <span style={{color: 'var(--danger)'}}>$10.99</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 12 - Car Insurance</span>
+                      <span style={{color: 'var(--danger)'}}>$289</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 13 - Phone Bill</span>
+                      <span style={{color: 'var(--danger)'}}>$85</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 14 - Gym Membership</span>
+                      <span style={{color: 'var(--danger)'}}>$39.99</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 15 - Internet</span>
+                      <span style={{color: 'var(--danger)'}}>$79.99</span>
+                    </div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                      <span>Oct 15 - Groceries Budget</span>
+                      <span style={{color: 'var(--danger)'}}>$250</span>
+                    </div>
+                  </div>
+                  <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-primary)', fontWeight: '600'}}>
+                    Total Hell Week Bills: <span style={{color: 'var(--danger)'}}>$870.45</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Net Cash Flow Card */}
+              <div className="dashboard-card">
+                <div className="card-header">
+                  <div className="card-title">Net Cash Flow</div>
+                  <div className="card-icon">📈</div>
+                </div>
+                <div className="card-value negative">{formatCurrency(state.netFlow)}</div>
+                <div className="progress-container">
+                  <div className="progress-bar danger" style={{width: '25%'}}></div>
+                </div>
+                <div className="card-trend">
+                  <span>📉</span>
+                  <span>Deficit this month</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Critical Alerts */}
+            <div className="overview-card">
+              <div className="section-title">⚠️ Critical Alerts</div>
+              <div style={{padding: '16px 0'}}>
+                <div style={{color: 'var(--danger)', marginBottom: '12px', fontWeight: '600'}}>
+                  🚨 Double rent payment due Oct 1st ($3,700)
+                </div>
+                <div style={{color: 'var(--warning)', marginBottom: '12px'}}>
+                  ⚠️ Heavy bill period Oct 8-15 ($870 in bills)
+                </div>
+                <div style={{color: 'var(--success)'}}>
+                  ✅ 3 Paychecks this month ($6,431 total)
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Monthly View Section */}
+        {currentSection === 'months' && (
+          <section id="months">
+            <div className="section-header">
+              <h1>📅 Monthly Bills & Income</h1>
+              <div className="month-selector">
+                <button 
+                  className={`month-btn ${currentMonth === 'october' ? 'active' : ''}`}
+                  onClick={() => setCurrentMonth('october')}
+                >
+                  October
+                </button>
+                <button 
+                  className={`month-btn ${currentMonth === 'november' ? 'active' : ''}`}
+                  onClick={() => setCurrentMonth('november')}
+                >
+                  November
+                </button>
+                <button 
+                  className={`month-btn ${currentMonth === 'december' ? 'active' : ''}`}
+                  onClick={() => setCurrentMonth('december')}
+                >
+                  December
+                </button>
+              </div>
+            </div>
+
+            <div className="month-stats">
+              <div className="stat-card">
+                <span className="stat-label">Income</span>
+                <span className="stat-value positive">
+                  {formatCurrency(
+                    getCurrentMonthData()
+                      .filter(b => b.isIncome)
+                      .reduce((sum, b) => sum + b.amount, 0)
+                  )}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-label">Expenses</span>
+                <span className="stat-value negative">
+                  {formatCurrency(
+                    getCurrentMonthData()
+                      .filter(b => !b.isIncome)
+                      .reduce((sum, b) => sum + b.amount, 0)
+                  )}
+                </span>
+              </div>
+              <div className="stat-card">
+                <span className="stat-label">Net</span>
+                <span className={`stat-value ${
+                  getCurrentMonthData().filter(b => b.isIncome).reduce((sum, b) => sum + b.amount, 0) -
+                  getCurrentMonthData().filter(b => !b.isIncome).reduce((sum, b) => sum + b.amount, 0) > 0
+                    ? 'positive' : 'negative'
+                }`}>
+                  {formatCurrency(
+                    getCurrentMonthData().filter(b => b.isIncome).reduce((sum, b) => sum + b.amount, 0) -
+                    getCurrentMonthData().filter(b => !b.isIncome).reduce((sum, b) => sum + b.amount, 0)
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="bills-list">
+              {getCurrentMonthData().length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <div style={{ fontSize: '36px', marginBottom: '12px' }}>📅</div>
+                  <p>No financial data for {currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>Add expenses or income to see them here</p>
+                </div>
+              ) : (
+                getCurrentMonthData().map(item => (
+                  <div key={`${item.type}-${item.id}`} className="bill-row">
+                    <span className="bill-date">{item.date}</span>
+                    <span className="bill-name">{item.name}</span>
+                    <span className="bill-category">{item.category}</span>
+                    <span className={`bill-amount ${item.isIncome ? 'income' : 'expense'}`}>
+                      {item.isIncome ? '+' : '-'}{formatCurrency(item.amount)}
+                    </span>
+                    <span className={`bill-status ${item.isPaid ? 'paid' : 'pending'}`}>
+                      {item.isPaid ? '✅ Recorded' : '⏳ Pending'}
+                    </span>
+                    <div className="bill-actions">
+                      {(item.type === 'expense' || item.type === 'income') && (
+                        <>
+                          <button
+                            onClick={() => {
+                              if (item.type === 'expense') {
+                                setEditingExpense(item.originalData);
+                                setExpenseForm({
+                                  amount: item.originalData.amount.toString(),
+                                  description: item.originalData.description,
+                                  category: item.originalData.category,
+                                  date: item.originalData.date ? new Date(item.originalData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                                });
+                                setShowExpenseForm(true);
+                              } else {
+                                setEditingIncome(item.originalData);
+                                setIncomeForm({
+                                  amount: item.originalData.amount.toString(),
+                                  description: item.originalData.description,
+                                  source: item.originalData.category,
+                                  date: item.originalData.date ? new Date(item.originalData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                                });
+                                setShowIncomeForm(true);
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--primary)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              marginRight: '8px'
+                            }}
+                            title={`Edit ${item.type}`}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (item.type === 'expense') {
+                                deleteExpense(item.id);
+                              } else {
+                                deleteIncome(item.id);
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--danger)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                            title={`Delete ${item.type}`}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </>
+                      )}
+                      {item.type === 'recurring' && (
+                        <>
+                          <button
+                            onClick={() => markBillAsPaid(item.originalData)}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--success)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              marginRight: '8px'
+                            }}
+                            title="Mark as Paid"
+                          >
+                            ✅ Pay
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingRecurringBill(item.originalData);
+                              setRecurringForm({
+                                name: item.originalData.name,
+                                amount: item.originalData.amount.toString(),
+                                frequency: item.originalData.frequency,
+                                category: item.originalData.category,
+                                startDate: item.originalData.startDate ? new Date(item.originalData.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                                endDate: item.originalData.endDate ? new Date(item.originalData.endDate).toISOString().split('T')[0] : ''
+                              });
+                              setShowRecurringForm(true);
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--primary)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              marginRight: '8px'
+                            }}
+                            title="Edit recurring bill"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => deleteRecurringBill(item.originalData.id)}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--danger)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                            title="Delete recurring bill"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </>
+                      )}
+                      {item.type === 'hardcoded' && (
+                        <span style={{
+                          padding: '4px 8px',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          color: 'var(--text-secondary)',
+                          borderRadius: '4px',
+                          fontSize: '12px'
+                        }}>
+                          📅 Projected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Analytics Section */}
+        {currentSection === 'analytics' && (
+          <section id="analytics">
+            <div className="section-header">
+              <h1>📈 Financial Analytics</h1>
+            </div>
+
+            <div className="analytics-grid">
+              <div className="analytics-card">
+                <h3>📊 Spending by Category</h3>
+                <div className="category-breakdown">
+                  {(() => {
+                    if (expenses.length === 0) {
+                      return (
+                        <div style={{
+                          textAlign: 'center',
+                          padding: '40px 20px',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <div style={{ fontSize: '36px', marginBottom: '12px' }}>📊</div>
+                          <p>No expense data to analyze</p>
+                          <p style={{ fontSize: '14px', marginTop: '8px' }}>Add expenses to see category breakdown</p>
+                        </div>
+                      );
+                    }
+
+                    // Calculate category totals from actual expense data
+                    const categoryTotals = expenses.reduce((acc, expense) => {
+                      const category = expense.category || 'other';
+                      acc[category] = (acc[category] || 0) + expense.amount;
+                      return acc;
+                    }, {} as Record<string, number>);
+
+                    const totalExpenses = (Object.values(categoryTotals) as number[]).reduce((sum: number, amount: number) => sum + amount, 0);
+                    const sortedCategories = Object.entries(categoryTotals)
+                      .sort(([,a], [,b]) => (b as number) - (a as number))
+                      .slice(0, 8); // Show top 8 categories
+
+                    const categoryIcons: Record<string, string> = {
+                      'food': '🍔',
+                      'transportation': '🚗',
+                      'entertainment': '🎬',
+                      'shopping': '🛒',
+                      'utilities': '⚡',
+                      'health': '🏥',
+                      'housing': '🏠',
+                      'insurance': '🛡️',
+                      'other': '📦'
+                    };
+
+                    const categoryColors = [
+                      'var(--danger)', 'var(--warning)', 'var(--primary)', 
+                      'var(--success)', 'var(--secondary)', '#9c27b0', '#ff5722', '#795548'
+                    ];
+
+                    return sortedCategories.map(([category, amount], index) => {
+                      const percentage = ((amount as number) / totalExpenses) * 100;
+                      return (
+                        <div key={category} className="category-item">
+                          <span className="category-name">
+                            {categoryIcons[category] || '📦'} {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </span>
+                          <div className="category-bar">
+                            <div 
+                              className="bar-fill" 
+                              style={{
+                                width: `${Math.max(percentage, 5)}%`, 
+                                background: categoryColors[index % categoryColors.length]
+                              }}
+                            ></div>
+                          </div>
+                          <span className="category-amount">{formatCurrency(amount as number)}</span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              <div className="analytics-card">
+                <h3>💰 Income vs Expenses Trend</h3>
+                <div className="trend-chart">
+                  <div className="trend-month">
+                    <span className="month-label">Oct</span>
+                    <div className="month-bars">
+                      <div className="income-bar" style={{height: '60%'}}></div>
+                      <div className="expense-bar" style={{height: '90%'}}></div>
+                    </div>
+                  </div>
+                  <div className="trend-month">
+                    <span className="month-label">Nov</span>
+                    <div className="month-bars">
+                      <div className="income-bar" style={{height: '60%'}}></div>
+                      <div className="expense-bar" style={{height: '50%'}}></div>
+                    </div>
+                  </div>
+                  <div className="trend-month">
+                    <span className="month-label">Dec</span>
+                    <div className="month-bars">
+                      <div className="income-bar" style={{height: '40%'}}></div>
+                      <div className="expense-bar" style={{height: '55%'}}></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="trend-legend">
+                  <span className="legend-item">
+                    <span className="legend-color income"></span> Income
+                  </span>
+                  <span className="legend-item">
+                    <span className="legend-color expense"></span> Expenses
+                  </span>
+                </div>
+              </div>
+
+              <div className="analytics-card">
+                <h3>🎯 Budget Performance</h3>
+                <div className="performance-metrics">
+                  <div className="metric">
+                    <span className="metric-label">Budget Utilization</span>
+                    <div className="metric-value">146%</div>
+                    <div className="metric-status danger">Over Budget</div>
+                  </div>
+                  <div className="metric">
+                    <span className="metric-label">Savings Rate</span>
+                    <div className="metric-value">-46%</div>
+                    <div className="metric-status danger">Negative</div>
+                  </div>
+                  <div className="metric">
+                    <span className="metric-label">Bill Payment Rate</span>
+                    <div className="metric-value">15%</div>
+                    <div className="metric-status warning">Behind Schedule</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="analytics-card">
+                <h3>💡 AI Financial Insights</h3>
+                <div className="insights">
+                  {(() => {
+                    const insights = [];
+                    const now = new Date();
+                    
+                    // Calculate financial metrics
+                    const last30DaysExpenses = expenses.filter(expense => {
+                      const expenseDate = new Date(expense.date || expense.createdAt);
+                      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                      return expenseDate >= thirtyDaysAgo;
+                    });
+                    
+                    const last30DaysIncome = income.filter(incomeItem => {
+                      const incomeDate = new Date(incomeItem.date || incomeItem.createdAt);
+                      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                      return incomeDate >= thirtyDaysAgo;
+                    });
+
+                    const monthlyExpenses = last30DaysExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+                    const monthlyIncome = last30DaysIncome.reduce((sum, incomeItem) => sum + incomeItem.amount, 0);
+                    
+                    // Advanced Cash Flow Recovery Strategies
+                    const netCashFlow = monthlyIncome - monthlyExpenses;
+                    const emergencyFundTarget = monthlyExpenses * 3; // 3-month emergency fund
+                    const criticalBalanceThreshold = monthlyExpenses * 0.5; // Half month expenses
+                    
+                    // Calculate accurate upcoming bills for next 30 days
+                    const upcomingBillTotal = calculateUpcomingBills(recurringBills);
+
+                    // Generate enhanced insights based on comprehensive analysis
+                    if (expenses.length > 0) {
+                      const categoryTotals = expenses.reduce((acc, expense) => {
+                        const category = expense.category || 'other';
+                        acc[category] = (acc[category] || 0) + expense.amount;
+                        return acc;
+                      }, {} as Record<string, number>);
+
+                      const sortedCategories = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number));
+                      const topCategory = sortedCategories[0];
+                      
+                      // Cash Flow Recovery Strategies
+                      if (netCashFlow < 0) {
+                        const deficit = Math.abs(netCashFlow);
+                        if (deficit > monthlyIncome * 0.2) {
+                          insights.push({
+                            icon: '🆘',
+                            text: `Critical deficit: ${formatCurrency(deficit)}. Immediate action needed - consider gig work or expense cuts`
+                          });
+                        }
+                        
+                        // Category-specific reduction suggestions
+                        if (topCategory && (topCategory[1] as number) > monthlyIncome * 0.3) {
+                          const potentialSavings = (topCategory[1] as number) * 0.2; // 20% reduction
+                          insights.push({
+                            icon: '✂️',
+                            text: `Cut ${topCategory[0]} spending by 20% to save ${formatCurrency(potentialSavings)}/month`
+                          });
+                        }
+                        
+                        // Income boost suggestions
+                        const incomeNeed = deficit + (emergencyFundTarget / 12);
+                        insights.push({
+                          icon: '💼',
+                          text: `Target ${formatCurrency(incomeNeed)} additional monthly income through side work or skills upgrade`
+                        });
+                      }
+
+                      if (topCategory && monthlyExpenses > 0) {
+                        const percentage = (((topCategory[1] as number) / monthlyExpenses) * 100).toFixed(0);
+                        insights.push({
+                          icon: '📊',
+                          text: `${topCategory[0].charAt(0).toUpperCase() + topCategory[0].slice(1)} dominates at ${percentage}% - optimize this category first`
+                        });
+                      }
+
+                      // Predictive spending alerts
+                      const weeklyAvg = monthlyExpenses / 4.33;
+                      const projectedWeekly = weeklyAvg * 1.1; // 10% buffer
+                      if (userBalance < projectedWeekly * 2) {
+                        insights.push({
+                          icon: '⏰',
+                          text: `Warning: Current balance covers only ${Math.floor(userBalance / weeklyAvg)} weeks at current spending rate`
+                        });
+                      }
+                    }
+
+                    // Enhanced Emergency Fund Recommendations
+                    if (userBalance < emergencyFundTarget) {
+                      const monthsOfExpenses = userBalance / (monthlyExpenses || 1);
+                      const monthlyTarget = (emergencyFundTarget - userBalance) / 12;
+                      
+                      if (monthsOfExpenses < 0.5) {
+                        insights.push({
+                          icon: '🚨',
+                          text: `Critical: Emergency fund covers ${monthsOfExpenses.toFixed(1)} months. Save ${formatCurrency(monthlyTarget)}/month to reach 3-month target`
+                        });
+                      } else if (monthsOfExpenses < 1) {
+                        insights.push({
+                          icon: '⚠️',
+                          text: `Low emergency cushion: ${monthsOfExpenses.toFixed(1)} months covered. Target ${formatCurrency(monthlyTarget)}/month savings`
+                        });
+                      } else if (monthsOfExpenses < 3) {
+                        insights.push({
+                          icon: '🎯',
+                          text: `Building emergency fund: ${monthsOfExpenses.toFixed(1)}/3 months. Add ${formatCurrency(monthlyTarget)}/month`
+                        });
+                      }
+                    }
+
+                    // Debt Reduction Strategy
+                    if (monthlyIncome > 0 && monthlyExpenses > 0) {
+                      const savingsRate = ((monthlyIncome - monthlyExpenses) / monthlyIncome * 100);
+                      if (savingsRate > 20) {
+                        insights.push({
+                          icon: '🏆',
+                          text: `Excellent ${savingsRate.toFixed(1)}% savings rate! Consider debt payoff or investment acceleration`
+                        });
+                      } else if (savingsRate > 10) {
+                        insights.push({
+                          icon: '💰',
+                          text: `Good ${savingsRate.toFixed(1)}% savings rate. Focus on debt reduction or emergency fund growth`
+                        });
+                      } else if (savingsRate > 0) {
+                        insights.push({
+                          icon: '📈',
+                          text: `Saving ${savingsRate.toFixed(1)}% of income. Target 10-20% for financial stability`
+                        });
+                      } else {
+                        const deficit = monthlyExpenses - monthlyIncome;
+                        insights.push({
+                          icon: '🔥',
+                          text: `Spending ${formatCurrency(deficit)} above income. Immediate budget restructuring required`
+                        });
+                        
+                        // Debt avalanche strategy for high-cost categories
+                        if (expenses.length > 0) {
+                          const categoryTotals = expenses.reduce((acc, expense) => {
+                            const category = expense.category || 'other';
+                            acc[category] = (acc[category] || 0) + expense.amount;
+                            return acc;
+                          }, {} as Record<string, number>);
+                          const sortedCategories = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number));
+                          const highestSpend = sortedCategories[0];
+                          if (highestSpend && (highestSpend[1] as number) > monthlyIncome * 0.4) {
+                            insights.push({
+                              icon: '⚡',
+                              text: `Focus: ${highestSpend[0]} costs ${(((highestSpend[1] as number)/monthlyIncome)*100).toFixed(0)}% of income - prioritize reduction here`
+                            });
+                          }
+                        }
+                      }
+                    }
+
+                    // Upcoming expense warnings based on recurring bills
+                    if (upcomingBillTotal > userBalance * 0.8) {
+                      insights.push({
+                        icon: '📅',
+                        text: `Upcoming bills (${formatCurrency(upcomingBillTotal)}) will strain current balance - prepare now`
+                      });
+                    }
+
+                    // Advanced balance-based strategies
+                    if (userBalance < criticalBalanceThreshold) {
+                      insights.push({
+                        icon: '🆘',
+                        text: 'Critical balance level! Freeze non-essential spending and activate emergency protocols'
+                      });
+                    } else if (userBalance > emergencyFundTarget && monthlyIncome > monthlyExpenses) {
+                      const surplus = userBalance - emergencyFundTarget;
+                      insights.push({
+                        icon: '🚀',
+                        text: `Emergency fund complete! Consider investing ${formatCurrency(surplus)} surplus for growth`
+                      });
+                    }
+
+                    // Income diversification insights
+                    if (income.length > 0) {
+                      const incomeSources = income.reduce((acc, inc) => {
+                        acc[inc.category] = (acc[inc.category] || 0) + inc.amount;
+                        return acc;
+                      }, {} as Record<string, number>);
+                      
+                      const sourceCount = Object.keys(incomeSources).length;
+                      if (sourceCount === 1) {
+                        insights.push({
+                          icon: '🌐',
+                          text: 'Single income source detected - consider diversifying for financial security'
+                        });
+                      } else if (sourceCount > 3) {
+                        insights.push({
+                          icon: '💪',
+                          text: `Great income diversification across ${sourceCount} sources - strong financial resilience`
+                        });
+                      }
+                    }
+
+                    // Default insights if no data
+                    if (insights.length === 0) {
+                      insights.push(
+                        { icon: '🎯', text: 'Start tracking expenses to get personalized insights' },
+                        { icon: '💰', text: 'Add income sources to see your savings rate' },
+                        { icon: '📊', text: 'Build a complete financial picture for better recommendations' }
+                      );
+                    }
+
+                    return insights.slice(0, 5).map((insight, index) => (
+                      <div key={index} className="insight-item">
+                        <span className="insight-icon">{insight.icon}</span>
+                        <span className="insight-text">{insight.text}</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* Recent Income Analytics */}
+              <div className="analytics-card">
+                <h3>💵 Recent Income Activity</h3>
+                {income.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    <div style={{ fontSize: '36px', marginBottom: '12px' }}>💼</div>
+                    <p>No income data available</p>
+                    <p style={{ fontSize: '14px', marginTop: '8px' }}>Visit the Income section to start tracking</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '16px'
+                    }}>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Last {Math.min(income.length, 5)} income entries
+                      </span>
+                      <span style={{ 
+                        color: 'var(--success)', 
+                        fontWeight: '600',
+                        fontSize: '16px'
+                      }}>
+                        Total: +{formatCurrency(income.slice(0, 5).reduce((sum, inc) => sum + inc.amount, 0))}
+                      </span>
+                    </div>
+                    {income.slice(0, 5).map((incomeItem, index) => (
+                      <div key={incomeItem.id || index} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: 'rgba(40, 167, 69, 0.1)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(40, 167, 69, 0.3)'
+                      }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontWeight: '500', color: 'var(--text)', fontSize: '14px' }}>
+                            {incomeItem.description}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                            {incomeItem.category} • {new Date(incomeItem.date || incomeItem.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontWeight: '600',
+                          color: 'var(--success)',
+                          fontSize: '14px'
+                        }}>
+                          +{formatCurrency(incomeItem.amount)}
+                        </div>
+                      </div>
+                    ))}
+                    {income.length > 5 && (
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '12px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '14px'
+                      }}>
+                        And {income.length - 5} more income entries...
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Expenses Analytics */}
+              <div className="analytics-card">
+                <h3>💳 Recent Expense Activity</h3>
+                {expenses.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                    color: 'var(--text-secondary)'
+                  }}>
+                    <div style={{ fontSize: '36px', marginBottom: '12px' }}>📊</div>
+                    <p>No expense data available</p>
+                    <p style={{ fontSize: '14px', marginTop: '8px' }}>Visit the Expenses section to start tracking</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '16px'
+                    }}>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Last {Math.min(expenses.length, 5)} expenses
+                      </span>
+                      <span style={{ 
+                        color: 'var(--danger)', 
+                        fontWeight: '600',
+                        fontSize: '16px'
+                      }}>
+                        Total: -{formatCurrency(expenses.slice(0, 5).reduce((sum, exp) => sum + exp.amount, 0))}
+                      </span>
+                    </div>
+                    {expenses.slice(0, 5).map((expense, index) => (
+                      <div key={expense.id || index} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ fontWeight: '500', color: 'var(--text)', fontSize: '14px' }}>
+                            {expense.description}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                            {expense.category} • {new Date(expense.date || expense.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontWeight: '600',
+                          color: 'var(--danger)',
+                          fontSize: '14px'
+                        }}>
+                          -{formatCurrency(expense.amount)}
+                        </div>
+                      </div>
+                    ))}
+                    {expenses.length > 5 && (
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '12px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '14px'
+                      }}>
+                        And {expenses.length - 5} more expenses...
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Expenses Section */}
+        {currentSection === 'expenses' && (
+          <section id="expenses">
+            <div className="section-header">
+              <h1>💰 Expense Tracker</h1>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  style={{
+                    padding: '12px 16px',
+                    background: showFilters ? 'var(--primary)' : 'rgba(255, 255, 255, 0.1)',
+                    color: 'white',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  🔍 Filter
+                </button>
+                <button 
+                  onClick={() => setShowExpenseForm(!showExpenseForm)}
+                  style={{
+                    padding: '12px 24px',
+                    background: 'var(--primary)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span>+</span>
+                  <span>Add Expense</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Search and Filter Bar */}
+            {showFilters && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '20px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  {/* Search Bar */}
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                      Search Expenses
+                    </label>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search by description..."
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Filter Options */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Category
+                      </label>
+                      <select
+                        value={filters.category}
+                        onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="food">Food & Dining</option>
+                        <option value="transportation">Transportation</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="health">Health & Medical</option>
+                        <option value="housing">Housing</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Date Range
+                      </label>
+                      <select
+                        value={filters.dateRange}
+                        onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                        <option value="year">Last Year</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        Amount Range
+                      </label>
+                      <select
+                        value={filters.amountRange}
+                        onChange={(e) => setFilters(prev => ({ ...prev, amountRange: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="all">Any Amount</option>
+                        <option value="under50">Under $50</option>
+                        <option value="50to100">$50 - $100</option>
+                        <option value="100to500">$100 - $500</option>
+                        <option value="over500">Over $500</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Filter Actions */}
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setFilters({
+                          category: 'all',
+                          dateRange: 'all',
+                          amountRange: 'all',
+                          type: 'all'
+                        });
+                      }}
+                      style={{
+                        padding: '10px 16px',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Expense Form */}
+            {showExpenseForm && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '24px',
+                marginBottom: '24px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                  {editingExpense ? 'Edit Expense' : 'Add New Expense'}
+                </h3>
+                <form onSubmit={handleExpenseSubmit} style={{ display: 'grid', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Amount ($)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={expenseForm.amount}
+                        onChange={(e) => setExpenseForm(prev => ({ ...prev, amount: e.target.value }))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Category
+                      </label>
+                      <select
+                        value={expenseForm.category}
+                        onChange={(e) => setExpenseForm(prev => ({ ...prev, category: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="food">Food & Dining</option>
+                        <option value="transportation">Transportation</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="health">Health & Medical</option>
+                        <option value="housing">Housing</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={expenseForm.description}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, description: e.target.value }))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                      placeholder="What did you spend money on?"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={expenseForm.date}
+                      onChange={(e) => setExpenseForm(prev => ({ ...prev, date: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowExpenseForm(false);
+                        setEditingExpense(null);
+                        setExpenseForm({
+                          amount: '',
+                          description: '',
+                          category: 'food',
+                          date: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '12px 24px',
+                        background: 'var(--primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {editingExpense ? 'Update Expense' : 'Add Expense'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Recent Expenses */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '24px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                {searchTerm || filters.category !== 'all' || filters.dateRange !== 'all' || filters.amountRange !== 'all' 
+                  ? `Filtered Expenses (${getFilteredExpenses().length} results)` 
+                  : 'Recent Expenses (Last 30 Days)'
+                }
+              </h3>
+              {getFilteredExpenses().length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>💳</div>
+                  <p>No expenses recorded yet</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>Click "Add Expense" to start tracking your spending</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {getFilteredExpenses().map((expense, index) => (
+                    <div key={expense.id || index} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '16px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: 'var(--text)' }}>
+                          {expense.description}
+                        </div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                          {expense.category} • {new Date(expense.date || expense.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          fontWeight: '600',
+                          color: 'var(--danger)',
+                          fontSize: '18px'
+                        }}>
+                          -{formatCurrency(expense.amount)}
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => {
+                              setEditingExpense(expense);
+                              setExpenseForm({
+                                amount: expense.amount.toString(),
+                                description: expense.description,
+                                category: expense.category,
+                                date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : ''
+                              });
+                              setShowExpenseForm(true);
+                            }}
+                            style={{
+                              padding: '6px 8px',
+                              background: 'var(--primary)',
+                              border: 'none',
+                              borderRadius: '4px',
+                              color: 'white',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => deleteExpense(expense.id)}
+                            style={{
+                              padding: '6px 8px',
+                              background: 'var(--danger)',
+                              border: 'none',
+                              borderRadius: '4px',
+                              color: 'white',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Income Section */}
+        {currentSection === 'income' && (
+          <section id="income">
+            <div className="section-header">
+              <h1>💵 Income Tracker</h1>
+              <button 
+                onClick={() => setShowIncomeForm(!showIncomeForm)}
+                style={{
+                  padding: '12px 24px',
+                  background: 'var(--success)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>+</span>
+                <span>Add Income</span>
+              </button>
+            </div>
+
+            {/* Income Form */}
+            {showIncomeForm && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '24px',
+                marginBottom: '24px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                  {editingIncome ? 'Edit Income' : 'Add New Income'}
+                </h3>
+                <form onSubmit={handleIncomeSubmit} style={{ display: 'grid', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Amount ($)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={incomeForm.amount}
+                        onChange={(e) => setIncomeForm(prev => ({ ...prev, amount: e.target.value }))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Source
+                      </label>
+                      <select
+                        value={incomeForm.source}
+                        onChange={(e) => setIncomeForm(prev => ({ ...prev, source: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="salary">Salary/Wages</option>
+                        <option value="freelance">Freelance Work</option>
+                        <option value="business">Business Income</option>
+                        <option value="investment">Investment Returns</option>
+                        <option value="rental">Rental Income</option>
+                        <option value="bonus">Bonus</option>
+                        <option value="gift">Gift/Monetary Gift</option>
+                        <option value="refund">Refund</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={incomeForm.description}
+                      onChange={(e) => setIncomeForm(prev => ({ ...prev, description: e.target.value }))}
+                      required
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                      placeholder="What income did you receive?"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={incomeForm.date}
+                      onChange={(e) => setIncomeForm(prev => ({ ...prev, date: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text)',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowIncomeForm(false);
+                        setEditingIncome(null);
+                        setIncomeForm({
+                          amount: '',
+                          description: '',
+                          source: 'salary',
+                          date: new Date().toISOString().split('T')[0]
+                        });
+                      }}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '12px 24px',
+                        background: 'var(--success)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {editingIncome ? 'Update Income' : 'Add Income'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Recent Income */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '24px',
+              marginBottom: '24px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Recent Income (Last 30 Days)</h3>
+              {income.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>💼</div>
+                  <p>No income recorded yet</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>Click "Add Income" to start tracking your earnings</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '16px',
+                    padding: '12px 16px',
+                    background: 'rgba(40, 167, 69, 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--success)'
+                  }}>
+                    <span style={{ color: 'var(--text)', fontWeight: '600' }}>
+                      Total Income (30 days)
+                    </span>
+                    <span style={{
+                      color: 'var(--success)',
+                      fontWeight: '700',
+                      fontSize: '18px'
+                    }}>
+                      +{formatCurrency(income.reduce((sum, item) => sum + item.amount, 0))}
+                    </span>
+                  </div>
+                  {income.map((incomeItem, index) => (
+                    <div key={incomeItem.id || index} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '16px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--text)' }}>
+                          {incomeItem.description}
+                        </div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                          {incomeItem.category} • {new Date(incomeItem.date || incomeItem.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontWeight: '600',
+                        color: 'var(--success)',
+                        fontSize: '18px'
+                      }}>
+                        +{formatCurrency(incomeItem.amount)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Recurring Bills Section */}
+        {currentSection === 'recurring' && (
+          <section id="recurring">
+            <div className="section-header">
+              <h1>🔄 Recurring Bills & Subscriptions</h1>
+              <button 
+                onClick={() => setShowRecurringForm(!showRecurringForm)}
+                style={{
+                  padding: '12px 24px',
+                  background: 'var(--primary)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>+</span>
+                <span>Add Recurring Bill</span>
+              </button>
+            </div>
+
+            {/* Recurring Bill Form */}
+            {showRecurringForm && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '24px',
+                marginBottom: '24px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                  {editingRecurringBill ? 'Edit Recurring Bill' : 'Add New Recurring Bill'}
+                </h3>
+                <form onSubmit={handleRecurringSubmit} style={{ display: 'grid', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Bill Name
+                      </label>
+                      <input
+                        type="text"
+                        value={recurringForm.name}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, name: e.target.value }))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                        placeholder="e.g., Netflix, Rent, Electric Bill"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Amount ($)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={recurringForm.amount}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, amount: e.target.value }))}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Frequency
+                      </label>
+                      <select
+                        value={recurringForm.frequency}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, frequency: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Bi-Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Category
+                      </label>
+                      <select
+                        value={recurringForm.category}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, category: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      >
+                        <option value="utilities">Utilities</option>
+                        <option value="housing">Housing</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="software">Software/Subscriptions</option>
+                        <option value="transportation">Transportation</option>
+                        <option value="health">Health & Medical</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={recurringForm.startDate}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, startDate: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                        End Date (Optional)
+                      </label>
+                      <input
+                        type="date"
+                        value={recurringForm.endDate}
+                        onChange={(e) => setRecurringForm(prev => ({ ...prev, endDate: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text)',
+                          fontSize: '16px'
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowRecurringForm(false);
+                        setEditingRecurringBill(null);
+                        setRecurringForm({
+                          name: '',
+                          amount: '',
+                          frequency: 'monthly',
+                          category: 'utilities',
+                          startDate: new Date().toISOString().split('T')[0],
+                          endDate: ''
+                        });
+                      }}
+                      style={{
+                        padding: '12px 24px',
+                        background: 'transparent',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '12px 24px',
+                        background: 'var(--primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {editingRecurringBill ? 'Update Bill' : 'Add Recurring Bill'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Recurring Bills List */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '24px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Your Recurring Bills</h3>
+              {recurringBills.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔄</div>
+                  <p>No recurring bills set up yet</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>Click "Add Recurring Bill" to start automating your regular expenses</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {recurringBills.map((bill, index) => {
+                    // Calculate next due date
+                    const getNextDueDate = (bill: any) => {
+                      const startDate = new Date(bill.startDate || bill.createdAt);
+                      const now = new Date();
+                      let nextDue = new Date(startDate);
+
+                      while (nextDue <= now) {
+                        switch (bill.frequency) {
+                          case 'weekly':
+                            nextDue.setDate(nextDue.getDate() + 7);
+                            break;
+                          case 'biweekly':
+                            nextDue.setDate(nextDue.getDate() + 14);
+                            break;
+                          case 'monthly':
+                            nextDue.setMonth(nextDue.getMonth() + 1);
+                            break;
+                          case 'quarterly':
+                            nextDue.setMonth(nextDue.getMonth() + 3);
+                            break;
+                          case 'yearly':
+                            nextDue.setFullYear(nextDue.getFullYear() + 1);
+                            break;
+                        }
+                      }
+                      return nextDue;
+                    };
+
+                    const nextDue = getNextDueDate(bill);
+                    const daysUntilDue = Math.ceil((nextDue.getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000));
+                    const isOverdue = daysUntilDue < 0;
+                    const isDueSoon = daysUntilDue <= 3 && daysUntilDue >= 0;
+
+                    return (
+                      <div key={bill.id || index} style={{
+                        padding: '20px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: '12px',
+                        border: `1px solid ${isOverdue ? 'var(--danger)' : isDueSoon ? 'var(--warning)' : bill.isActive ? 'rgba(40, 167, 69, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+                        opacity: bill.isActive ? 1 : 0.6,
+                        position: 'relative'
+                      }}>
+                        {/* Due Date Alert Banner */}
+                        {bill.isActive && (isOverdue || isDueSoon) && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            background: isOverdue ? 'var(--danger)' : 'var(--warning)',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '12px 12px 0 0',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            textAlign: 'center'
+                          }}>
+                            {isOverdue ? `OVERDUE by ${Math.abs(daysUntilDue)} days` : `DUE in ${daysUntilDue} day${daysUntilDue === 1 ? '' : 's'}`}
+                          </div>
+                        )}
+
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'flex-start',
+                          marginTop: (isOverdue || isDueSoon) ? '16px' : '0'
+                        }}>
+                          {/* Bill Information */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                            <div style={{ 
+                              fontWeight: '700', 
+                              color: 'var(--text)',
+                              fontSize: '18px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px'
+                            }}>
+                              {bill.name}
+                              <span style={{
+                                fontSize: '12px',
+                                padding: '4px 8px',
+                                background: bill.isActive ? 'var(--success)' : 'var(--secondary)',
+                                color: 'white',
+                                borderRadius: '12px',
+                                fontWeight: '500'
+                              }}>
+                                {bill.isActive ? 'Active' : 'Paused'}
+                              </span>
+                            </div>
+                            
+                            <div style={{ 
+                              fontSize: '16px', 
+                              color: 'var(--text-secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '16px'
+                            }}>
+                              <span style={{ 
+                                padding: '4px 8px', 
+                                background: 'rgba(255, 255, 255, 0.1)', 
+                                borderRadius: '6px',
+                                fontSize: '14px'
+                              }}>
+                                {bill.category}
+                              </span>
+                              <span>{bill.frequency}</span>
+                              <span style={{ fontWeight: '600', color: 'var(--danger)' }}>
+                                {formatCurrency(bill.amount)}
+                              </span>
+                            </div>
+
+                            {/* Due Date Information */}
+                            <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                              <div style={{ marginBottom: '4px' }}>
+                                <strong>Next Due:</strong> {nextDue.toLocaleDateString()} 
+                                {bill.isActive && (
+                                  <span style={{ 
+                                    marginLeft: '8px',
+                                    color: isOverdue ? 'var(--danger)' : isDueSoon ? 'var(--warning)' : 'var(--success)'
+                                  }}>
+                                    ({isOverdue ? `${Math.abs(daysUntilDue)} days overdue` : 
+                                      isDueSoon ? `${daysUntilDue} days remaining` : 
+                                      `${daysUntilDue} days away`})
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <strong>Started:</strong> {new Date(bill.startDate || bill.createdAt).toLocaleDateString()}
+                                {bill.endDate && (
+                                  <span style={{ marginLeft: '16px' }}>
+                                    <strong>Ends:</strong> {new Date(bill.endDate).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              {/* Mark as Paid Button */}
+                              {bill.isActive && (
+                                <button
+                                  onClick={() => markBillAsPaid(bill)}
+                                  style={{
+                                    padding: '8px 12px',
+                                    background: 'var(--success)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    fontWeight: '600'
+                                  }}
+                                >
+                                  💳 Mark Paid
+                                </button>
+                              )}
+                              
+                              {/* Edit Button */}
+                              <button
+                                onClick={() => {
+                                  setEditingRecurringBill(bill);
+                                  setRecurringForm({
+                                    name: bill.name,
+                                    amount: bill.amount.toString(),
+                                    frequency: bill.frequency,
+                                    category: bill.category,
+                                    startDate: bill.startDate ? new Date(bill.startDate).toISOString().split('T')[0] : '',
+                                    endDate: bill.endDate ? new Date(bill.endDate).toISOString().split('T')[0] : ''
+                                  });
+                                  setShowRecurringForm(true);
+                                }}
+                                style={{
+                                  padding: '8px 12px',
+                                  background: 'var(--primary)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                ✏️ Edit
+                              </button>
+
+                              {/* Pause/Resume Button */}
+                              <button
+                                onClick={() => toggleRecurringBill(bill.id, bill.isActive)}
+                                style={{
+                                  padding: '8px 12px',
+                                  background: bill.isActive ? 'var(--warning)' : 'var(--success)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                {bill.isActive ? '⏸️ Pause' : '▶️ Resume'}
+                              </button>
+
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => deleteRecurringBill(bill.id)}
+                                style={{
+                                  padding: '8px 12px',
+                                  background: 'var(--danger)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: '600'
+                                }}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Goals Section */}
+        {currentSection === 'goals' && (
+          <section id="goals">
+            <div className="section-header">
+              <h1>🎯 Financial Goals & Targets</h1>
+            </div>
+
+            <div className="goals-grid">
+              {goals.map((goal) => {
+                const progressPercentage = Math.min((goal.current / goal.target) * 100, 100);
+                const targetDate = new Date(goal.targetDate);
+                const today = new Date();
+                const monthsRemaining = Math.max(1, Math.ceil((targetDate.getTime() - today.getTime()) / (30 * 24 * 60 * 60 * 1000)));
+                const monthlyNeeded = goal.type === 'debt' 
+                  ? (goal.target - goal.current) / monthsRemaining 
+                  : (goal.target - goal.current) / monthsRemaining;
+                
+                const progressColor = progressPercentage < 25 ? 'var(--danger)' : 
+                                    progressPercentage < 75 ? 'var(--warning)' : 'var(--success)';
+
+                return (
+                  <div 
+                    key={goal.id} 
+                    className="goal-card"
+                    style={{
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                    onClick={() => {
+                      setEditingGoal(goal);
+                      setShowGoalForm(true);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <div className="goal-header">
+                      <span className="goal-icon">{goal.icon}</span>
+                      <h3>{goal.name}</h3>
+                      <div style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        ✏️ Click to edit
+                      </div>
+                    </div>
+                    <div className="goal-target">
+                      <span className="current">{formatCurrency(goal.current)}</span>
+                      <span className="separator"> / </span>
+                      <span className="target">{formatCurrency(goal.target)}</span>
+                    </div>
+                    <div className="goal-progress">
+                      <div className="progress-bar-container">
+                        <div className="progress-bar-fill" style={{
+                          width: `${progressPercentage}%`, 
+                          background: progressColor
+                        }}></div>
+                      </div>
+                      <span className="progress-text">{progressPercentage.toFixed(1)}% Complete</span>
+                    </div>
+                    <div className="goal-deadline">
+                      <span className="deadline-label">Target Date:</span>
+                      <span className="deadline-date">{targetDate.toLocaleDateString()}</span>
+                    </div>
+                    <div className="goal-monthly">
+                      <span className="monthly-label">
+                        {goal.type === 'debt' ? 'Monthly Payment Needed:' : 'Monthly Savings Needed:'}
+                      </span>
+                      <span className="monthly-amount">{formatCurrency(Math.max(0, monthlyNeeded))}</span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="goal-card add-goal">
+                <button 
+                  className="add-goal-btn"
+                  onClick={() => {
+                    setEditingGoal(null);
+                    setShowGoalForm(true);
+                  }}
+                >
+                  <span className="plus-icon">+</span>
+                  <span>Add New Goal</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="goals-summary">
+              <h3>📊 Goals Summary</h3>
+              <div className="summary-stats">
+                <div className="summary-stat">
+                  <span className="stat-label">Total Goals</span>
+                  <span className="stat-value">3</span>
+                </div>
+                <div className="summary-stat">
+                  <span className="stat-label">Monthly Commitment</span>
+                  <span className="stat-value negative">{formatCurrency(4018.57)}</span>
+                </div>
+                <div className="summary-stat">
+                  <span className="stat-label">Available for Goals</span>
+                  <span className="stat-value negative">{formatCurrency(-2989.08)}</span>
+                </div>
+                <div className="summary-stat">
+                  <span className="stat-label">Goal Feasibility</span>
+                  <span className="stat-value danger">Needs Adjustment</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Goal Form */}
+            {showGoalForm && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}>
+                <div style={{
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--glass-border)',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  maxWidth: '500px',
+                  width: '90%',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                    {editingGoal ? 'Edit Goal' : 'Add New Goal'}
+                  </h3>
+                  <form style={{ display: 'grid', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Goal Name
+                        </label>
+                        <input
+                          type="text"
+                          defaultValue={editingGoal?.name || ''}
+                          placeholder="e.g., Emergency Fund"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Icon
+                        </label>
+                        <input
+                          type="text"
+                          defaultValue={editingGoal?.icon || '🎯'}
+                          placeholder="🎯"
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Current Amount ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          defaultValue={editingGoal?.current || 0}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Target Amount ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          defaultValue={editingGoal?.target || 0}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Target Date
+                        </label>
+                        <input
+                          type="date"
+                          defaultValue={editingGoal?.targetDate || ''}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                          Goal Type
+                        </label>
+                        <select
+                          defaultValue={editingGoal?.type || 'savings'}
+                          style={{
+                            width: '100%',
+                            padding: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            color: 'var(--text)',
+                            fontSize: '16px'
+                          }}
+                        >
+                          <option value="savings">Savings Goal</option>
+                          <option value="debt">Debt Payoff</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowGoalForm(false);
+                          setEditingGoal(null);
+                        }}
+                        style={{
+                          padding: '12px 24px',
+                          background: 'transparent',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        style={{
+                          padding: '12px 24px',
+                          background: 'var(--primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        {editingGoal ? 'Update Goal' : 'Add Goal'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Settings Section */}
+        {currentSection === 'settings' && (
+          <section id="settings">
+            <div className="section-header">
+              <h1>⚙️ Settings & Preferences</h1>
+            </div>
+
+            <div className="settings-container">
+              <div className="settings-section">
+                <h3>👤 Account Information</h3>
+                <div className="settings-group">
+                  <div className="setting-item">
+                    <label>Email</label>
+                    <input type="email" value="user@astralmoney.com" readOnly className="setting-input" />
+                  </div>
+                  <div className="setting-item">
+                    <label>Current Balance</label>
+                    <input type="text" value={formatCurrency(userBalance)} readOnly className="setting-input" />
+                  </div>
+                  <div className="setting-item">
+                    <label>Account Created</label>
+                    <input type="text" value="September 23, 2025" readOnly className="setting-input" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-section">
+                <h3>💰 Income Settings</h3>
+                <div className="settings-group">
+                  <div className="setting-item">
+                    <label>Paycheck Amount</label>
+                    <input type="text" value={formatCurrency(state.paycheckAmount)} className="setting-input" />
+                  </div>
+                  <div className="setting-item">
+                    <label>Pay Frequency</label>
+                    <select className="setting-input">
+                      <option value="biweekly">Bi-Weekly</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="semimonthly">Semi-Monthly</option>
+                    </select>
+                  </div>
+                  <div className="setting-item">
+                    <label>Next Paycheck</label>
+                    <input type="date" className="setting-input" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-section">
+                <h3>🔔 Notifications</h3>
+                <div className="settings-group">
+                  <div className="setting-toggle">
+                    <label>Bill Due Reminders</label>
+                    <input type="checkbox" checked className="toggle-input" />
+                  </div>
+                  <div className="setting-toggle">
+                    <label>Low Balance Alerts</label>
+                    <input type="checkbox" checked className="toggle-input" />
+                  </div>
+                  <div className="setting-toggle">
+                    <label>Goal Progress Updates</label>
+                    <input type="checkbox" checked className="toggle-input" />
+                  </div>
+                  <div className="setting-toggle">
+                    <label>Weekly Summary Email</label>
+                    <input type="checkbox" className="toggle-input" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-section">
+                <h3>🎨 Display Preferences</h3>
+                <div className="settings-group">
+                  <div className="setting-item">
+                    <label>Currency</label>
+                    <select className="setting-input">
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                    </select>
+                  </div>
+                  <div className="setting-item">
+                    <label>Date Format</label>
+                    <select className="setting-input">
+                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                    </select>
+                  </div>
+                  <div className="setting-item">
+                    <label>Theme</label>
+                    <select className="setting-input">
+                      <option value="dark">Dark Mode</option>
+                      <option value="light">Light Mode</option>
+                      <option value="auto">Auto</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-section">
+                <h3>📊 Data Export</h3>
+                <div className="settings-group">
+                  <div className="setting-item">
+                    <label>Export your financial data for backup or analysis</label>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                      <button 
+                        onClick={() => exportData('json')}
+                        style={{
+                          padding: '10px 20px',
+                          background: 'var(--primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        📋 Export JSON
+                      </button>
+                      <button 
+                        onClick={() => exportData('csv')}
+                        style={{
+                          padding: '10px 20px',
+                          background: 'var(--success)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        📊 Export CSV
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                      JSON includes all data, CSV is optimized for spreadsheet analysis
+                    </div>
+                  </div>
+                  <div className="setting-item">
+                    <label>Data Summary</label>
+                    <div style={{
+                      padding: '12px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      fontSize: '14px',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      <div>• {expenses.length} expense records</div>
+                      <div>• {income.length} income records</div>
+                      <div>• Current balance: {formatCurrency(userBalance)}</div>
+                      <div>• Data as of: {new Date().toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="settings-actions">
+                <button className="btn btn-primary">Save Changes</button>
+                <button className="btn btn-danger">Reset Settings</button>
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <style jsx>{`
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.02); opacity: 0.9; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .month-selector {
+          display: flex;
+          gap: 12px;
+        }
+        .month-btn {
+          padding: 8px 16px;
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 8px;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .month-btn:hover {
+          background: var(--surface-light);
+          color: var(--text-primary);
+        }
+        .month-btn.active {
+          background: var(--primary);
+          color: white;
+          border-color: var(--primary);
+        }
+        .month-stats {
+          display: flex;
+          gap: 24px;
+          margin: 24px 0;
+        }
+        .stat-card {
+          flex: 1;
+          padding: 20px;
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .stat-label {
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+          margin-bottom: 8px;
+        }
+        .stat-value {
+          font-size: 1.8rem;
+          font-weight: 700;
+        }
+        .stat-value.positive {
+          color: var(--success);
+        }
+        .stat-value.negative {
+          color: var(--danger);
+        }
+        .bills-list {
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          padding: 20px;
+        }
+        .bill-row {
+          display: grid;
+          grid-template-columns: 40px 100px 1fr 120px 120px 100px;
+          align-items: center;
+          padding: 12px 0;
+          border-bottom: 1px solid var(--border-secondary);
+          transition: background 0.2s ease;
+        }
+        .bill-row:hover {
+          background: var(--surface-light);
+        }
+        .bill-checkbox {
+          width: 20px;
+          height: 20px;
+        }
+        .bill-date {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+        }
+        .bill-name {
+          font-weight: 600;
+        }
+        .bill-category {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+        }
+        .bill-amount {
+          font-weight: 600;
+          text-align: right;
+        }
+        .bill-amount.income {
+          color: var(--success);
+        }
+        .bill-amount.expense {
+          color: var(--danger);
+        }
+        .bill-status {
+          text-align: center;
+          font-size: 0.9rem;
+        }
+        .analytics-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+          gap: 24px;
+        }
+        .analytics-card {
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          padding: 24px;
+        }
+        .analytics-card h3 {
+          margin-bottom: 20px;
+          color: var(--text-primary);
+        }
+        .category-breakdown {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .category-item {
+          display: grid;
+          grid-template-columns: 120px 1fr 80px;
+          align-items: center;
+          gap: 12px;
+        }
+        .category-bar {
+          height: 20px;
+          background: var(--surface-dark);
+          border-radius: 10px;
+          overflow: hidden;
+        }
+        .bar-fill {
+          height: 100%;
+          border-radius: 10px;
+          transition: width 0.3s ease;
+        }
+        .trend-chart {
+          display: flex;
+          justify-content: space-around;
+          align-items: flex-end;
+          height: 200px;
+          margin: 20px 0;
+        }
+        .trend-month {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
+        .month-bars {
+          display: flex;
+          gap: 8px;
+          align-items: flex-end;
+          height: 150px;
+        }
+        .income-bar {
+          width: 40px;
+          background: var(--success);
+          border-radius: 4px 4px 0 0;
+        }
+        .expense-bar {
+          width: 40px;
+          background: var(--danger);
+          border-radius: 4px 4px 0 0;
+        }
+        .trend-legend {
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          margin-top: 16px;
+        }
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .legend-color {
+          width: 16px;
+          height: 16px;
+          border-radius: 4px;
+        }
+        .legend-color.income {
+          background: var(--success);
+        }
+        .legend-color.expense {
+          background: var(--danger);
+        }
+        .performance-metrics {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .metric {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px;
+          background: var(--surface-dark);
+          border-radius: 8px;
+        }
+        .metric-value {
+          font-size: 1.2rem;
+          font-weight: 700;
+        }
+        .metric-status {
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 0.8rem;
+        }
+        .metric-status.danger {
+          background: rgba(239, 68, 68, 0.2);
+          color: var(--danger);
+        }
+        .metric-status.warning {
+          background: rgba(245, 158, 11, 0.2);
+          color: var(--warning);
+        }
+        .insights {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .insight-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          background: var(--surface-dark);
+          border-radius: 8px;
+        }
+        .goals-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 24px;
+          margin-bottom: 32px;
+        }
+        .goal-card {
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .goal-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .goal-icon {
+          font-size: 1.5rem;
+        }
+        .goal-target {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+        }
+        .goal-target .current {
+          font-size: 1.5rem;
+          font-weight: 700;
+        }
+        .goal-target .target {
+          font-size: 1.2rem;
+          color: var(--text-secondary);
+        }
+        .goal-progress {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .progress-bar-container {
+          height: 8px;
+          background: var(--surface-dark);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        .progress-bar-fill {
+          height: 100%;
+          border-radius: 4px;
+        }
+        .goal-deadline, .goal-monthly {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.9rem;
+        }
+        .deadline-label, .monthly-label {
+          color: var(--text-secondary);
+        }
+        .add-goal {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .add-goal-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding: 32px;
+          background: transparent;
+          border: 2px dashed var(--glass-border);
+          border-radius: 12px;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all 0.3s ease;
+          width: 100%;
+        }
+        .add-goal-btn:hover {
+          background: var(--surface-light);
+          border-color: var(--primary);
+          color: var(--primary);
+        }
+        .plus-icon {
+          font-size: 2rem;
+        }
+        .goals-summary {
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          padding: 24px;
+        }
+        .summary-stats {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 20px;
+          margin-top: 16px;
+        }
+        .summary-stat {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 16px;
+          background: var(--surface-dark);
+          border-radius: 8px;
+        }
+        .settings-container {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+        .settings-section {
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
+          border-radius: 12px;
+          padding: 24px;
+        }
+        .settings-section h3 {
+          margin-bottom: 20px;
+        }
+        .settings-group {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .setting-item {
+          display: grid;
+          grid-template-columns: 200px 1fr;
+          align-items: center;
+          gap: 16px;
+        }
+        .setting-item label {
+          color: var(--text-secondary);
+        }
+        .setting-input {
+          padding: 8px 12px;
+          background: var(--surface-dark);
+          border: 1px solid var(--border-primary);
+          border-radius: 8px;
+          color: var(--text-primary);
+          font-size: 1rem;
+        }
+        .setting-toggle {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 0;
+          border-bottom: 1px solid var(--border-secondary);
+        }
+        .toggle-input {
+          width: 20px;
+          height: 20px;
+        }
+        .settings-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 24px;
+        }
+        .btn {
+          padding: 12px 24px;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .btn-primary {
+          background: var(--primary);
+          color: white;
+        }
+        .btn-primary:hover {
+          background: var(--primary-dark);
+        }
+        .btn-secondary {
+          background: var(--surface-light);
+          color: var(--text-primary);
+        }
+        .btn-secondary:hover {
+          background: var(--surface-dark);
+        }
+        .btn-danger {
+          background: var(--danger);
+          color: white;
+        }
+        .btn-danger:hover {
+          background: #dc2626;
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+          .container {
+            margin: 0;
+            padding: 8px;
+          }
+          
+          .header {
+            padding: 16px 8px;
+          }
+          
+          .nav-menu {
+            display: flex;
+            overflow-x: auto;
+            padding: 8px;
+            gap: 8px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          
+          .nav-menu::-webkit-scrollbar {
+            display: none;
+          }
+          
+          .nav-item {
+            flex: 0 0 auto;
+          }
+          
+          .nav-link {
+            padding: 10px 14px;
+            font-size: 13px;
+            min-width: 80px;
+            text-align: center;
+          }
+          
+          .nav-link span {
+            display: block;
+          }
+          
+          .nav-icon {
+            font-size: 18px;
+            margin-bottom: 2px;
+          }
+          
+          .main-content {
+            padding: 16px 8px;
+          }
+          
+          .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          
+          .section-header h1 {
+            font-size: 22px;
+          }
+          
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          
+          .analytics-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          
+          .goals-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          
+          .current-balance {
+            font-size: 16px;
+          }
+          
+          .dashboard-card {
+            padding: 16px;
+          }
+          
+          .analytics-card {
+            padding: 16px;
+          }
+          
+          .goal-card {
+            padding: 16px;
+          }
+          
+          /* Mobile Form Styles */
+          form {
+            gap: 12px !important;
+          }
+          
+          form > div[style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          
+          input, select, textarea {
+            font-size: 16px !important; /* Prevents zoom on iOS */
+          }
+          
+          /* Mobile Button Styles */
+          button {
+            min-height: 44px; /* Touch target size */
+            font-size: 14px;
+          }
+          
+          /* Mobile Settings */
+          .settings-container {
+            gap: 16px;
+          }
+          
+          .settings-section {
+            padding: 16px;
+          }
+          
+          .settings-actions {
+            flex-direction: column;
+            gap: 12px;
+          }
+          
+          .settings-actions button {
+            width: 100%;
+          }
+        }
+        
+        /* Tablet Styles */
+        @media (max-width: 1024px) and (min-width: 769px) {
+          .dashboard-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .analytics-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .goals-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .nav-menu {
+            gap: 12px;
+            padding: 0 16px;
+          }
+          
+          .main-content {
+            padding: 24px 16px;
+          }
+        }
+        
+        /* Small Mobile Styles */
+        @media (max-width: 480px) {
+          .header {
+            padding: 12px 8px;
+          }
+          
+          .header h1 {
+            font-size: 20px;
+          }
+          
+          .section-header h1 {
+            font-size: 20px;
+          }
+          
+          .current-balance {
+            font-size: 14px;
+          }
+          
+          .dashboard-card .card-value {
+            font-size: 20px;
+          }
+          
+          .nav-link {
+            padding: 8px 10px;
+            font-size: 12px;
+            min-width: 70px;
+          }
+          
+          .nav-icon {
+            font-size: 16px;
+          }
+          
+          button {
+            padding: 8px 12px !important;
+            font-size: 13px !important;
+          }
+          
+          input, select, textarea {
+            padding: 10px !important;
+            font-size: 16px !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// Error Boundary Fallback Component
+function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
+  return (
+    <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+        <div className="text-red-500 text-6xl mb-4">⚠️</div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
+        <p className="text-gray-600 mb-6">We apologize for the inconvenience. Please try refreshing the page.</p>
+        <div className="space-y-3">
+          <button
+            onClick={resetErrorBoundary}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
+        <details className="mt-4 text-left">
+          <summary className="text-sm text-gray-500 cursor-pointer">Error Details</summary>
+          <pre className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded overflow-auto">
+            {error.message}
+          </pre>
+        </details>
+      </div>
     </div>
   );
 }
