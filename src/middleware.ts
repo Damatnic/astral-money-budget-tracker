@@ -1,27 +1,38 @@
 import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
 
 export default withAuth(
   function middleware(req) {
-    // Add additional middleware logic here if needed
+    // If user is already authenticated and trying to access auth pages, redirect to home
+    if (req.nextUrl.pathname.startsWith('/auth') && req.nextauth.token) {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // If user is accessing auth pages and already logged in, redirect to home
-        if ((req.nextUrl.pathname.startsWith('/auth/signin') || 
-             req.nextUrl.pathname.startsWith('/auth/signup')) && token) {
-          return false;
-        }
+        const isAuthPage = req.nextUrl.pathname.startsWith('/auth');
+        const isApiAuth = req.nextUrl.pathname.startsWith('/api/auth');
+        const isHomePage = req.nextUrl.pathname === '/';
         
-        // Protect main dashboard - require authentication
-        if (req.nextUrl.pathname === '/' && !token) {
-          return false;
-        }
-        
-        // Allow access to auth pages and API routes
-        if (req.nextUrl.pathname.startsWith('/auth') || 
-            req.nextUrl.pathname.startsWith('/api/auth')) {
+        // Allow API auth routes
+        if (isApiAuth) {
           return true;
+        }
+        
+        // Allow auth pages for unauthenticated users
+        if (isAuthPage && !token) {
+          return true;
+        }
+        
+        // Redirect authenticated users away from auth pages (handled in middleware function)
+        if (isAuthPage && token) {
+          return true; // Let middleware handle the redirect
+        }
+        
+        // Protect home page - require authentication
+        if (isHomePage) {
+          return !!token;
         }
         
         // Default to requiring authentication

@@ -108,11 +108,8 @@ export default function SignInPage() {
       if (result?.error) {
         setError('Invalid email or PIN');
       } else if (result?.ok) {
-        const session = await getSession();
-        if (session) {
-          router.push('/');
-          router.refresh();
-        }
+        // Force a hard redirect to avoid state issues
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Sign in error:', error);
@@ -144,11 +141,8 @@ export default function SignInPage() {
       if (result?.error) {
         setError('Invalid PIN');
       } else if (result?.ok) {
-        const session = await getSession();
-        if (session) {
-          router.push('/');
-          router.refresh();
-        }
+        // Force a hard redirect to avoid state issues
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Sign in error:', error);
