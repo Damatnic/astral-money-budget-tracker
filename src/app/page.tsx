@@ -612,25 +612,75 @@ export default function Home() {
     }
   };
 
-  const handleIncomeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const deleteIncome = async (incomeId: string) => {
+    if (!confirm('Are you sure you want to delete this income entry?')) {
+      return;
+    }
+
     try {
       const response = await fetch('/api/income', {
-        method: 'POST',
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          amount: parseFloat(incomeForm.amount),
-          description: incomeForm.description,
-          source: incomeForm.source,
-          date: incomeForm.date,
-        }),
+        body: JSON.stringify({ id: incomeId }),
       });
       
       const data = await response.json();
       if (response.ok) {
-        setIncome(prev => [data.income, ...prev]);
+        setIncome(prev => prev.filter(inc => inc.id !== incomeId));
+        if (data.newBalance !== undefined) {
+          setUserBalance(data.newBalance);
+        }
+        fetchUserData(); // Refresh balance
+      } else {
+        alert(data.error || 'Failed to delete income');
+      }
+    } catch (error) {
+      console.error('Error deleting income:', error);
+      alert('Failed to delete income');
+    }
+  };
+
+  const handleIncomeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const isEditing = editingIncome !== null;
+      const method = isEditing ? 'PUT' : 'POST';
+      const body = isEditing 
+        ? JSON.stringify({
+            id: editingIncome.id,
+            amount: parseFloat(incomeForm.amount),
+            description: incomeForm.description,
+            source: incomeForm.source,
+            date: incomeForm.date,
+          })
+        : JSON.stringify({
+            amount: parseFloat(incomeForm.amount),
+            description: incomeForm.description,
+            source: incomeForm.source,
+            date: incomeForm.date,
+          });
+
+      const response = await fetch('/api/income', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body,
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        if (isEditing) {
+          setIncome(prev => prev.map(inc => 
+            inc.id === editingIncome.id ? data.income : inc
+          ));
+          setEditingIncome(null);
+        } else {
+          setIncome(prev => [data.income, ...prev]);
+        }
+        
         if (data.newBalance !== undefined) {
           setUserBalance(data.newBalance);
         }
@@ -643,11 +693,11 @@ export default function Home() {
         setShowIncomeForm(false);
         fetchUserData(); // Refresh balance
       } else {
-        alert(data.error || 'Failed to add income');
+        alert(data.error || `Failed to ${isEditing ? 'update' : 'add'} income`);
       }
     } catch (error) {
-      console.error('Error adding income:', error);
-      alert('Failed to add income');
+      console.error(`Error ${editingIncome ? 'updating' : 'adding'} income:`, error);
+      alert(`Failed to ${editingIncome ? 'update' : 'add'} income`);
     }
   };
 
@@ -978,13 +1028,64 @@ export default function Home() {
     { id: 'd20', name: 'Year-End Savings', amount: 1000, date: 'Dec 31', category: 'savings', isPaid: false },
   ];
 
-  const getCurrentMonthBills = () => {
+  const getCurrentMonthData = () => {
+    const now = new Date();
+    let targetMonth = 9; // October (0-indexed)
+    let targetYear = now.getFullYear();
+    
     switch(currentMonth) {
-      case 'october': return octoberBills;
-      case 'november': return novemberBills;
-      case 'december': return decemberBills;
-      default: return octoberBills;
+      case 'october':
+        targetMonth = 9;
+        break;
+      case 'november':
+        targetMonth = 10;
+        break;
+      case 'december':
+        targetMonth = 11;
+        break;
+      default:
+        targetMonth = 9;
     }
+
+    // Filter expenses for the selected month
+    const monthExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date || expense.createdAt);
+      return expenseDate.getMonth() === targetMonth && expenseDate.getFullYear() === targetYear;
+    });
+
+    // Filter income for the selected month
+    const monthIncome = income.filter(incomeItem => {
+      const incomeDate = new Date(incomeItem.date || incomeItem.createdAt);
+      return incomeDate.getMonth() === targetMonth && incomeDate.getFullYear() === targetYear;
+    });
+
+    // Combine into a unified format for display
+    const combinedData = [
+      ...monthExpenses.map(expense => ({
+        id: expense.id,
+        name: expense.description,
+        amount: expense.amount,
+        date: new Date(expense.date || expense.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        category: expense.category,
+        isIncome: false,
+        isPaid: true, // Expenses are always "paid" since they're recorded
+        type: 'expense',
+        originalData: expense
+      })),
+      ...monthIncome.map(incomeItem => ({
+        id: incomeItem.id,
+        name: incomeItem.description,
+        amount: incomeItem.amount,
+        date: new Date(incomeItem.date || incomeItem.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        category: incomeItem.category,
+        isIncome: true,
+        isPaid: true, // Income is always "paid" since it's recorded
+        type: 'income',
+        originalData: incomeItem
+      }))
+    ].sort((a, b) => new Date(a.originalData.date || a.originalData.createdAt).getTime() - new Date(b.originalData.date || b.originalData.createdAt).getTime());
+
+    return combinedData;
   };
 
   return (
@@ -1475,7 +1576,7 @@ export default function Home() {
                 <span className="stat-label">Income</span>
                 <span className="stat-value positive">
                   {formatCurrency(
-                    getCurrentMonthBills()
+                    getCurrentMonthData()
                       .filter(b => b.isIncome)
                       .reduce((sum, b) => sum + b.amount, 0)
                   )}
@@ -1485,7 +1586,7 @@ export default function Home() {
                 <span className="stat-label">Expenses</span>
                 <span className="stat-value negative">
                   {formatCurrency(
-                    getCurrentMonthBills()
+                    getCurrentMonthData()
                       .filter(b => !b.isIncome)
                       .reduce((sum, b) => sum + b.amount, 0)
                   )}
@@ -1494,38 +1595,103 @@ export default function Home() {
               <div className="stat-card">
                 <span className="stat-label">Net</span>
                 <span className={`stat-value ${
-                  getCurrentMonthBills().filter(b => b.isIncome).reduce((sum, b) => sum + b.amount, 0) -
-                  getCurrentMonthBills().filter(b => !b.isIncome).reduce((sum, b) => sum + b.amount, 0) > 0
+                  getCurrentMonthData().filter(b => b.isIncome).reduce((sum, b) => sum + b.amount, 0) -
+                  getCurrentMonthData().filter(b => !b.isIncome).reduce((sum, b) => sum + b.amount, 0) > 0
                     ? 'positive' : 'negative'
                 }`}>
                   {formatCurrency(
-                    getCurrentMonthBills().filter(b => b.isIncome).reduce((sum, b) => sum + b.amount, 0) -
-                    getCurrentMonthBills().filter(b => !b.isIncome).reduce((sum, b) => sum + b.amount, 0)
+                    getCurrentMonthData().filter(b => b.isIncome).reduce((sum, b) => sum + b.amount, 0) -
+                    getCurrentMonthData().filter(b => !b.isIncome).reduce((sum, b) => sum + b.amount, 0)
                   )}
                 </span>
               </div>
             </div>
 
             <div className="bills-list">
-              {getCurrentMonthBills().map(bill => (
-                <div key={bill.id} className="bill-row">
-                  <input
-                    type="checkbox"
-                    checked={state.checkedBills.has(bill.id)}
-                    onChange={() => handleBillCheck(bill.id, bill.amount)}
-                    className="bill-checkbox"
-                  />
-                  <span className="bill-date">{bill.date}</span>
-                  <span className="bill-name">{bill.name}</span>
-                  <span className="bill-category">{bill.category}</span>
-                  <span className={`bill-amount ${bill.isIncome ? 'income' : 'expense'}`}>
-                    {bill.isIncome ? '+' : '-'}{formatCurrency(bill.amount)}
-                  </span>
-                  <span className={`bill-status ${bill.isPaid ? 'paid' : 'pending'}`}>
-                    {bill.isPaid ? '✅ Paid' : '⏳ Pending'}
-                  </span>
+              {getCurrentMonthData().length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  color: 'var(--text-secondary)'
+                }}>
+                  <div style={{ fontSize: '36px', marginBottom: '12px' }}>📅</div>
+                  <p>No financial data for {currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}</p>
+                  <p style={{ fontSize: '14px', marginTop: '8px' }}>Add expenses or income to see them here</p>
                 </div>
-              ))}
+              ) : (
+                getCurrentMonthData().map(item => (
+                  <div key={`${item.type}-${item.id}`} className="bill-row">
+                    <span className="bill-date">{item.date}</span>
+                    <span className="bill-name">{item.name}</span>
+                    <span className="bill-category">{item.category}</span>
+                    <span className={`bill-amount ${item.isIncome ? 'income' : 'expense'}`}>
+                      {item.isIncome ? '+' : '-'}{formatCurrency(item.amount)}
+                    </span>
+                    <span className={`bill-status ${item.isPaid ? 'paid' : 'pending'}`}>
+                      {item.isPaid ? '✅ Recorded' : '⏳ Pending'}
+                    </span>
+                    <div className="bill-actions">
+                      <button
+                        onClick={() => {
+                          if (item.type === 'expense') {
+                            setEditingExpense(item.originalData);
+                            setExpenseForm({
+                              amount: item.originalData.amount.toString(),
+                              description: item.originalData.description,
+                              category: item.originalData.category,
+                              date: item.originalData.date ? new Date(item.originalData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                            });
+                            setShowExpenseForm(true);
+                          } else {
+                            setEditingIncome(item.originalData);
+                            setIncomeForm({
+                              amount: item.originalData.amount.toString(),
+                              description: item.originalData.description,
+                              source: item.originalData.category,
+                              date: item.originalData.date ? new Date(item.originalData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                            });
+                            setShowIncomeForm(true);
+                          }
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          background: 'var(--primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          marginRight: '8px'
+                        }}
+                        title={`Edit ${item.type}`}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (item.type === 'expense') {
+                            deleteExpense(item.id);
+                          } else {
+                            deleteIncome(item.id);
+                          }
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          background: 'var(--danger)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                        title={`Delete ${item.type}`}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         )}
@@ -2504,7 +2670,9 @@ export default function Home() {
                 marginBottom: '24px',
                 backdropFilter: 'blur(10px)'
               }}>
-                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>Add New Income</h3>
+                <h3 style={{ marginBottom: '20px', color: 'var(--text)' }}>
+                  {editingIncome ? 'Edit Income' : 'Add New Income'}
+                </h3>
                 <form onSubmit={handleIncomeSubmit} style={{ display: 'grid', gap: '16px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
@@ -2601,7 +2769,16 @@ export default function Home() {
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
-                      onClick={() => setShowIncomeForm(false)}
+                      onClick={() => {
+                        setShowIncomeForm(false);
+                        setEditingIncome(null);
+                        setIncomeForm({
+                          amount: '',
+                          description: '',
+                          source: 'salary',
+                          date: new Date().toISOString().split('T')[0]
+                        });
+                      }}
                       style={{
                         padding: '12px 24px',
                         background: 'transparent',
@@ -2625,7 +2802,7 @@ export default function Home() {
                         fontWeight: '600'
                       }}
                     >
-                      Add Income
+                      {editingIncome ? 'Update Income' : 'Add Income'}
                     </button>
                   </div>
                 </form>
