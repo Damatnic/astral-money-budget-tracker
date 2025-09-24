@@ -39,7 +39,8 @@
       "Read(//c/**)",
       "Bash(awk:*)",
       "Read(//c//**)",
-      "Bash(timeout 30 npm run dev)"
+      "Bash(timeout 30 npm run dev)",
+      "WebFetch(domain:astral-budget-rjnuabp1p-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []

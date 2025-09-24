@@ -73,7 +73,7 @@ function estimateFromLastBill(bill: RecurringBill) {
   
   return {
     estimatedAmount: lastAmount,
-    confidence: bill.billHistory && bill.billHistory.length > 0 ? 'medium' : 'low' as 'medium' | 'low',
+    confidence: (bill.billHistory && bill.billHistory.length > 0 ? 'medium' : 'low') as 'medium' | 'low',
     reason: 'Based on most recent bill',
     range: {
       min: Math.max(0, lastAmount - variance),
@@ -92,7 +92,7 @@ function estimateFromAverage(bill: RecurringBill) {
   
   return {
     estimatedAmount: avgAmount,
-    confidence: historyLength > 3 ? 'high' : historyLength > 1 ? 'medium' : 'low',
+    confidence: (historyLength > 3 ? 'high' : historyLength > 1 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
     reason: `Based on ${historyLength} bill average`,
     range: {
       min: Math.max(0, avgAmount - variance),
@@ -125,7 +125,7 @@ function estimateFromSeasonalPattern(bill: RecurringBill) {
     
     return {
       estimatedAmount: seasonalAvg,
-      confidence: sameMonthBills.length > 1 ? 'high' : 'medium',
+      confidence: (sameMonthBills.length > 1 ? 'high' : 'medium') as 'high' | 'medium',
       reason: `Based on ${sameMonthBills.length} bills from same month`,
       range: {
         min: Math.max(0, seasonalAvg - variance),
@@ -165,7 +165,7 @@ function estimateFromTrend(bill: RecurringBill) {
   
   return {
     estimatedAmount: Math.max(0, projectedAmount),
-    confidence: recentBills.length > 3 ? 'medium' : 'low',
+    confidence: (recentBills.length > 3 ? 'medium' : 'low') as 'medium' | 'low',
     reason: `Based on ${recentBills.length}-month trend analysis`,
     range: {
       min: Math.max(0, projectedAmount - variance),
