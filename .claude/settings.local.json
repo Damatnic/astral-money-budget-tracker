@@ -43,7 +43,13 @@
       "WebFetch(domain:astral-budget-rjnuabp1p-astral-productions.vercel.app)",
       "WebFetch(domain:astral-budget-bcenizpa8-astral-productions.vercel.app)",
       "mcp__ide__getDiagnostics",
-      "Bash(od:*)"
+      "Bash(od:*)",
+      "Bash(find:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx prisma:*)",
+      "Bash(PORT=3012 npm run dev)",
+      "Bash(PORT=3013 npm run dev)",
+      "Bash(PORT=3014 npm run dev)"
     ],
     "deny": [],
     "ask": []
