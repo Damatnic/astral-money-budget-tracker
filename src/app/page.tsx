@@ -1,8 +1,112 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
-export default function Home() {
+// Types
+interface Transaction {
+  id: string;
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+  createdAt?: string;
+  type?: 'income' | 'expense';
+}
+
+interface Goal {
+  id: string;
+  icon: string;
+  name: string;
+  current: number;
+  target: number;
+  targetDate: string;
+  type: 'savings' | 'debt';
+}
+
+interface RecurringBill {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: string;
+  category: string;
+  startDate: string;
+  endDate?: string;
+  isActive?: boolean;
+}
+
+interface Notification {
+  id: string;
+  type: 'error' | 'warning' | 'info' | 'success';
+  title: string;
+  message: string;
+  timestamp: Date;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+}
+
+interface LoadingState {
+  userData: boolean;
+  expenses: boolean;
+  income: boolean;
+  recurringBills: boolean;
+  creating: boolean;
+  updating: boolean;
+  deleting: boolean;
+}
+
+interface ErrorState {
+  userData: string | null;
+  expenses: string | null;
+  income: string | null;
+  recurringBills: string | null;
+  form: string | null;
+}
+
+// Loading Spinner Component
+function LoadingSpinner({ size = 'medium' }: { size?: 'small' | 'medium' | 'large' }) {
+  const sizeClasses = {
+    small: 'w-4 h-4',
+    medium: 'w-8 h-8',
+    large: 'w-12 h-12'
+  };
+
+  return (
+    <div className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-gray-300 border-t-blue-600`}></div>
+  );
+}
+
+// Toast Notification Component
+function Toast({ notification, onClose }: { notification: Notification; onClose: () => void }) {
+  const typeStyles = {
+    error: 'bg-red-50 border-red-200 text-red-800',
+    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+    info: 'bg-blue-50 border-blue-200 text-blue-800',
+    success: 'bg-green-50 border-green-200 text-green-800'
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border shadow-lg max-w-sm transform transition-all duration-300 ${typeStyles[notification.type]}`}>
+      <div className="flex justify-between items-start">
+        <div>
+          <h4 className="font-semibold">{notification.title}</h4>
+          <p className="text-sm mt-1">{notification.message}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="ml-4 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Home() {
   const [currentSection, setCurrentSection] = useState('dashboard');
   const [currentMonth, setCurrentMonth] = useState('october');
   const [userBalance, setUserBalance] = useState(11.29);
@@ -77,6 +181,52 @@ export default function Home() {
   const [editingExpense, setEditingExpense] = useState<any>(null);
   const [editingIncome, setEditingIncome] = useState<any>(null);
   const [editingRecurringBill, setEditingRecurringBill] = useState<any>(null);
+  // Loading and Error States
+  const [loading, setLoading] = useState<LoadingState>({
+    userData: false,
+    expenses: false,
+    income: false,
+    recurringBills: false,
+    creating: false,
+    updating: false,
+    deleting: false
+  });
+  const [errors, setErrors] = useState<ErrorState>({
+    userData: null,
+    expenses: null,
+    income: null,
+    recurringBills: null,
+    form: null
+  });
+  const [toasts, setToasts] = useState<Notification[]>([]);
+  
+  // App Settings and Preferences
+  const [settings, setSettings] = useState({
+    theme: 'light',
+    currency: 'USD',
+    dateFormat: 'MM/DD/YYYY',
+    notifications: {
+      lowBalance: true,
+      billReminders: true,
+      goalProgress: true,
+      spendingAlerts: true
+    },
+    budgetLimits: {
+      food: 500,
+      entertainment: 200,
+      utilities: 300,
+      transportation: 150,
+      shopping: 100,
+      healthcare: 200,
+      other: 150
+    },
+    onboardingCompleted: false
+  });
+  
+  // Performance optimization refs
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const chartRef = useRef<HTMLCanvasElement>(null);
+  
   const [state, setState] = useState({
     startBalance: 11.29,
     paycheckAmount: 2143.73,
@@ -89,15 +239,506 @@ export default function Home() {
     netFlow: -2989.08,
     healthScore: 25,
   });
+  
+  // Advanced features state
+  const [showOnboarding, setShowOnboarding] = useState(!settings.onboardingCompleted);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showBudgetPlanner, setShowBudgetPlanner] = useState(false);
+  const [showDataExport, setShowDataExport] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  
+  // Financial insights and AI recommendations
+  const [financialInsights, setFinancialInsights] = useState<any[]>([]);
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+  const [budgetAlerts, setBudgetAlerts] = useState<any[]>([]);
 
+  // Performance optimized data fetching
+  const fetchUserData = useCallback(async () => {
+    setLoading(prev => ({ ...prev, userData: true }));
+    setErrors(prev => ({ ...prev, userData: null }));
+    
+    try {
+      const response = await fetch('/api/user/balance');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      if (data.balance !== undefined) {
+        setUserBalance(data.balance);
+        setState(prev => ({ ...prev, startBalance: data.balance }));
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setErrors(prev => ({ ...prev, userData: errorMessage }));
+      showToast('error', 'Failed to load balance', errorMessage);
+    } finally {
+      setLoading(prev => ({ ...prev, userData: false }));
+    }
+  }, []);
+
+  const fetchExpenses = useCallback(async () => {
+    setLoading(prev => ({ ...prev, expenses: true }));
+    setErrors(prev => ({ ...prev, expenses: null }));
+    
+    try {
+      const response = await fetch('/api/expenses');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      if (data.expenses) {
+        setExpenses(data.expenses);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setErrors(prev => ({ ...prev, expenses: errorMessage }));
+      showToast('error', 'Failed to load expenses', errorMessage);
+    } finally {
+      setLoading(prev => ({ ...prev, expenses: false }));
+    }
+  }, []);
+
+  const fetchIncome = useCallback(async () => {
+    setLoading(prev => ({ ...prev, income: true }));
+    setErrors(prev => ({ ...prev, income: null }));
+    
+    try {
+      const response = await fetch('/api/income');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      if (data.income) {
+        setIncome(data.income);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setErrors(prev => ({ ...prev, income: errorMessage }));
+      showToast('error', 'Failed to load income', errorMessage);
+    } finally {
+      setLoading(prev => ({ ...prev, income: false }));
+    }
+  }, []);
+
+  const fetchRecurringBills = useCallback(async () => {
+    setLoading(prev => ({ ...prev, recurringBills: true }));
+    setErrors(prev => ({ ...prev, recurringBills: null }));
+    
+    try {
+      const response = await fetch('/api/recurring');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      if (data.recurring) {
+        setRecurringBills(data.recurring);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setErrors(prev => ({ ...prev, recurringBills: errorMessage }));
+      showToast('error', 'Failed to load recurring bills', errorMessage);
+    } finally {
+      setLoading(prev => ({ ...prev, recurringBills: false }));
+    }
+  }, []);
+
+  // Toast notification system
+  const showToast = useCallback((type: Notification['type'], title: string, message: string, priority: Notification['priority'] = 'medium') => {
+    const toast: Notification = {
+      id: `toast-${Date.now()}-${Math.random()}`,
+      type,
+      title,
+      message,
+      timestamp: new Date(),
+      priority
+    };
+    setToasts(prev => [...prev, toast]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
+
+  // Offline detection
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      showToast('success', 'Back Online', 'Internet connection restored');
+      // Re-fetch data when back online
+      fetchUserData();
+      fetchExpenses();
+      fetchIncome();
+      fetchRecurringBills();
+    };
+    
+    const handleOffline = () => {
+      setIsOffline(true);
+      showToast('warning', 'Offline Mode', 'Some features may be limited');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [fetchUserData, fetchExpenses, fetchIncome, fetchRecurringBills, showToast]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl/Cmd + shortcuts
+      if (event.ctrlKey || event.metaKey) {
+        switch (event.key) {
+          case 'k': // Search
+            event.preventDefault();
+            searchInputRef.current?.focus();
+            break;
+          case 'n': // New expense
+            event.preventDefault();
+            setShowExpenseForm(true);
+            break;
+          case 'i': // New income
+            event.preventDefault();
+            setShowIncomeForm(true);
+            break;
+          case 'b': // New bill
+            event.preventDefault();
+            setShowRecurringForm(true);
+            break;
+          case 's': // Settings
+            event.preventDefault();
+            setShowSettings(true);
+            break;
+          case '?': // Help
+            event.preventDefault();
+            setShowHelpModal(true);
+            break;
+        }
+      }
+      
+      // ESC to close modals
+      if (event.key === 'Escape') {
+        setShowExpenseForm(false);
+        setShowIncomeForm(false);
+        setShowRecurringForm(false);
+        setShowSettings(false);
+        setShowHelpModal(false);
+        setShowDataExport(false);
+        setActiveTooltip(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Initial data fetch
   useEffect(() => {
     fetchUserData();
     fetchExpenses();
     fetchIncome();
     fetchRecurringBills();
+  }, [fetchUserData, fetchExpenses, fetchIncome, fetchRecurringBills]);
+
+  // Enhanced data processing with memoization
+  const processedExpenses = useMemo(() => {
+    return expenses.map(expense => ({
+      ...expense,
+      amount: typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount,
+      date: new Date(expense.date || expense.createdAt)
+    })).sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [expenses]);
+
+  const processedIncome = useMemo(() => {
+    return income.map(inc => ({
+      ...inc,
+      amount: typeof inc.amount === 'string' ? parseFloat(inc.amount) : inc.amount,
+      date: new Date(inc.date || inc.createdAt)
+    })).sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [income]);
+
+  // Advanced filtering with performance optimization
+  const filteredTransactions = useMemo(() => {
+    const allTransactions = [
+      ...processedExpenses.map(exp => ({ ...exp, type: 'expense' as const })),
+      ...processedIncome.map(inc => ({ ...inc, type: 'income' as const }))
+    ];
+
+    return allTransactions.filter(transaction => {
+      // Search filter
+      if (searchTerm && !transaction.description?.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+
+      // Type filter
+      if (filters.type !== 'all' && transaction.type !== filters.type) {
+        return false;
+      }
+
+      // Category filter
+      if (filters.category !== 'all' && transaction.category !== filters.category) {
+        return false;
+      }
+
+      // Date range filter
+      if (filters.dateRange !== 'all') {
+        const now = new Date();
+        const transactionDate = transaction.date;
+        let cutoffDate = new Date();
+
+        switch (filters.dateRange) {
+          case 'today':
+            cutoffDate.setHours(0, 0, 0, 0);
+            break;
+          case 'week':
+            cutoffDate.setDate(now.getDate() - 7);
+            break;
+          case 'month':
+            cutoffDate.setMonth(now.getMonth() - 1);
+            break;
+          case 'quarter':
+            cutoffDate.setMonth(now.getMonth() - 3);
+            break;
+          case 'year':
+            cutoffDate.setFullYear(now.getFullYear() - 1);
+            break;
+        }
+
+        if (transactionDate < cutoffDate) {
+          return false;
+        }
+      }
+
+      // Amount range filter
+      if (filters.amountRange !== 'all') {
+        const amount = transaction.amount;
+        switch (filters.amountRange) {
+          case 'small':
+            if (amount >= 50) return false;
+            break;
+          case 'medium':
+            if (amount < 50 || amount >= 200) return false;
+            break;
+          case 'large':
+            if (amount < 200) return false;
+            break;
+        }
+      }
+
+      return true;
+    }).sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [processedExpenses, processedIncome, searchTerm, filters]);
+
+  // Financial insights generation
+  const generateFinancialInsights = useCallback(() => {
+    const insights = [];
+    const now = new Date();
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    // Recent spending analysis
+    const recentExpenses = processedExpenses.filter(exp => exp.date >= last30Days);
+    const recentIncome = processedIncome.filter(inc => inc.date >= last30Days);
+    
+    const totalExpenses = recentExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalIncome = recentIncome.reduce((sum, inc) => sum + inc.amount, 0);
+    const avgDailySpending = totalExpenses / 30;
+    
+    // Category analysis
+    const categorySpending = recentExpenses.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topCategory = Object.entries(categorySpending).sort(([,a], [,b]) => (b as number) - (a as number))[0];
+    
+    if (topCategory) {
+      insights.push({
+        type: 'spending',
+        title: 'Top Spending Category',
+        message: `You spent $${(topCategory[1] as number).toFixed(2)} on ${topCategory[0]} this month`,
+        icon: '📊',
+        actionable: true
+      });
+    }
+    
+    // Savings rate
+    if (totalIncome > 0) {
+      const savingsRate = ((totalIncome - totalExpenses) / totalIncome) * 100;
+      insights.push({
+        type: savingsRate >= 20 ? 'positive' : 'warning',
+        title: 'Savings Rate',
+        message: `You're saving ${savingsRate.toFixed(1)}% of your income ${savingsRate >= 20 ? '🎉' : '📈'}`,
+        icon: savingsRate >= 20 ? '💚' : '⚠️',
+        actionable: savingsRate < 20
+      });
+    }
+    
+    // Spending trend
+    const last7Days = recentExpenses.filter(exp => exp.date >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
+    const weeklySpending = last7Days.reduce((sum, exp) => sum + exp.amount, 0);
+    const projectedMonthly = (weeklySpending / 7) * 30;
+    
+    if (projectedMonthly > totalExpenses * 1.2) {
+      insights.push({
+        type: 'warning',
+        title: 'Spending Acceleration',
+        message: `Your recent spending pace suggests ${formatCurrency(projectedMonthly)} monthly total`,
+        icon: '🚨',
+        actionable: true
+      });
+    }
+    
+    setFinancialInsights(insights);
+  }, [processedExpenses, processedIncome]);
+
+  // Budget limit checking
+  const checkBudgetLimits = useCallback(() => {
+    const alerts = [];
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const monthlyExpenses = processedExpenses.filter(exp => exp.date >= monthStart);
+    
+    const categorySpending = monthlyExpenses.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    Object.entries(settings.budgetLimits).forEach(([category, limit]) => {
+      const spent = categorySpending[category] || 0;
+      const percentage = (spent / limit) * 100;
+      
+      if (percentage >= 90) {
+        alerts.push({
+          category,
+          spent,
+          limit,
+          percentage,
+          type: percentage >= 100 ? 'exceeded' : 'warning',
+          message: percentage >= 100 
+            ? `Budget exceeded by ${formatCurrency(spent - limit)}`
+            : `${(100 - percentage).toFixed(0)}% budget remaining`
+        });
+      }
+    });
+    
+    setBudgetAlerts(alerts);
+  }, [processedExpenses, settings.budgetLimits]);
+
+  // Enhanced financial calculations
+  const calculateFinancialHealth = useCallback(() => {
+    const totalExpenses = processedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalIncome = processedIncome.reduce((sum, inc) => sum + inc.amount, 0);
+    
+    let score = 50; // Base score
+    
+    // Income vs Expenses (30 points)
+    if (totalIncome > 0) {
+      const savingsRate = ((totalIncome - totalExpenses) / totalIncome) * 100;
+      if (savingsRate >= 20) score += 30;
+      else if (savingsRate >= 10) score += 20;
+      else if (savingsRate >= 0) score += 10;
+      else score -= 20; // Spending more than earning
+    }
+    
+    // Emergency fund (25 points)
+    const monthlyExpenses = totalExpenses / 3; // Rough monthly estimate
+    const emergencyFundRatio = userBalance / (monthlyExpenses * 3);
+    if (emergencyFundRatio >= 1) score += 25;
+    else if (emergencyFundRatio >= 0.5) score += 15;
+    else if (emergencyFundRatio >= 0.25) score += 5;
+    else score -= 10;
+    
+    // Budget adherence (20 points)
+    const budgetScore = budgetAlerts.length === 0 ? 20 : Math.max(0, 20 - budgetAlerts.length * 5);
+    score += budgetScore;
+    
+    // Goal progress (15 points)
+    const goalProgress = goals.reduce((sum, goal) => sum + (goal.current / goal.target), 0) / goals.length;
+    score += Math.min(15, goalProgress * 15);
+    
+    // Regular saving habits (10 points)
+    const recentSavings = processedIncome.slice(0, 5).length - processedExpenses.slice(0, 5).length;
+    if (recentSavings > 0) score += 10;
+    
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }, [processedExpenses, processedIncome, userBalance, budgetAlerts, goals]);
+
+  // Update KPIs
+  const updateKPIs = useCallback(() => {
+    const totalIncome = processedIncome.reduce((sum, inc) => sum + inc.amount, 0);
+    const totalExpenses = processedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const netFlow = totalIncome - totalExpenses;
+    const healthScore = calculateFinancialHealth();
+    
+    setState(prev => ({
+      ...prev,
+      totalIncome,
+      totalExpenses,
+      netFlow,
+      healthScore
+    }));
+  }, [processedIncome, processedExpenses, calculateFinancialHealth]);
+
+  // Generate AI-powered recommendations
+  const generateAIRecommendations = useCallback(() => {
+    const recommendations = [];
+    const healthScore = calculateFinancialHealth();
+    
+    // Category spending analysis
+    const categoryTotals = processedExpenses.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topSpendingCategory = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number))[0];
+    
+    if (topSpendingCategory && (topSpendingCategory[1] as number) > settings.budgetLimits[topSpendingCategory[0]]) {
+      recommendations.push({
+        type: 'budget',
+        priority: 'high',
+        title: `Reduce ${topSpendingCategory[0]} spending`,
+        description: `You've spent $${(topSpendingCategory[1] as number).toFixed(2)} on ${topSpendingCategory[0]}, which exceeds your budget.`,
+        action: 'Set spending alerts or find alternatives'
+      });
+    }
+    
+    // Savings recommendations
+    if (healthScore < 60) {
+      recommendations.push({
+        type: 'savings',
+        priority: 'high',
+        title: 'Improve your financial health',
+        description: `Your financial health score is ${healthScore}/100. Focus on building emergency fund and reducing expenses.`,
+        action: 'Review your biggest expenses and look for savings opportunities'
+      });
+    }
+    
+    // Goal recommendations
+    goals.forEach(goal => {
+      const progress = (goal.current / goal.target) * 100;
+      if (progress < 25 && new Date(goal.targetDate) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)) {
+        recommendations.push({
+          type: 'goal',
+          priority: 'medium',
+          title: `Accelerate ${goal.name} progress`,
+          description: `You're at ${progress.toFixed(1)}% of your ${goal.name} goal with deadline approaching.`,
+          action: 'Consider increasing monthly contributions'
+        });
+      }
+    });
+    
+    setAiRecommendations(recommendations);
+  }, [calculateFinancialHealth, processedExpenses, settings.budgetLimits, goals]);
+
+  // Update KPIs and notifications when data changes
+  useEffect(() => {
     updateKPIs();
     generateNotifications();
-  }, [userBalance, expenses, income]);
+    generateFinancialInsights();
+    generateAIRecommendations();
+    checkBudgetLimits();
+  }, [userBalance, expenses, income, settings.budgetLimits, updateKPIs, generateFinancialInsights, generateAIRecommendations, checkBudgetLimits]);
 
   // Close notifications when clicking outside
   useEffect(() => {
@@ -410,57 +1051,25 @@ export default function Home() {
     }
   };
 
-  const fetchUserData = async () => {
-    try {
-      const response = await fetch('/api/user/balance');
-      const data = await response.json();
-      if (data.balance) {
-        setUserBalance(data.balance);
-        setState(prev => ({ ...prev, startBalance: data.balance }));
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    }
-  };
 
-  const fetchExpenses = async () => {
-    try {
-      const response = await fetch('/api/expenses');
-      const data = await response.json();
-      if (data.expenses) {
-        setExpenses(data.expenses);
-      }
-    } catch (error) {
-      console.error('Error fetching expenses:', error);
-    }
-  };
-
-  const fetchIncome = async () => {
-    try {
-      const response = await fetch('/api/income');
-      const data = await response.json();
-      if (data.income) {
-        setIncome(data.income);
-      }
-    } catch (error) {
-      console.error('Error fetching income:', error);
-    }
-  };
-
-  const fetchRecurringBills = async () => {
-    try {
-      const response = await fetch('/api/recurring');
-      const data = await response.json();
-      if (data.recurring) {
-        setRecurringBills(data.recurring);
-      }
-    } catch (error) {
-      console.error('Error fetching recurring bills:', error);
-    }
-  };
-
-  const handleExpenseSubmit = async (e: React.FormEvent) => {
+  // Enhanced form submission with loading states and validation
+  const handleExpenseSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!expenseForm.amount || parseFloat(expenseForm.amount) <= 0) {
+      setErrors(prev => ({ ...prev, form: 'Please enter a valid amount' }));
+      return;
+    }
+    
+    if (!expenseForm.description.trim()) {
+      setErrors(prev => ({ ...prev, form: 'Please enter a description' }));
+      return;
+    }
+    
+    setErrors(prev => ({ ...prev, form: null }));
+    setLoading(prev => ({ ...prev, creating: true }));
+    
     try {
       const isEditing = editingExpense !== null;
       const method = isEditing ? 'PUT' : 'POST';
@@ -468,13 +1077,13 @@ export default function Home() {
         ? JSON.stringify({
             id: editingExpense.id,
             amount: parseFloat(expenseForm.amount),
-            description: expenseForm.description,
+            description: expenseForm.description.trim(),
             category: expenseForm.category,
             date: expenseForm.date,
           })
         : JSON.stringify({
             amount: parseFloat(expenseForm.amount),
-            description: expenseForm.description,
+            description: expenseForm.description.trim(),
             category: expenseForm.category,
             date: expenseForm.date,
           });
@@ -487,36 +1096,43 @@ export default function Home() {
         body,
       });
       
-      const data = await response.json();
-      if (response.ok) {
-        if (isEditing) {
-          setExpenses(prev => prev.map(exp => 
-            exp.id === editingExpense.id ? data.expense : exp
-          ));
-          setEditingExpense(null);
-        } else {
-          setExpenses(prev => [data.expense, ...prev]);
-        }
-        
-        if (data.newBalance !== undefined) {
-          setUserBalance(data.newBalance);
-        }
-        setExpenseForm({
-          amount: '',
-          description: '',
-          category: 'food',
-          date: new Date().toISOString().split('T')[0]
-        });
-        setShowExpenseForm(false);
-        fetchUserData(); // Refresh balance
-      } else {
-        alert(data.error || `Failed to ${isEditing ? 'update' : 'add'} expense`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
+      
+      const data = await response.json();
+      
+      if (isEditing) {
+        setExpenses(prev => prev.map(exp => 
+          exp.id === editingExpense.id ? data.expense : exp
+        ));
+        setEditingExpense(null);
+        showToast('success', 'Expense Updated', 'Your expense has been updated successfully');
+      } else {
+        setExpenses(prev => [data.expense, ...prev]);
+        showToast('success', 'Expense Added', `Added ${formatCurrency(parseFloat(expenseForm.amount))} expense`);
+      }
+      
+      if (data.newBalance !== undefined) {
+        setUserBalance(data.newBalance);
+      }
+      
+      setExpenseForm({
+        amount: '',
+        description: '',
+        category: 'food',
+        date: new Date().toISOString().split('T')[0]
+      });
+      setShowExpenseForm(false);
+      fetchUserData(); // Refresh balance
     } catch (error) {
-      console.error(`Error ${editingExpense ? 'updating' : 'adding'} expense:`, error);
-      alert(`Failed to ${editingExpense ? 'update' : 'add'} expense`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setErrors(prev => ({ ...prev, form: `Failed to ${editingExpense ? 'update' : 'add'} expense: ${errorMessage}` }));
+      showToast('error', 'Error', `Failed to ${editingExpense ? 'update' : 'add'} expense`);
+    } finally {
+      setLoading(prev => ({ ...prev, creating: false }));
     }
-  };
+  }, [expenseForm, editingExpense, showToast, fetchUserData]);
 
   const markBillAsPaid = async (bill: any) => {
     if (!confirm(`Mark ${bill.name} as paid for ${formatCurrency(bill.amount)}?`)) {
@@ -910,19 +1526,104 @@ export default function Home() {
     });
   };
 
-  const updateKPIs = () => {
-    setState(prev => ({
-      ...prev,
-      netFlow: prev.totalIncome - prev.totalExpenses,
-    }));
-  };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: settings.currency,
     }).format(amount);
-  };
+  }, [settings.currency]);
+
+  // Advanced data export with multiple formats
+  const exportDataAdvanced = useCallback(async (format: 'csv' | 'json' | 'pdf' | 'excel') => {
+    const data = {
+      transactions: filteredTransactions,
+      summary: {
+        totalIncome: processedIncome.reduce((sum, inc) => sum + inc.amount, 0),
+        totalExpenses: processedExpenses.reduce((sum, exp) => sum + exp.amount, 0),
+        currentBalance: userBalance,
+        generatedAt: new Date().toISOString(),
+        dateRange: filters.dateRange,
+        categoryFilter: filters.category
+      },
+      budgetAnalysis: budgetAlerts,
+      financialInsights,
+      goals,
+      recurringBills
+    };
+
+    switch (format) {
+      case 'json':
+        const jsonBlob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        downloadFile(jsonBlob, `astral-money-export-${new Date().toISOString().split('T')[0]}.json`);
+        showToast('success', 'Export Complete', 'JSON export downloaded successfully');
+        break;
+        
+      case 'csv':
+        const csvHeaders = 'Date,Type,Description,Category,Amount\\n';
+        const csvRows = filteredTransactions.map(t => 
+          `${t.date.toISOString().split('T')[0]},${t.type},"${t.description?.replace(/"/g, '""')}",${t.category},${t.amount}`
+        ).join('\\n');
+        const csvBlob = new Blob([csvHeaders + csvRows], { type: 'text/csv' });
+        downloadFile(csvBlob, `astral-money-transactions-${new Date().toISOString().split('T')[0]}.csv`);
+        showToast('success', 'Export Complete', 'CSV export downloaded successfully');
+        break;
+        
+      case 'pdf':
+        showToast('info', 'PDF Export', 'PDF export feature coming soon! Use JSON or CSV for now.');
+        break;
+        
+      case 'excel':
+        showToast('info', 'Excel Export', 'Excel export feature coming soon! Use CSV for now.');
+        break;
+    }
+  }, [filteredTransactions, processedIncome, processedExpenses, userBalance, filters, budgetAlerts, financialInsights, goals, recurringBills, showToast]);
+
+  const downloadFile = useCallback((blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, []);
+
+
+
+  // Format date with user preference
+  const formatDate = useCallback((date: Date | string) => {
+    const d = new Date(date);
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    };
+    return d.toLocaleDateString('en-US', options);
+  }, []);
+
+  // Calculate category percentage
+  const getCategoryPercentage = useCallback((category: string) => {
+    const categoryTotal = processedExpenses
+      .filter(exp => exp.category === category)
+      .reduce((sum, exp) => sum + exp.amount, 0);
+    const totalExpenses = processedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    return totalExpenses > 0 ? (categoryTotal / totalExpenses) * 100 : 0;
+  }, [processedExpenses]);
+
+  // Enhanced search function
+  const handleSearch = useCallback((term: string) => {
+    setSearchTerm(term);
+  }, []);
+
+  // Enhanced filter function
+  const handleFilterChange = useCallback((filterType: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+  }, []);
 
   const showSection = (sectionId: string) => {
     setCurrentSection(sectionId);
@@ -1170,6 +1871,80 @@ export default function Home() {
 
   return (
     <div className="app-container">
+      {/* Toast Notifications */}
+      <div className="toast-container">
+        {toasts.map(toast => (
+          <Toast 
+            key={toast.id} 
+            notification={toast} 
+            onClose={() => removeToast(toast.id)} 
+          />
+        ))}
+      </div>
+
+      {/* Offline Indicator */}
+      {isOffline && (
+        <div className="fixed top-0 left-0 right-0 bg-orange-500 text-white text-center py-2 z-40">
+          ⚠️ You're offline. Some features may be limited.
+        </div>
+      )}
+
+      {/* Loading Overlay */}
+      {(loading.userData || loading.expenses || loading.income || loading.recurringBills) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center">
+            <LoadingSpinner size="large" />
+            <p className="mt-4 text-gray-600">Loading your financial data...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {Object.values(errors).some(error => error !== null) && (
+        <div className="fixed top-20 left-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 z-40">
+          <h4 className="text-red-800 font-semibold mb-2">⚠️ Some issues occurred:</h4>
+          <ul className="text-red-600 text-sm space-y-1">
+            {Object.entries(errors).map(([key, error]) => 
+              error && <li key={key}>• {key}: {error}</li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {/* Budget Alerts */}
+      {budgetAlerts.length > 0 && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-30">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg max-w-md">
+            <h4 className="text-yellow-800 font-semibold mb-2">💰 Budget Alerts</h4>
+            <div className="space-y-2">
+              {budgetAlerts.slice(0, 3).map((alert, index) => (
+                <div key={index} className="text-yellow-700 text-sm">
+                  <strong>{alert.category}:</strong> {alert.message}
+                </div>
+              ))}
+              {budgetAlerts.length > 3 && (
+                <p className="text-yellow-600 text-xs">+{budgetAlerts.length - 3} more alerts</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Indicator */}
+      {activeTooltip && (
+        <div className="fixed bottom-4 right-4 bg-gray-800 text-white rounded-lg p-3 text-sm z-30">
+          <h5 className="font-semibold mb-2">🚀 Keyboard Shortcuts</h5>
+          <div className="space-y-1">
+            <div>Ctrl+K: Search</div>
+            <div>Ctrl+N: New Expense</div>
+            <div>Ctrl+I: New Income</div>
+            <div>Ctrl+B: New Bill</div>
+            <div>Ctrl+S: Settings</div>
+            <div>ESC: Close modals</div>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -4612,3 +5387,47 @@ export default function Home() {
     </div>
   );
 }
+
+// Error Boundary Fallback Component
+function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
+  return (
+    <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+        <div className="text-red-500 text-6xl mb-4">⚠️</div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
+        <p className="text-gray-600 mb-6">We apologize for the inconvenience. Please try refreshing the page.</p>
+        <div className="space-y-3">
+          <button
+            onClick={resetErrorBoundary}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
+        <details className="mt-4 text-left">
+          <summary className="text-sm text-gray-500 cursor-pointer">Error Details</summary>
+          <pre className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded overflow-auto">
+            {error.message}
+          </pre>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+// Main Component Wrapper with Error Boundary
+function AstralMoneyApp() {
+  return (
+    <div>
+      <Home />
+    </div>
+  );
+}
+
+export default AstralMoneyApp;
