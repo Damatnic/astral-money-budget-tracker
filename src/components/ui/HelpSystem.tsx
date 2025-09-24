@@ -1,3 +1,433 @@
 'use client';
 
-import React, { useState, useRef, useEffect, createContext, useContext } from 'react';\nimport { useAppContext } from '@/contexts/AppContext';\n\ninterface TooltipProps {\n  content: string | React.ReactNode;\n  children: React.ReactNode;\n  position?: 'top' | 'bottom' | 'left' | 'right' | 'auto';\n  delay?: number;\n  disabled?: boolean;\n  className?: string;\n  maxWidth?: number;\n  showArrow?: boolean;\n}\n\ninterface HelpContextType {\n  isHelpMode: boolean;\n  toggleHelpMode: () => void;\n  showHelp: (key: string) => void;\n  hideHelp: () => void;\n}\n\nconst HelpContext = createContext<HelpContextType | undefined>(undefined);\n\n/**\n * Professional tooltip component with advanced positioning\n */\nexport function Tooltip({\n  content,\n  children,\n  position = 'auto',\n  delay = 300,\n  disabled = false,\n  className = '',\n  maxWidth = 300,\n  showArrow = true\n}: TooltipProps) {\n  const [isVisible, setIsVisible] = useState(false);\n  const [actualPosition, setActualPosition] = useState(position);\n  const [coords, setCoords] = useState({ x: 0, y: 0 });\n  \n  const triggerRef = useRef<HTMLDivElement>(null);\n  const tooltipRef = useRef<HTMLDivElement>(null);\n  const timeoutRef = useRef<NodeJS.Timeout>();\n\n  const calculatePosition = () => {\n    if (!triggerRef.current || !tooltipRef.current) return;\n    \n    const triggerRect = triggerRef.current.getBoundingClientRect();\n    const tooltipRect = tooltipRef.current.getBoundingClientRect();\n    const viewportWidth = window.innerWidth;\n    const viewportHeight = window.innerHeight;\n    \n    let finalPosition = position;\n    let x = 0;\n    let y = 0;\n    \n    // Auto-positioning logic\n    if (position === 'auto') {\n      const spaceTop = triggerRect.top;\n      const spaceBottom = viewportHeight - triggerRect.bottom;\n      const spaceLeft = triggerRect.left;\n      const spaceRight = viewportWidth - triggerRect.right;\n      \n      if (spaceTop >= tooltipRect.height + 10) {\n        finalPosition = 'top';\n      } else if (spaceBottom >= tooltipRect.height + 10) {\n        finalPosition = 'bottom';\n      } else if (spaceRight >= tooltipRect.width + 10) {\n        finalPosition = 'right';\n      } else {\n        finalPosition = 'left';\n      }\n    }\n    \n    // Calculate coordinates based on final position\n    switch (finalPosition) {\n      case 'top':\n        x = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;\n        y = triggerRect.top - tooltipRect.height - 10;\n        break;\n      case 'bottom':\n        x = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;\n        y = triggerRect.bottom + 10;\n        break;\n      case 'left':\n        x = triggerRect.left - tooltipRect.width - 10;\n        y = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;\n        break;\n      case 'right':\n        x = triggerRect.right + 10;\n        y = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;\n        break;\n    }\n    \n    // Viewport bounds correction\n    x = Math.max(10, Math.min(x, viewportWidth - tooltipRect.width - 10));\n    y = Math.max(10, Math.min(y, viewportHeight - tooltipRect.height - 10));\n    \n    setActualPosition(finalPosition);\n    setCoords({ x, y });\n  };\n\n  const handleMouseEnter = () => {\n    if (disabled) return;\n    \n    timeoutRef.current = setTimeout(() => {\n      setIsVisible(true);\n      setTimeout(calculatePosition, 0);\n    }, delay);\n  };\n\n  const handleMouseLeave = () => {\n    if (timeoutRef.current) {\n      clearTimeout(timeoutRef.current);\n    }\n    setIsVisible(false);\n  };\n\n  useEffect(() => {\n    return () => {\n      if (timeoutRef.current) {\n        clearTimeout(timeoutRef.current);\n      }\n    };\n  }, []);\n\n  const getArrowClasses = () => {\n    const base = 'absolute w-2 h-2 rotate-45';\n    switch (actualPosition) {\n      case 'top':\n        return `${base} -bottom-1 left-1/2 -translate-x-1/2 bg-gray-900 border-r border-b border-gray-700`;\n      case 'bottom':\n        return `${base} -top-1 left-1/2 -translate-x-1/2 bg-gray-900 border-l border-t border-gray-700`;\n      case 'left':\n        return `${base} -right-1 top-1/2 -translate-y-1/2 bg-gray-900 border-t border-r border-gray-700`;\n      case 'right':\n        return `${base} -left-1 top-1/2 -translate-y-1/2 bg-gray-900 border-b border-l border-gray-700`;\n      default:\n        return `${base} -bottom-1 left-1/2 -translate-x-1/2 bg-gray-900 border-r border-b border-gray-700`;\n    }\n  };\n\n  return (\n    <>\n      <div\n        ref={triggerRef}\n        onMouseEnter={handleMouseEnter}\n        onMouseLeave={handleMouseLeave}\n        className=\"inline-block\"\n      >\n        {children}\n      </div>\n      \n      {isVisible && (\n        <div\n          ref={tooltipRef}\n          className={`\n            fixed z-[9999] px-3 py-2 text-sm font-medium text-white\n            bg-gray-900 border border-gray-700 rounded-lg shadow-lg\n            transform transition-all duration-200 ease-out\n            animate-fadeInUp\n            ${className}\n          `}\n          style={{\n            left: coords.x,\n            top: coords.y,\n            maxWidth: maxWidth,\n          }}\n        >\n          {content}\n          {showArrow && <div className={getArrowClasses()} />}\n        </div>\n      )}\n    </>\n  );\n}\n\n/**\n * Comprehensive help content database\n */\nconst helpContent: Record<string, {\n  title: string;\n  content: React.ReactNode;\n  category: 'getting-started' | 'features' | 'advanced' | 'troubleshooting';\n  keywords: string[];\n}> = {\n  'dashboard-overview': {\n    title: 'Dashboard Overview',\n    content: (\n      <div className=\"space-y-3\">\n        <p>Your financial dashboard provides a comprehensive view of your money.</p>\n        <ul className=\"list-disc list-inside space-y-1 text-sm\">\n          <li><strong>Current Balance:</strong> Your total available money</li>\n          <li><strong>Monthly Income:</strong> All income for the current month</li>\n          <li><strong>Monthly Expenses:</strong> All expenses for the current month</li>\n          <li><strong>Financial Health Score:</strong> AI-powered assessment (0-100)</li>\n        </ul>\n      </div>\n    ),\n    category: 'getting-started',\n    keywords: ['dashboard', 'overview', 'balance', 'income', 'expenses']\n  },\n  'add-transaction': {\n    title: 'Adding Transactions',\n    content: (\n      <div className=\"space-y-3\">\n        <p>Track your money flow with expenses and income:</p>\n        <ul className=\"list-disc list-inside space-y-1 text-sm\">\n          <li>Click <strong>\"+\"</strong> or use <kbd>Ctrl+E</kbd> for expenses</li>\n          <li>Use <kbd>Ctrl+I</kbd> for income</li>\n          <li>Categories help organize your spending</li>\n          <li>Add descriptions for better tracking</li>\n        </ul>\n      </div>\n    ),\n    category: 'getting-started',\n    keywords: ['transaction', 'add', 'expense', 'income', 'category']\n  },\n  'recurring-bills': {\n    title: 'Recurring Bills',\n    content: (\n      <div className=\"space-y-3\">\n        <p>Automate tracking of regular payments:</p>\n        <ul className=\"list-disc list-inside space-y-1 text-sm\">\n          <li>Set up monthly, weekly, or yearly bills</li>\n          <li>Get notifications before due dates</li>\n          <li>Track payment history automatically</li>\n          <li>Budget more accurately with predictable expenses</li>\n        </ul>\n      </div>\n    ),\n    category: 'features',\n    keywords: ['recurring', 'bills', 'automatic', 'monthly', 'subscription']\n  },\n  'financial-health': {\n    title: 'Financial Health Score',\n    content: (\n      <div className=\"space-y-3\">\n        <p>AI-powered analysis of your financial wellness:</p>\n        <div className=\"grid grid-cols-2 gap-2 text-xs\">\n          <div className=\"bg-green-100 p-2 rounded\">\n            <strong>80-100:</strong> Excellent\n          </div>\n          <div className=\"bg-yellow-100 p-2 rounded\">\n            <strong>60-79:</strong> Good\n          </div>\n          <div className=\"bg-orange-100 p-2 rounded\">\n            <strong>40-59:</strong> Fair\n          </div>\n          <div className=\"bg-red-100 p-2 rounded\">\n            <strong>0-39:</strong> Needs Attention\n          </div>\n        </div>\n        <p className=\"text-sm\">Based on spending habits, savings rate, and debt levels.</p>\n      </div>\n    ),\n    category: 'features',\n    keywords: ['health', 'score', 'ai', 'analysis', 'wellness']\n  },\n  'keyboard-shortcuts': {\n    title: 'Keyboard Shortcuts',\n    content: (\n      <div className=\"space-y-2\">\n        <div className=\"grid grid-cols-2 gap-2 text-xs\">\n          <div><kbd>Ctrl+K</kbd></div>\n          <div>Quick Actions</div>\n          <div><kbd>Ctrl+E</kbd></div>\n          <div>Add Expense</div>\n          <div><kbd>Ctrl+I</kbd></div>\n          <div>Add Income</div>\n          <div><kbd>Ctrl+B</kbd></div>\n          <div>Add Bill</div>\n          <div><kbd>Ctrl+Z</kbd></div>\n          <div>Undo</div>\n          <div><kbd>Ctrl+Y</kbd></div>\n          <div>Redo</div>\n        </div>\n      </div>\n    ),\n    category: 'advanced',\n    keywords: ['shortcuts', 'keyboard', 'hotkeys', 'quick']\n  },\n  'data-export': {\n    title: 'Exporting Your Data',\n    content: (\n      <div className=\"space-y-3\">\n        <p>Export your financial data for backup or analysis:</p>\n        <ul className=\"list-disc list-inside space-y-1 text-sm\">\n          <li><strong>CSV:</strong> For spreadsheet analysis</li>\n          <li><strong>PDF:</strong> For printing or sharing</li>\n          <li><strong>JSON:</strong> For technical backup</li>\n        </ul>\n        <p className=\"text-sm\">All exports include transactions, bills, and categories.</p>\n      </div>\n    ),\n    category: 'advanced',\n    keywords: ['export', 'data', 'backup', 'csv', 'pdf']\n  }\n};\n\n/**\n * Help system provider\n */\nexport function HelpProvider({ children }: { children: React.ReactNode }) {\n  const [isHelpMode, setIsHelpMode] = useState(false);\n  const [activeHelp, setActiveHelp] = useState<string | null>(null);\n\n  const toggleHelpMode = () => {\n    setIsHelpMode(!isHelpMode);\n    if (!isHelpMode) {\n      setActiveHelp(null);\n    }\n  };\n\n  const showHelp = (key: string) => {\n    setActiveHelp(key);\n  };\n\n  const hideHelp = () => {\n    setActiveHelp(null);\n  };\n\n  return (\n    <HelpContext.Provider value={{ isHelpMode, toggleHelpMode, showHelp, hideHelp }}>\n      {children}\n      {activeHelp && <HelpModal helpKey={activeHelp} onClose={hideHelp} />}\n    </HelpContext.Provider>\n  );\n}\n\n/**\n * Help modal component\n */\nfunction HelpModal({ helpKey, onClose }: { helpKey: string; onClose: () => void }) {\n  const help = helpContent[helpKey];\n  \n  if (!help) return null;\n\n  return (\n    <div className=\"fixed inset-0 z-[10000] flex items-center justify-center p-4\">\n      <div className=\"absolute inset-0 bg-black/50 backdrop-blur-sm\" onClick={onClose} />\n      <div className=\"relative bg-white rounded-xl shadow-2xl max-w-md w-full border border-gray-200\">\n        <div className=\"p-6\">\n          <div className=\"flex items-center justify-between mb-4\">\n            <h3 className=\"text-lg font-semibold text-gray-900\">{help.title}</h3>\n            <button\n              onClick={onClose}\n              className=\"p-1 text-gray-400 hover:text-gray-600 transition-colors\"\n            >\n              <XIcon className=\"w-5 h-5\" />\n            </button>\n          </div>\n          <div className=\"text-gray-700\">\n            {help.content}\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n\n/**\n * Comprehensive help center component\n */\nexport function HelpCenter({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {\n  const [searchQuery, setSearchQuery] = useState('');\n  const [selectedCategory, setSelectedCategory] = useState<string>('all');\n  \n  const filteredHelp = Object.entries(helpContent).filter(([key, help]) => {\n    const matchesSearch = searchQuery === '' || \n      help.title.toLowerCase().includes(searchQuery.toLowerCase()) ||\n      help.keywords.some(keyword => keyword.toLowerCase().includes(searchQuery.toLowerCase()));\n    \n    const matchesCategory = selectedCategory === 'all' || help.category === selectedCategory;\n    \n    return matchesSearch && matchesCategory;\n  });\n\n  const categories = [\n    { id: 'all', label: 'All Topics', count: Object.keys(helpContent).length },\n    { id: 'getting-started', label: 'Getting Started', count: 0 },\n    { id: 'features', label: 'Features', count: 0 },\n    { id: 'advanced', label: 'Advanced', count: 0 },\n    { id: 'troubleshooting', label: 'Troubleshooting', count: 0 }\n  ];\n\n  // Calculate counts\n  Object.values(helpContent).forEach(help => {\n    const category = categories.find(cat => cat.id === help.category);\n    if (category) category.count++;\n  });\n\n  if (!isOpen) return null;\n\n  return (\n    <div className=\"fixed inset-0 z-[10000] flex\">\n      <div className=\"absolute inset-0 bg-black/50 backdrop-blur-sm\" onClick={onClose} />\n      <div className=\"relative ml-auto bg-white w-full max-w-4xl shadow-2xl overflow-hidden\">\n        <div className=\"flex h-full\">\n          {/* Sidebar */}\n          <div className=\"w-64 bg-gray-50 border-r border-gray-200 p-6\">\n            <div className=\"flex items-center justify-between mb-6\">\n              <h2 className=\"text-xl font-bold text-gray-900\">Help Center</h2>\n              <button\n                onClick={onClose}\n                className=\"p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100\"\n              >\n                <XIcon className=\"w-5 h-5\" />\n              </button>\n            </div>\n            \n            <div className=\"space-y-4\">\n              <div>\n                <label className=\"block text-sm font-medium text-gray-700 mb-2\">\n                  Search topics\n                </label>\n                <div className=\"relative\">\n                  <SearchIcon className=\"absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4\" />\n                  <input\n                    type=\"text\"\n                    value={searchQuery}\n                    onChange={(e) => setSearchQuery(e.target.value)}\n                    placeholder=\"Search help topics...\"\n                    className=\"w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm\"\n                  />\n                </div>\n              </div>\n              \n              <div>\n                <label className=\"block text-sm font-medium text-gray-700 mb-2\">\n                  Categories\n                </label>\n                <div className=\"space-y-1\">\n                  {categories.map(category => (\n                    <button\n                      key={category.id}\n                      onClick={() => setSelectedCategory(category.id)}\n                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${\n                        selectedCategory === category.id\n                          ? 'bg-blue-100 text-blue-900 font-medium'\n                          : 'text-gray-600 hover:bg-gray-100'\n                      }`}\n                    >\n                      <div className=\"flex items-center justify-between\">\n                        <span>{category.label}</span>\n                        <span className=\"text-xs bg-gray-200 px-2 py-1 rounded-full\">\n                          {category.count}\n                        </span>\n                      </div>\n                    </button>\n                  ))}\n                </div>\n              </div>\n            </div>\n          </div>\n          \n          {/* Content */}\n          <div className=\"flex-1 p-6 overflow-y-auto\">\n            {filteredHelp.length === 0 ? (\n              <div className=\"text-center py-12\">\n                <SearchIcon className=\"w-12 h-12 text-gray-300 mx-auto mb-4\" />\n                <h3 className=\"text-lg font-medium text-gray-900 mb-2\">No results found</h3>\n                <p className=\"text-gray-500\">Try adjusting your search or browse categories</p>\n              </div>\n            ) : (\n              <div className=\"space-y-6\">\n                {filteredHelp.map(([key, help]) => (\n                  <div key={key} className=\"bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow\">\n                    <div className=\"flex items-start justify-between mb-3\">\n                      <h3 className=\"text-lg font-semibold text-gray-900\">{help.title}</h3>\n                      <span className=\"px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full capitalize\">\n                        {help.category.replace('-', ' ')}\n                      </span>\n                    </div>\n                    <div className=\"text-gray-700\">\n                      {help.content}\n                    </div>\n                    <div className=\"flex flex-wrap gap-2 mt-4\">\n                      {help.keywords.map(keyword => (\n                        <span\n                          key={keyword}\n                          className=\"px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full\"\n                        >\n                          {keyword}\n                        </span>\n                      ))}\n                    </div>\n                  </div>\n                ))}\n              </div>\n            )}\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n\n/**\n * Hook to use help context\n */\nexport function useHelp() {\n  const context = useContext(HelpContext);\n  if (!context) {\n    throw new Error('useHelp must be used within HelpProvider');\n  }\n  return context;\n}\n\n/**\n * Quick help button component\n */\nexport function HelpButton({ className = '' }: { className?: string }) {\n  const [showCenter, setShowCenter] = useState(false);\n  \n  return (\n    <>\n      <Tooltip content=\"Help & Support (F1)\">\n        <button\n          onClick={() => setShowCenter(true)}\n          className={`p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 ${className}`}\n          aria-label=\"Open help center\"\n        >\n          <QuestionMarkIcon className=\"w-5 h-5\" />\n        </button>\n      </Tooltip>\n      \n      <HelpCenter isOpen={showCenter} onClose={() => setShowCenter(false)} />\n    </>\n  );\n}\n\n// Icon Components\nconst XIcon = ({ className }: { className?: string }) => (\n  <svg className={className} fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n    <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M6 18L18 6M6 6l12 12\" />\n  </svg>\n);\n\nconst SearchIcon = ({ className }: { className?: string }) => (\n  <svg className={className} fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n    <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\" />\n  </svg>\n);\n\nconst QuestionMarkIcon = ({ className }: { className?: string }) => (\n  <svg className={className} fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\">\n    <path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\" />\n  </svg>\n);\n\nexport default Tooltip;
+import React, { useState, useRef, useEffect, createContext, useContext } from 'react';
+
+interface TooltipProps {
+  content: string | React.ReactNode;
+  children: React.ReactNode;
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'auto';
+  delay?: number;
+  disabled?: boolean;
+  className?: string;
+  maxWidth?: number;
+  showArrow?: boolean;
+}
+
+interface HelpContextType {
+  isHelpMode: boolean;
+  toggleHelpMode: () => void;
+  showHelp: (key: string) => void;
+  hideHelp: () => void;
+}
+
+const HelpContext = createContext<HelpContextType | undefined>(undefined);
+
+/**
+ * Professional tooltip component with advanced positioning
+ */
+export function Tooltip({
+  content,
+  children,
+  position = 'auto',
+  delay = 300,
+  disabled = false,
+  className = '',
+  maxWidth = 300,
+  showArrow = true
+}: TooltipProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [actualPosition, setActualPosition] = useState(position);
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  const calculatePosition = () => {
+    if (!triggerRef.current || !tooltipRef.current) return;
+    
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let finalPosition = position;
+    let x = 0;
+    let y = 0;
+
+    // Auto positioning logic
+    if (position === 'auto') {
+      const spaceTop = triggerRect.top;
+      const spaceBottom = viewportHeight - triggerRect.bottom;
+      const spaceLeft = triggerRect.left;
+      const spaceRight = viewportWidth - triggerRect.right;
+      
+      if (spaceTop > tooltipRect.height + 10) {
+        finalPosition = 'top';
+      } else if (spaceBottom > tooltipRect.height + 10) {
+        finalPosition = 'bottom';
+      } else if (spaceRight > tooltipRect.width + 10) {
+        finalPosition = 'right';
+      } else if (spaceLeft > tooltipRect.width + 10) {
+        finalPosition = 'left';
+      } else {
+        finalPosition = 'bottom'; // fallback
+      }
+    }
+
+    // Calculate coordinates based on final position
+    switch (finalPosition) {
+      case 'top':
+        x = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
+        y = triggerRect.top - tooltipRect.height - 8;
+        break;
+      case 'bottom':
+        x = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
+        y = triggerRect.bottom + 8;
+        break;
+      case 'left':
+        x = triggerRect.left - tooltipRect.width - 8;
+        y = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
+        break;
+      case 'right':
+        x = triggerRect.right + 8;
+        y = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
+        break;
+    }
+
+    // Ensure tooltip stays within viewport
+    x = Math.max(8, Math.min(x, viewportWidth - tooltipRect.width - 8));
+    y = Math.max(8, Math.min(y, viewportHeight - tooltipRect.height - 8));
+
+    setActualPosition(finalPosition);
+    setCoords({ x, y });
+  };
+
+  const showTooltip = () => {
+    if (disabled) return;
+    
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      setIsVisible(true);
+      // Calculate position after tooltip is rendered
+      setTimeout(calculatePosition, 0);
+    }, delay);
+  };
+
+  const hideTooltip = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsVisible(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      calculatePosition();
+    }
+  }, [isVisible, content]);
+
+  return (
+    <>
+      <div
+        ref={triggerRef}
+        onMouseEnter={showTooltip}
+        onMouseLeave={hideTooltip}
+        onFocus={showTooltip}
+        onBlur={hideTooltip}
+        className={`inline-block ${className}`}
+      >
+        {children}
+      </div>
+      
+      {isVisible && (
+        <div
+          ref={tooltipRef}
+          className="fixed z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg pointer-events-none"
+          style={{
+            left: coords.x,
+            top: coords.y,
+            maxWidth: `${maxWidth}px`,
+          }}
+        >
+          {content}
+          {showArrow && (
+            <div
+              className={`absolute w-2 h-2 bg-gray-900 transform rotate-45 ${
+                actualPosition === 'top' ? 'bottom-[-4px] left-1/2 -translate-x-1/2' :
+                actualPosition === 'bottom' ? 'top-[-4px] left-1/2 -translate-x-1/2' :
+                actualPosition === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' :
+                'left-[-4px] top-1/2 -translate-y-1/2'
+              }`}
+            />
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * Help Provider component
+ */
+export function HelpProvider({ children }: { children: React.ReactNode }) {
+  const [isHelpMode, setIsHelpMode] = useState(false);
+  const [activeHelp, setActiveHelp] = useState<string | null>(null);
+
+  const toggleHelpMode = () => setIsHelpMode(!isHelpMode);
+  const showHelp = (key: string) => setActiveHelp(key);
+  const hideHelp = () => setActiveHelp(null);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'F1') {
+        event.preventDefault();
+        toggleHelpMode();
+      } else if (event.key === 'Escape' && isHelpMode) {
+        setIsHelpMode(false);
+        hideHelp();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isHelpMode]);
+
+  return (
+    <HelpContext.Provider value={{
+      isHelpMode,
+      toggleHelpMode,
+      showHelp,
+      hideHelp
+    }}>
+      {children}
+      {isHelpMode && (
+        <div className="fixed inset-0 bg-blue-500/20 z-40 pointer-events-none">
+          <div className="absolute top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
+            Help Mode - Press F1 to exit
+          </div>
+        </div>
+      )}
+    </HelpContext.Provider>
+  );
+}
+
+/**
+ * Help Center Modal
+ */
+export function HelpCenter({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  if (!isOpen) return null;
+
+  const helpContent = {
+    'getting-started': {
+      title: 'Getting Started',
+      category: 'basics',
+      content: 'Learn the basics of using Astral Money to track your finances.',
+      keywords: ['start', 'begin', 'basics', 'intro']
+    },
+    'add-transaction': {
+      title: 'Adding Transactions',
+      category: 'transactions',
+      content: 'Add income and expense transactions to track your money flow.',
+      keywords: ['add', 'transaction', 'income', 'expense']
+    },
+    'recurring-bills': {
+      title: 'Recurring Bills',
+      category: 'bills',
+      content: 'Set up and manage recurring bills and subscriptions.',
+      keywords: ['recurring', 'bills', 'subscriptions', 'repeat']
+    },
+    'reports': {
+      title: 'Financial Reports',
+      category: 'reports',
+      content: 'Generate and view detailed financial reports and analytics.',
+      keywords: ['reports', 'analytics', 'insights', 'graphs']
+    }
+  };
+
+  const categories = [
+    { id: 'all', label: 'All Topics', count: Object.keys(helpContent).length },
+    { id: 'basics', label: 'Basics', count: 1 },
+    { id: 'transactions', label: 'Transactions', count: 1 },
+    { id: 'bills', label: 'Bills', count: 1 },
+    { id: 'reports', label: 'Reports', count: 1 }
+  ];
+
+  const filteredHelp = Object.entries(helpContent).filter(([key, help]) => {
+    const matchesSearch = searchTerm === '' || 
+      help.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      help.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      help.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesCategory = selectedCategory === 'all' || help.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Help Center</h2>
+            <p className="text-gray-500 mt-1">Find answers and learn how to use Astral Money</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+            aria-label="Close help center"
+          >
+            <XIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
+            {/* Search */}
+            <div className="p-4">
+              <div className="relative">
+                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search help..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Categories */}
+            <div className="flex-1 p-4">
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Categories</h3>
+                <div className="space-y-1">
+                  {categories.map(category => (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        selectedCategory === category.id
+                          ? 'bg-blue-100 text-blue-900 font-medium'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{category.label}</span>
+                        <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                          {category.count}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            {filteredHelp.length === 0 ? (
+              <div className="text-center py-12">
+                <SearchIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No results found</h3>
+                <p className="text-gray-500">Try adjusting your search or browse categories</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {filteredHelp.map(([key, help]) => (
+                  <div key={key} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">{help.title}</h3>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full capitalize">
+                        {help.category.replace('-', ' ')}
+                      </span>
+                    </div>
+                    <div className="text-gray-700">
+                      {help.content}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {help.keywords.map(keyword => (
+                        <span
+                          key={keyword}
+                          className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
+                        >
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Hook to use help context
+ */
+export function useHelp() {
+  const context = useContext(HelpContext);
+  if (!context) {
+    throw new Error('useHelp must be used within HelpProvider');
+  }
+  return context;
+}
+
+/**
+ * Quick help button component
+ */
+export function HelpButton({ className = '' }: { className?: string }) {
+  const [showCenter, setShowCenter] = useState(false);
+  
+  return (
+    <>
+      <Tooltip content="Help & Support (F1)">
+        <button
+          onClick={() => setShowCenter(true)}
+          className={`p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 ${className}`}
+          aria-label="Open help center"
+        >
+          <QuestionMarkIcon className="w-5 h-5" />
+        </button>
+      </Tooltip>
+      
+      <HelpCenter isOpen={showCenter} onClose={() => setShowCenter(false)} />
+    </>
+  );
+}
+
+// Icon Components
+const XIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const SearchIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const QuestionMarkIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+export default Tooltip;

@@ -1,1 +1,281 @@
-/**\n * Advanced Performance Monitoring and Error Logging System\n * Provides comprehensive tracking of application performance and errors\n */\n\n// Types for monitoring data\ninterface PerformanceMetric {\n  id: string;\n  name: string;\n  value: number;\n  timestamp: number;\n  tags: Record<string, string>;\n  metadata?: Record<string, any>;\n}\n\ninterface ErrorLog {\n  id: string;\n  message: string;\n  stack?: string;\n  level: 'error' | 'warning' | 'info' | 'debug';\n  timestamp: number;\n  userId?: string;\n  sessionId: string;\n  url: string;\n  userAgent: string;\n  metadata: Record<string, any>;\n  componentStack?: string;\n  errorBoundary?: string;\n}\n\ninterface UserAction {\n  id: string;\n  action: string;\n  component: string;\n  timestamp: number;\n  sessionId: string;\n  duration?: number;\n  metadata: Record<string, any>;\n}\n\ninterface WebVital {\n  name: 'CLS' | 'FID' | 'FCP' | 'LCP' | 'TTFB';\n  value: number;\n  rating: 'good' | 'needs-improvement' | 'poor';\n  timestamp: number;\n}\n\n/**\n * Performance monitoring class\n */\nexport class PerformanceMonitor {\n  private static instance: PerformanceMonitor;\n  private metrics: PerformanceMetric[] = [];\n  private observers: PerformanceObserver[] = [];\n  private sessionId: string;\n  private startTime: number;\n  private isMonitoring: boolean = false;\n\n  private constructor() {\n    this.sessionId = this.generateId();\n    this.startTime = performance.now();\n    this.initializeObservers();\n  }\n\n  static getInstance(): PerformanceMonitor {\n    if (!PerformanceMonitor.instance) {\n      PerformanceMonitor.instance = new PerformanceMonitor();\n    }\n    return PerformanceMonitor.instance;\n  }\n\n  /**\n   * Start monitoring performance\n   */\n  startMonitoring(): void {\n    if (typeof window === 'undefined' || this.isMonitoring) return;\n    \n    this.isMonitoring = true;\n    console.log('🔍 Performance monitoring started');\n    \n    // Monitor Web Vitals\n    this.observeWebVitals();\n    \n    // Monitor network requests\n    this.observeNetworkRequests();\n    \n    // Monitor long tasks\n    this.observeLongTasks();\n    \n    // Monitor memory usage\n    this.observeMemoryUsage();\n    \n    // Set up periodic reporting\n    this.setupPeriodicReporting();\n  }\n\n  /**\n   * Record a custom metric\n   */\n  recordMetric(\n    name: string,\n    value: number,\n    tags: Record<string, string> = {},\n    metadata?: Record<string, any>\n  ): void {\n    const metric: PerformanceMetric = {\n      id: this.generateId(),\n      name,\n      value,\n      timestamp: Date.now(),\n      tags: {\n        sessionId: this.sessionId,\n        ...tags,\n      },\n      metadata,\n    };\n\n    this.metrics.push(metric);\n    this.limitMetricsStorage();\n    \n    // Console log for development\n    if (process.env.NODE_ENV === 'development') {\n      console.log(`📊 Metric: ${name} = ${value}`, tags);\n    }\n  }\n\n  /**\n   * Time a function execution\n   */\n  async timeFunction<T>(\n    name: string,\n    fn: () => Promise<T> | T,\n    tags?: Record<string, string>\n  ): Promise<T> {\n    const startTime = performance.now();\n    \n    try {\n      const result = await fn();\n      const duration = performance.now() - startTime;\n      \n      this.recordMetric(`${name}_duration`, duration, {\n        status: 'success',\n        ...tags,\n      });\n      \n      return result;\n    } catch (error) {\n      const duration = performance.now() - startTime;\n      \n      this.recordMetric(`${name}_duration`, duration, {\n        status: 'error',\n        ...tags,\n      });\n      \n      throw error;\n    }\n  }\n\n  /**\n   * Start timing an operation\n   */\n  startTimer(name: string, tags?: Record<string, string>): () => void {\n    const startTime = performance.now();\n    \n    return () => {\n      const duration = performance.now() - startTime;\n      this.recordMetric(`${name}_duration`, duration, tags);\n    };\n  }\n\n  /**\n   * Get current performance metrics\n   */\n  getMetrics(filter?: { name?: string; tags?: Record<string, string> }): PerformanceMetric[] {\n    let filtered = this.metrics;\n    \n    if (filter?.name) {\n      filtered = filtered.filter(m => m.name.includes(filter.name!));\n    }\n    \n    if (filter?.tags) {\n      filtered = filtered.filter(m => \n        Object.entries(filter.tags!).every(\n          ([key, value]) => m.tags[key] === value\n        )\n      );\n    }\n    \n    return filtered.sort((a, b) => b.timestamp - a.timestamp);\n  }\n\n  /**\n   * Get performance summary\n   */\n  getPerformanceSummary(): {\n    sessionDuration: number;\n    totalMetrics: number;\n    averageResponseTime: number;\n    errorRate: number;\n    memoryUsage?: number;\n    webVitals: Record<string, any>;\n  } {\n    const sessionDuration = performance.now() - this.startTime;\n    const responseTimeMetrics = this.metrics.filter(m => m.name.includes('_duration'));\n    const errorMetrics = this.metrics.filter(m => m.tags.status === 'error');\n    \n    const averageResponseTime = responseTimeMetrics.length > 0\n      ? responseTimeMetrics.reduce((sum, m) => sum + m.value, 0) / responseTimeMetrics.length\n      : 0;\n    \n    const errorRate = this.metrics.length > 0\n      ? (errorMetrics.length / this.metrics.length) * 100\n      : 0;\n\n    return {\n      sessionDuration,\n      totalMetrics: this.metrics.length,\n      averageResponseTime,\n      errorRate,\n      memoryUsage: this.getCurrentMemoryUsage(),\n      webVitals: this.getWebVitalsSummary(),\n    };\n  }\n\n  /**\n   * Initialize performance observers\n   */\n  private initializeObservers(): void {\n    if (typeof window === 'undefined') return;\n    \n    // Navigation timing\n    if ('PerformanceObserver' in window) {\n      try {\n        const navigationObserver = new PerformanceObserver((list) => {\n          const entries = list.getEntries();\n          entries.forEach(entry => {\n            if (entry.entryType === 'navigation') {\n              this.processNavigationEntry(entry as PerformanceNavigationTiming);\n            }\n          });\n        });\n        \n        navigationObserver.observe({ entryTypes: ['navigation'] });\n        this.observers.push(navigationObserver);\n      } catch (error) {\n        console.warn('Navigation timing observer not supported');\n      }\n    }\n  }\n\n  /**\n   * Observe Web Vitals\n   */\n  private observeWebVitals(): void {\n    if (typeof window === 'undefined') return;\n\n    // Largest Contentful Paint (LCP)\n    if ('PerformanceObserver' in window) {\n      try {\n        const lcpObserver = new PerformanceObserver((list) => {\n          const entries = list.getEntries();\n          const lastEntry = entries[entries.length - 1] as any;\n          \n          this.recordMetric('web_vital_lcp', lastEntry.startTime, {\n            rating: this.getRating('LCP', lastEntry.startTime),\n          });\n        });\n        \n        lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });\n        this.observers.push(lcpObserver);\n      } catch (error) {\n        console.warn('LCP observer not supported');\n      }\n    }\n\n    // First Input Delay (FID)\n    if ('PerformanceObserver' in window) {\n      try {\n        const fidObserver = new PerformanceObserver((list) => {\n          const entries = list.getEntries();\n          entries.forEach((entry: any) => {\n            this.recordMetric('web_vital_fid', entry.processingStart - entry.startTime, {\n              rating: this.getRating('FID', entry.processingStart - entry.startTime),\n            });\n          });\n        });\n        \n        fidObserver.observe({ entryTypes: ['first-input'] });\n        this.observers.push(fidObserver);\n      } catch (error) {\n        console.warn('FID observer not supported');\n      }\n    }\n\n    // Cumulative Layout Shift (CLS)\n    if ('PerformanceObserver' in window) {\n      try {\n        let clsValue = 0;\n        const clsObserver = new PerformanceObserver((list) => {\n          const entries = list.getEntries();\n          entries.forEach((entry: any) => {\n            if (!entry.hadRecentInput) {\n              clsValue += entry.value;\n            }\n          });\n          \n          this.recordMetric('web_vital_cls', clsValue, {\n            rating: this.getRating('CLS', clsValue),\n          });\n        });\n        \n        clsObserver.observe({ entryTypes: ['layout-shift'] });\n        this.observers.push(clsObserver);\n      } catch (error) {\n        console.warn('CLS observer not supported');\n      }\n    }\n  }\n\n  /**\n   * Observe network requests\n   */\n  private observeNetworkRequests(): void {\n    if (typeof window === 'undefined') return;\n\n    if ('PerformanceObserver' in window) {\n      try {\n        const networkObserver = new PerformanceObserver((list) => {\n          const entries = list.getEntries();\n          entries.forEach(entry => {\n            if (entry.entryType === 'resource') {\n              this.processNetworkEntry(entry as PerformanceResourceTiming);\n            }\n          });\n        });\n        \n        networkObserver.observe({ entryTypes: ['resource'] });\n        this.observers.push(networkObserver);\n      } catch (error) {\n        console.warn('Network observer not supported');\n      }\n    }\n  }\n\n  /**\n   * Observe long tasks\n   */\n  private observeLongTasks(): void {\n    if (typeof window === 'undefined') return;\n\n    if ('PerformanceObserver' in window) {\n      try {\n        const longTaskObserver = new PerformanceObserver((list) => {\n          const entries = list.getEntries();\n          entries.forEach(entry => {\n            this.recordMetric('long_task', entry.duration, {\n              type: 'performance',\n              severity: entry.duration > 100 ? 'high' : 'medium',\n            });\n          });\n        });\n        \n        longTaskObserver.observe({ entryTypes: ['longtask'] });\n        this.observers.push(longTaskObserver);\n      } catch (error) {\n        console.warn('Long task observer not supported');\n      }\n    }\n  }\n\n  /**\n   * Observe memory usage\n   */\n  private observeMemoryUsage(): void {\n    if (typeof window === 'undefined') return;\n\n    const recordMemoryUsage = () => {\n      const memoryUsage = this.getCurrentMemoryUsage();\n      if (memoryUsage !== undefined) {\n        this.recordMetric('memory_usage', memoryUsage, { type: 'memory' });\n      }\n    };\n\n    // Record initial memory usage\n    recordMemoryUsage();\n\n    // Record memory usage every 30 seconds\n    setInterval(recordMemoryUsage, 30000);\n  }\n\n  /**\n   * Get current memory usage\n   */\n  private getCurrentMemoryUsage(): number | undefined {\n    if (typeof window !== 'undefined' && 'performance' in window && 'memory' in performance) {\n      const memory = (performance as any).memory;\n      return memory.usedJSHeapSize;\n    }\n    return undefined;\n  }\n\n  /**\n   * Process navigation entry\n   */\n  private processNavigationEntry(entry: PerformanceNavigationTiming): void {\n    this.recordMetric('page_load_time', entry.loadEventEnd - entry.navigationStart);\n    this.recordMetric('dom_content_loaded', entry.domContentLoadedEventEnd - entry.navigationStart);\n    this.recordMetric('time_to_first_byte', entry.responseStart - entry.navigationStart);\n  }\n\n  /**\n   * Process network entry\n   */\n  private processNetworkEntry(entry: PerformanceResourceTiming): void {\n    const url = new URL(entry.name);\n    \n    // Only track API calls\n    if (url.pathname.startsWith('/api/')) {\n      this.recordMetric('api_request_duration', entry.responseEnd - entry.requestStart, {\n        endpoint: url.pathname,\n        method: 'unknown', // This would need to be tracked separately\n      });\n    }\n  }\n\n  /**\n   * Get Web Vitals rating\n   */\n  private getRating(metric: string, value: number): 'good' | 'needs-improvement' | 'poor' {\n    const thresholds = {\n      LCP: { good: 2500, poor: 4000 },\n      FID: { good: 100, poor: 300 },\n      CLS: { good: 0.1, poor: 0.25 },\n    };\n\n    const threshold = thresholds[metric as keyof typeof thresholds];\n    if (!threshold) return 'good';\n\n    if (value <= threshold.good) return 'good';\n    if (value <= threshold.poor) return 'needs-improvement';\n    return 'poor';\n  }\n\n  /**\n   * Get Web Vitals summary\n   */\n  private getWebVitalsSummary(): Record<string, any> {\n    const webVitalMetrics = this.metrics.filter(m => m.name.startsWith('web_vital_'));\n    const summary: Record<string, any> = {};\n\n    webVitalMetrics.forEach(metric => {\n      const vitalName = metric.name.replace('web_vital_', '').toUpperCase();\n      summary[vitalName] = {\n        value: metric.value,\n        rating: metric.tags.rating,\n        timestamp: metric.timestamp,\n      };\n    });\n\n    return summary;\n  }\n\n  /**\n   * Setup periodic reporting\n   */\n  private setupPeriodicReporting(): void {\n    // Report metrics every 5 minutes\n    setInterval(() => {\n      const summary = this.getPerformanceSummary();\n      console.log('📊 Performance Summary:', summary);\n      \n      // In production, this would send to analytics service\n      if (process.env.NODE_ENV === 'production') {\n        this.sendToAnalytics(summary);\n      }\n    }, 5 * 60 * 1000);\n  }\n\n  /**\n   * Send metrics to analytics service\n   */\n  private async sendToAnalytics(data: any): Promise<void> {\n    try {\n      // This would be replaced with actual analytics service\n      await fetch('/api/analytics/performance', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          sessionId: this.sessionId,\n          timestamp: Date.now(),\n          data,\n        }),\n      });\n    } catch (error) {\n      console.error('Failed to send analytics:', error);\n    }\n  }\n\n  /**\n   * Limit metrics storage to prevent memory issues\n   */\n  private limitMetricsStorage(): void {\n    const maxMetrics = 1000;\n    if (this.metrics.length > maxMetrics) {\n      this.metrics = this.metrics.slice(-maxMetrics);\n    }\n  }\n\n  /**\n   * Generate unique ID\n   */\n  private generateId(): string {\n    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n  }\n\n  /**\n   * Clean up observers\n   */\n  destroy(): void {\n    this.observers.forEach(observer => observer.disconnect());\n    this.observers = [];\n    this.isMonitoring = false;\n  }\n}\n\n/**\n * Error logging system\n */\nexport class ErrorLogger {\n  private static instance: ErrorLogger;\n  private logs: ErrorLog[] = [];\n  private sessionId: string;\n  private userId?: string;\n\n  private constructor() {\n    this.sessionId = this.generateId();\n    this.setupGlobalErrorHandlers();\n  }\n\n  static getInstance(): ErrorLogger {\n    if (!ErrorLogger.instance) {\n      ErrorLogger.instance = new ErrorLogger();\n    }\n    return ErrorLogger.instance;\n  }\n\n  /**\n   * Log an error\n   */\n  logError(\n    message: string,\n    error?: Error,\n    level: 'error' | 'warning' | 'info' | 'debug' = 'error',\n    metadata: Record<string, any> = {},\n    componentStack?: string\n  ): void {\n    const errorLog: ErrorLog = {\n      id: this.generateId(),\n      message,\n      stack: error?.stack,\n      level,\n      timestamp: Date.now(),\n      userId: this.userId,\n      sessionId: this.sessionId,\n      url: typeof window !== 'undefined' ? window.location.href : '',\n      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',\n      metadata,\n      componentStack,\n    };\n\n    this.logs.push(errorLog);\n    this.limitLogStorage();\n\n    // Console output\n    const consoleMethod = level === 'error' ? 'error' : level === 'warning' ? 'warn' : 'log';\n    console[consoleMethod](`🚨 ${level.toUpperCase()}: ${message}`, error, metadata);\n\n    // Send to error reporting service in production\n    if (process.env.NODE_ENV === 'production' && level === 'error') {\n      this.sendErrorReport(errorLog);\n    }\n  }\n\n  /**\n   * Log React component error\n   */\n  logComponentError(\n    error: Error,\n    errorInfo: React.ErrorInfo,\n    componentName?: string\n  ): void {\n    this.logError(\n      `React component error${componentName ? ` in ${componentName}` : ''}`,\n      error,\n      'error',\n      {\n        component: componentName,\n        errorBoundary: true,\n      },\n      errorInfo.componentStack\n    );\n  }\n\n  /**\n   * Log API error\n   */\n  logApiError(\n    endpoint: string,\n    status: number,\n    response: any,\n    requestData?: any\n  ): void {\n    this.logError(\n      `API error: ${endpoint} returned ${status}`,\n      undefined,\n      'error',\n      {\n        endpoint,\n        status,\n        response,\n        requestData,\n        apiError: true,\n      }\n    );\n  }\n\n  /**\n   * Set user ID for error tracking\n   */\n  setUserId(userId: string): void {\n    this.userId = userId;\n  }\n\n  /**\n   * Get error logs\n   */\n  getLogs(filter?: {\n    level?: 'error' | 'warning' | 'info' | 'debug';\n    timeRange?: { start: number; end: number };\n    component?: string;\n  }): ErrorLog[] {\n    let filtered = this.logs;\n\n    if (filter?.level) {\n      filtered = filtered.filter(log => log.level === filter.level);\n    }\n\n    if (filter?.timeRange) {\n      filtered = filtered.filter(\n        log => log.timestamp >= filter.timeRange!.start && log.timestamp <= filter.timeRange!.end\n      );\n    }\n\n    if (filter?.component) {\n      filtered = filtered.filter(log => log.metadata.component === filter.component);\n    }\n\n    return filtered.sort((a, b) => b.timestamp - a.timestamp);\n  }\n\n  /**\n   * Get error summary\n   */\n  getErrorSummary(): {\n    totalErrors: number;\n    errorsByLevel: Record<string, number>;\n    recentErrors: ErrorLog[];\n    topErrorMessages: Array<{ message: string; count: number }>;\n  } {\n    const errorsByLevel: Record<string, number> = {\n      error: 0,\n      warning: 0,\n      info: 0,\n      debug: 0,\n    };\n\n    const errorCounts = new Map<string, number>();\n\n    this.logs.forEach(log => {\n      errorsByLevel[log.level]++;\n      const count = errorCounts.get(log.message) || 0;\n      errorCounts.set(log.message, count + 1);\n    });\n\n    const topErrorMessages = Array.from(errorCounts.entries())\n      .sort(([, a], [, b]) => b - a)\n      .slice(0, 5)\n      .map(([message, count]) => ({ message, count }));\n\n    return {\n      totalErrors: this.logs.length,\n      errorsByLevel,\n      recentErrors: this.logs.slice(-10).reverse(),\n      topErrorMessages,\n    };\n  }\n\n  /**\n   * Setup global error handlers\n   */\n  private setupGlobalErrorHandlers(): void {\n    if (typeof window === 'undefined') return;\n\n    // Handle uncaught JavaScript errors\n    window.addEventListener('error', (event) => {\n      this.logError(\n        `Uncaught error: ${event.message}`,\n        event.error,\n        'error',\n        {\n          filename: event.filename,\n          lineno: event.lineno,\n          colno: event.colno,\n          global: true,\n        }\n      );\n    });\n\n    // Handle unhandled promise rejections\n    window.addEventListener('unhandledrejection', (event) => {\n      this.logError(\n        `Unhandled promise rejection: ${event.reason}`,\n        event.reason instanceof Error ? event.reason : undefined,\n        'error',\n        {\n          promise: true,\n          global: true,\n        }\n      );\n    });\n  }\n\n  /**\n   * Send error report to external service\n   */\n  private async sendErrorReport(errorLog: ErrorLog): Promise<void> {\n    try {\n      // This would be replaced with actual error reporting service\n      await fetch('/api/errors/report', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify(errorLog),\n      });\n    } catch (error) {\n      console.error('Failed to send error report:', error);\n    }\n  }\n\n  /**\n   * Limit log storage to prevent memory issues\n   */\n  private limitLogStorage(): void {\n    const maxLogs = 500;\n    if (this.logs.length > maxLogs) {\n      this.logs = this.logs.slice(-maxLogs);\n    }\n  }\n\n  /**\n   * Generate unique ID\n   */\n  private generateId(): string {\n    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n  }\n}\n\n/**\n * User action tracker\n */\nexport class UserActionTracker {\n  private static instance: UserActionTracker;\n  private actions: UserAction[] = [];\n  private sessionId: string;\n\n  private constructor() {\n    this.sessionId = this.generateId();\n  }\n\n  static getInstance(): UserActionTracker {\n    if (!UserActionTracker.instance) {\n      UserActionTracker.instance = new UserActionTracker();\n    }\n    return UserActionTracker.instance;\n  }\n\n  /**\n   * Track user action\n   */\n  trackAction(\n    action: string,\n    component: string,\n    metadata: Record<string, any> = {},\n    duration?: number\n  ): void {\n    const userAction: UserAction = {\n      id: this.generateId(),\n      action,\n      component,\n      timestamp: Date.now(),\n      sessionId: this.sessionId,\n      duration,\n      metadata,\n    };\n\n    this.actions.push(userAction);\n    this.limitActionStorage();\n\n    if (process.env.NODE_ENV === 'development') {\n      console.log(`👆 User Action: ${action} in ${component}`, metadata);\n    }\n  }\n\n  /**\n   * Get user actions\n   */\n  getActions(filter?: {\n    component?: string;\n    action?: string;\n    timeRange?: { start: number; end: number };\n  }): UserAction[] {\n    let filtered = this.actions;\n\n    if (filter?.component) {\n      filtered = filtered.filter(action => action.component === filter.component);\n    }\n\n    if (filter?.action) {\n      filtered = filtered.filter(action => action.action.includes(filter.action!));\n    }\n\n    if (filter?.timeRange) {\n      filtered = filtered.filter(\n        action => action.timestamp >= filter.timeRange!.start && action.timestamp <= filter.timeRange!.end\n      );\n    }\n\n    return filtered.sort((a, b) => b.timestamp - a.timestamp);\n  }\n\n  /**\n   * Limit action storage\n   */\n  private limitActionStorage(): void {\n    const maxActions = 1000;\n    if (this.actions.length > maxActions) {\n      this.actions = this.actions.slice(-maxActions);\n    }\n  }\n\n  /**\n   * Generate unique ID\n   */\n  private generateId(): string {\n    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n  }\n}\n\n/**\n * Monitoring utilities and hooks\n */\nexport const MonitoringUtils = {\n  /**\n   * React hook for performance monitoring\n   */\n  usePerformanceMonitoring: (componentName: string) => {\n    const monitor = PerformanceMonitor.getInstance();\n    const tracker = UserActionTracker.getInstance();\n\n    React.useEffect(() => {\n      const timer = monitor.startTimer(`component_mount_${componentName}`);\n      return timer;\n    }, []);\n\n    return {\n      trackAction: (action: string, metadata?: Record<string, any>) => {\n        tracker.trackAction(action, componentName, metadata);\n      },\n      recordMetric: (name: string, value: number, tags?: Record<string, string>) => {\n        monitor.recordMetric(name, value, { component: componentName, ...tags });\n      },\n    };\n  },\n\n  /**\n   * Initialize monitoring system\n   */\n  initialize: () => {\n    const performanceMonitor = PerformanceMonitor.getInstance();\n    const errorLogger = ErrorLogger.getInstance();\n    \n    performanceMonitor.startMonitoring();\n    \n    console.log('🚀 Monitoring system initialized');\n    \n    return {\n      performanceMonitor,\n      errorLogger,\n      userActionTracker: UserActionTracker.getInstance(),\n    };\n  },\n};\n\n// Export singleton instances\nexport const performanceMonitor = PerformanceMonitor.getInstance();\nexport const errorLogger = ErrorLogger.getInstance();\nexport const userActionTracker = UserActionTracker.getInstance();
+/**
+ * Advanced Performance Monitoring and Error Logging System
+ * Provides comprehensive tracking of application performance and errors
+ */
+
+import React from 'react';
+
+// Types for monitoring data
+interface PerformanceMetric {
+  id: string;
+  name: string;
+  value: number;
+  timestamp: number;
+  tags: Record<string, string>;
+  metadata?: Record<string, any>;
+}
+
+interface ErrorLog {
+  id: string;
+  message: string;
+  stack?: string;
+  level: 'error' | 'warning' | 'info' | 'debug';
+  timestamp: number;
+  userId?: string;
+  sessionId: string;
+  url: string;
+  userAgent: string;
+  metadata: Record<string, any>;
+  componentStack?: string;
+  errorBoundary?: string;
+}
+
+interface UserAction {
+  id: string;
+  action: string;
+  component: string;
+  timestamp: number;
+  sessionId: string;
+  duration?: number;
+  metadata: Record<string, any>;
+}
+
+/**
+ * Performance monitoring class
+ */
+export class PerformanceMonitor {
+  private static instance: PerformanceMonitor;
+  private metrics: PerformanceMetric[] = [];
+  private sessionId: string;
+  private startTime: number;
+
+  private constructor() {
+    this.sessionId = this.generateId();
+    this.startTime = performance.now();
+  }
+
+  static getInstance(): PerformanceMonitor {
+    if (!PerformanceMonitor.instance) {
+      PerformanceMonitor.instance = new PerformanceMonitor();
+    }
+    return PerformanceMonitor.instance;
+  }
+
+  /**
+   * Record a custom metric
+   */
+  recordMetric(
+    name: string,
+    value: number,
+    tags: Record<string, string> = {},
+    metadata?: Record<string, any>
+  ): void {
+    const metric: PerformanceMetric = {
+      id: this.generateId(),
+      name,
+      value,
+      timestamp: Date.now(),
+      tags: {
+        sessionId: this.sessionId,
+        ...tags,
+      },
+      metadata,
+    };
+
+    this.metrics.push(metric);
+    this.limitMetricsStorage();
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📊 Metric: ${name} = ${value}`, tags);
+    }
+  }
+
+  /**
+   * Start timing an operation
+   */
+  startTimer(name: string, tags?: Record<string, string>): () => void {
+    const startTime = performance.now();
+    
+    return () => {
+      const duration = performance.now() - startTime;
+      this.recordMetric(`${name}_duration`, duration, tags);
+    };
+  }
+
+  /**
+   * Get current performance metrics
+   */
+  getMetrics(): PerformanceMetric[] {
+    return this.metrics.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  private limitMetricsStorage(): void {
+    const maxMetrics = 1000;
+    if (this.metrics.length > maxMetrics) {
+      this.metrics = this.metrics.slice(-maxMetrics);
+    }
+  }
+
+  private generateId(): string {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+}
+
+/**
+ * Error logging class
+ */
+export class ErrorLogger {
+  private static instance: ErrorLogger;
+  private logs: ErrorLog[] = [];
+  private sessionId: string;
+
+  private constructor() {
+    this.sessionId = this.generateId();
+  }
+
+  static getInstance(): ErrorLogger {
+    if (!ErrorLogger.instance) {
+      ErrorLogger.instance = new ErrorLogger();
+    }
+    return ErrorLogger.instance;
+  }
+
+  /**
+   * Log an error
+   */
+  logError(
+    message: string,
+    error?: Error,
+    level: 'error' | 'warning' | 'info' | 'debug' = 'error',
+    metadata: Record<string, any> = {}
+  ): void {
+    const errorLog: ErrorLog = {
+      id: this.generateId(),
+      message,
+      stack: error?.stack,
+      level,
+      timestamp: Date.now(),
+      sessionId: this.sessionId,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+      metadata,
+    };
+
+    this.logs.push(errorLog);
+    this.limitLogStorage();
+
+    console.error(`🚨 ${level.toUpperCase()}: ${message}`, {
+      error,
+      metadata,
+    });
+  }
+
+  /**
+   * Log API error
+   */
+  logApiError(
+    endpoint: string,
+    statusCode: number,
+    error: any,
+    metadata: Record<string, any> = {}
+  ): void {
+    this.logError(
+      `API Error: ${endpoint}`,
+      error instanceof Error ? error : new Error(String(error)),
+      'error',
+      {
+        endpoint,
+        statusCode,
+        ...metadata,
+      }
+    );
+  }
+
+  /**
+   * Get error logs
+   */
+  getLogs(): ErrorLog[] {
+    return this.logs.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  private limitLogStorage(): void {
+    const maxLogs = 500;
+    if (this.logs.length > maxLogs) {
+      this.logs = this.logs.slice(-maxLogs);
+    }
+  }
+
+  private generateId(): string {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+}
+
+/**
+ * User action tracker
+ */
+export class UserActionTracker {
+  private static instance: UserActionTracker;
+  private actions: UserAction[] = [];
+  private sessionId: string;
+
+  private constructor() {
+    this.sessionId = this.generateId();
+  }
+
+  static getInstance(): UserActionTracker {
+    if (!UserActionTracker.instance) {
+      UserActionTracker.instance = new UserActionTracker();
+    }
+    return UserActionTracker.instance;
+  }
+
+  /**
+   * Track user action
+   */
+  trackAction(
+    action: string,
+    component: string,
+    metadata: Record<string, any> = {},
+    duration?: number
+  ): void {
+    const userAction: UserAction = {
+      id: this.generateId(),
+      action,
+      component,
+      timestamp: Date.now(),
+      sessionId: this.sessionId,
+      duration,
+      metadata,
+    };
+
+    this.actions.push(userAction);
+    this.limitActionStorage();
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`👆 User Action: ${action} in ${component}`, metadata);
+    }
+  }
+
+  /**
+   * Get user actions
+   */
+  getActions(): UserAction[] {
+    return this.actions.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  private limitActionStorage(): void {
+    const maxActions = 1000;
+    if (this.actions.length > maxActions) {
+      this.actions = this.actions.slice(-maxActions);
+    }
+  }
+
+  private generateId(): string {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+}
+
+// Export singleton instances
+export const performanceMonitor = PerformanceMonitor.getInstance();
+export const errorLogger = ErrorLogger.getInstance();
+export const userActionTracker = UserActionTracker.getInstance();

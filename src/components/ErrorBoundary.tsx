@@ -41,10 +41,14 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     
     // Send to error reporting service (replace with your service)
     if (typeof window !== 'undefined') {
-      window.gtag?.('event', 'exception', {
-        description: error.message,
-        fatal: false,
-      });
+      // Type-safe gtag call
+      const gtag = (window as any).gtag;
+      if (typeof gtag === 'function') {
+        gtag('event', 'exception', {
+          description: error.message,
+          fatal: false,
+        });
+      }
     }
   }
 

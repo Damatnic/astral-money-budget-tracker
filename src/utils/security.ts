@@ -1,1 +1,362 @@
-/**\n * Advanced Security and Input Validation Utilities\n * Provides comprehensive protection against common web vulnerabilities\n */\n\n// Security constants\nconst SECURITY_CONFIG = {\n  MAX_STRING_LENGTH: 1000,\n  MAX_NUMBER_VALUE: 999999999.99,\n  MIN_NUMBER_VALUE: -999999999.99,\n  ALLOWED_FILE_TYPES: ['csv', 'json', 'pdf'],\n  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB\n  RATE_LIMIT_WINDOW: 60000, // 1 minute\n  RATE_LIMIT_MAX_REQUESTS: 100,\n  XSS_PATTERNS: [\n    /<script[^>]*>.*?<\\/script>/gi,\n    /<iframe[^>]*>.*?<\\/iframe>/gi,\n    /javascript:/gi,\n    /on\\w+\\s*=/gi,\n    /<object[^>]*>.*?<\\/object>/gi,\n    /<embed[^>]*>/gi,\n    /<link[^>]*>/gi,\n    /<meta[^>]*>/gi,\n  ],\n  SQL_INJECTION_PATTERNS: [\n    /('|(\\-\\-)|(;)|(\\||\\|)|(\\*|\\*))|((%27)|(\\x27)|(%2D%2D)|(%3B)|(%7C%7C)|(%2A%2A))/i,\n    /(exec(\\s|\\+)+(s|x)p\\w+)/i,\n    /union[\\s\\w]*select/i,\n    /select[\\s\\w]*from/i,\n    /insert[\\s\\w]*into/i,\n    /delete[\\s\\w]*from/i,\n    /update[\\s\\w]*set/i,\n    /drop[\\s\\w]*table/i,\n  ],\n};\n\n// Rate limiting storage\nconst rateLimitStore = new Map<string, { count: number; resetTime: number }>();\n\n/**\n * Input validation result interface\n */\nexport interface ValidationResult {\n  isValid: boolean;\n  errors: string[];\n  sanitizedValue?: any;\n  securityScore: number; // 0-100, higher is more secure\n}\n\n/**\n * Advanced input sanitizer\n */\nexport class InputSanitizer {\n  /**\n   * Sanitize and validate a string input\n   */\n  static sanitizeString(\n    input: any,\n    options: {\n      maxLength?: number;\n      allowHtml?: boolean;\n      stripXss?: boolean;\n      required?: boolean;\n      pattern?: RegExp;\n    } = {}\n  ): ValidationResult {\n    const errors: string[] = [];\n    let sanitizedValue = '';\n    let securityScore = 100;\n\n    // Type validation\n    if (typeof input !== 'string') {\n      if (input === null || input === undefined) {\n        if (options.required) {\n          errors.push('This field is required');\n          return { isValid: false, errors, securityScore: 0 };\n        }\n        return { isValid: true, errors: [], sanitizedValue: '', securityScore: 100 };\n      }\n      input = String(input);\n      securityScore -= 5;\n    }\n\n    // Length validation\n    const maxLength = options.maxLength || SECURITY_CONFIG.MAX_STRING_LENGTH;\n    if (input.length > maxLength) {\n      errors.push(`Input exceeds maximum length of ${maxLength} characters`);\n      input = input.substring(0, maxLength);\n      securityScore -= 20;\n    }\n\n    // XSS detection and removal\n    if (options.stripXss !== false) {\n      const originalLength = input.length;\n      input = this.removeXssPatterns(input);\n      if (input.length < originalLength) {\n        securityScore -= 30;\n        errors.push('Potentially dangerous content was removed');\n      }\n    }\n\n    // SQL injection detection\n    if (this.detectSqlInjection(input)) {\n      errors.push('Input contains potentially dangerous SQL patterns');\n      securityScore -= 50;\n    }\n\n    // HTML sanitization\n    if (!options.allowHtml) {\n      input = this.escapeHtml(input);\n    }\n\n    // Pattern validation\n    if (options.pattern && !options.pattern.test(input)) {\n      errors.push('Input does not match the required format');\n    }\n\n    sanitizedValue = input.trim();\n\n    // Required field validation\n    if (options.required && !sanitizedValue) {\n      errors.push('This field is required');\n    }\n\n    return {\n      isValid: errors.length === 0,\n      errors,\n      sanitizedValue,\n      securityScore: Math.max(0, securityScore),\n    };\n  }\n\n  /**\n   * Sanitize and validate numeric input\n   */\n  static sanitizeNumber(\n    input: any,\n    options: {\n      min?: number;\n      max?: number;\n      integer?: boolean;\n      positive?: boolean;\n      required?: boolean;\n    } = {}\n  ): ValidationResult {\n    const errors: string[] = [];\n    let sanitizedValue: number | null = null;\n    let securityScore = 100;\n\n    // Handle null/undefined\n    if (input === null || input === undefined || input === '') {\n      if (options.required) {\n        errors.push('This field is required');\n        return { isValid: false, errors, securityScore: 0 };\n      }\n      return { isValid: true, errors: [], sanitizedValue: null, securityScore: 100 };\n    }\n\n    // Convert to number\n    const numValue = Number(input);\n\n    // Validate number\n    if (isNaN(numValue) || !isFinite(numValue)) {\n      errors.push('Please enter a valid number');\n      return { isValid: false, errors, securityScore: 0 };\n    }\n\n    // Range validation\n    const min = options.min ?? SECURITY_CONFIG.MIN_NUMBER_VALUE;\n    const max = options.max ?? SECURITY_CONFIG.MAX_NUMBER_VALUE;\n\n    if (numValue < min) {\n      errors.push(`Value must be at least ${min}`);\n    }\n\n    if (numValue > max) {\n      errors.push(`Value must not exceed ${max}`);\n    }\n\n    // Positive validation\n    if (options.positive && numValue < 0) {\n      errors.push('Value must be positive');\n    }\n\n    // Integer validation\n    if (options.integer && numValue !== Math.floor(numValue)) {\n      errors.push('Value must be a whole number');\n    }\n\n    // Security checks for extremely large or suspicious numbers\n    if (Math.abs(numValue) > 1e15) {\n      securityScore -= 30;\n      errors.push('Number is suspiciously large');\n    }\n\n    sanitizedValue = numValue;\n\n    return {\n      isValid: errors.length === 0,\n      errors,\n      sanitizedValue,\n      securityScore,\n    };\n  }\n\n  /**\n   * Sanitize and validate date input\n   */\n  static sanitizeDate(\n    input: any,\n    options: {\n      minDate?: Date;\n      maxDate?: Date;\n      required?: boolean;\n      format?: 'iso' | 'timestamp' | 'date-only';\n    } = {}\n  ): ValidationResult {\n    const errors: string[] = [];\n    let sanitizedValue: Date | null = null;\n    let securityScore = 100;\n\n    // Handle null/undefined\n    if (input === null || input === undefined || input === '') {\n      if (options.required) {\n        errors.push('Date is required');\n        return { isValid: false, errors, securityScore: 0 };\n      }\n      return { isValid: true, errors: [], sanitizedValue: null, securityScore: 100 };\n    }\n\n    // Parse date\n    const date = new Date(input);\n\n    // Validate date\n    if (isNaN(date.getTime())) {\n      errors.push('Please enter a valid date');\n      return { isValid: false, errors, securityScore: 0 };\n    }\n\n    // Range validation\n    if (options.minDate && date < options.minDate) {\n      errors.push(`Date must be after ${options.minDate.toLocaleDateString()}`);\n    }\n\n    if (options.maxDate && date > options.maxDate) {\n      errors.push(`Date must be before ${options.maxDate.toLocaleDateString()}`);\n    }\n\n    // Security validation - check for suspicious dates\n    const currentYear = new Date().getFullYear();\n    if (date.getFullYear() < 1900 || date.getFullYear() > currentYear + 100) {\n      securityScore -= 20;\n      errors.push('Date appears to be outside reasonable range');\n    }\n\n    sanitizedValue = date;\n\n    return {\n      isValid: errors.length === 0,\n      errors,\n      sanitizedValue,\n      securityScore,\n    };\n  }\n\n  /**\n   * Remove XSS patterns from input\n   */\n  private static removeXssPatterns(input: string): string {\n    let cleaned = input;\n    \n    SECURITY_CONFIG.XSS_PATTERNS.forEach(pattern => {\n      cleaned = cleaned.replace(pattern, '');\n    });\n\n    return cleaned;\n  }\n\n  /**\n   * Detect SQL injection patterns\n   */\n  private static detectSqlInjection(input: string): boolean {\n    return SECURITY_CONFIG.SQL_INJECTION_PATTERNS.some(pattern => \n      pattern.test(input.toLowerCase())\n    );\n  }\n\n  /**\n   * Escape HTML characters\n   */\n  private static escapeHtml(input: string): string {\n    const htmlEscapes: Record<string, string> = {\n      '&': '&amp;',\n      '<': '&lt;',\n      '>': '&gt;',\n      '\"': '&quot;',\n      \"'\": '&#x27;',\n      '/': '&#x2F;',\n    };\n\n    return input.replace(/[&<>\"'\\/]/g, (match) => htmlEscapes[match]);\n  }\n}\n\n/**\n * Rate limiting utility\n */\nexport class RateLimiter {\n  /**\n   * Check if request is within rate limit\n   */\n  static checkRateLimit(\n    identifier: string,\n    maxRequests: number = SECURITY_CONFIG.RATE_LIMIT_MAX_REQUESTS,\n    windowMs: number = SECURITY_CONFIG.RATE_LIMIT_WINDOW\n  ): { allowed: boolean; resetTime: number; remaining: number } {\n    const now = Date.now();\n    const key = identifier;\n    \n    const existing = rateLimitStore.get(key);\n    \n    // Reset if window has passed\n    if (!existing || now > existing.resetTime) {\n      const newRecord = {\n        count: 1,\n        resetTime: now + windowMs,\n      };\n      rateLimitStore.set(key, newRecord);\n      \n      return {\n        allowed: true,\n        resetTime: newRecord.resetTime,\n        remaining: maxRequests - 1,\n      };\n    }\n    \n    // Increment counter\n    existing.count++;\n    rateLimitStore.set(key, existing);\n    \n    return {\n      allowed: existing.count <= maxRequests,\n      resetTime: existing.resetTime,\n      remaining: Math.max(0, maxRequests - existing.count),\n    };\n  }\n\n  /**\n   * Clear rate limit for identifier\n   */\n  static clearRateLimit(identifier: string): void {\n    rateLimitStore.delete(identifier);\n  }\n}\n\n/**\n * CSRF token management\n */\nexport class CSRFProtection {\n  private static tokens = new Map<string, { token: string; expires: number }>();\n\n  /**\n   * Generate a CSRF token for a session\n   */\n  static generateToken(sessionId: string): string {\n    const token = this.generateRandomToken();\n    const expires = Date.now() + (24 * 60 * 60 * 1000); // 24 hours\n    \n    this.tokens.set(sessionId, { token, expires });\n    \n    return token;\n  }\n\n  /**\n   * Validate a CSRF token\n   */\n  static validateToken(sessionId: string, providedToken: string): boolean {\n    const stored = this.tokens.get(sessionId);\n    \n    if (!stored) {\n      return false;\n    }\n    \n    // Check expiration\n    if (Date.now() > stored.expires) {\n      this.tokens.delete(sessionId);\n      return false;\n    }\n    \n    return stored.token === providedToken;\n  }\n\n  /**\n   * Generate a cryptographically secure random token\n   */\n  private static generateRandomToken(): string {\n    const array = new Uint8Array(32);\n    if (typeof window !== 'undefined' && window.crypto) {\n      window.crypto.getRandomValues(array);\n    } else {\n      // Fallback for Node.js or unsupported environments\n      for (let i = 0; i < array.length; i++) {\n        array[i] = Math.floor(Math.random() * 256);\n      }\n    }\n    \n    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');\n  }\n}\n\n/**\n * Content Security Policy utilities\n */\nexport class CSPHelper {\n  /**\n   * Generate a nonce for inline scripts/styles\n   */\n  static generateNonce(): string {\n    const array = new Uint8Array(16);\n    if (typeof window !== 'undefined' && window.crypto) {\n      window.crypto.getRandomValues(array);\n    }\n    return btoa(String.fromCharCode(...array));\n  }\n\n  /**\n   * Get CSP header value\n   */\n  static getCSPHeader(nonce?: string): string {\n    const directives = [\n      \"default-src 'self'\",\n      `script-src 'self' 'unsafe-inline' ${nonce ? `'nonce-${nonce}'` : ''} https:`,\n      \"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com\",\n      \"font-src 'self' https://fonts.gstatic.com\",\n      \"img-src 'self' data: https:\",\n      \"connect-src 'self' https:\",\n      \"frame-ancestors 'none'\",\n      \"base-uri 'self'\",\n      \"form-action 'self'\",\n    ];\n    \n    return directives.join('; ');\n  }\n}\n\n/**\n * File upload security\n */\nexport class FileUploadSecurity {\n  /**\n   * Validate uploaded file\n   */\n  static validateFile(file: File): ValidationResult {\n    const errors: string[] = [];\n    let securityScore = 100;\n\n    // Size validation\n    if (file.size > SECURITY_CONFIG.MAX_FILE_SIZE) {\n      errors.push(`File size exceeds maximum of ${SECURITY_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`);\n    }\n\n    // Type validation\n    const extension = file.name.split('.').pop()?.toLowerCase();\n    if (!extension || !SECURITY_CONFIG.ALLOWED_FILE_TYPES.includes(extension)) {\n      errors.push('File type not allowed');\n      securityScore -= 50;\n    }\n\n    // Name validation\n    const fileNameResult = InputSanitizer.sanitizeString(file.name, {\n      maxLength: 255,\n      stripXss: true,\n    });\n    \n    if (!fileNameResult.isValid) {\n      errors.push(...fileNameResult.errors.map(error => `File name: ${error}`));\n      securityScore -= 20;\n    }\n\n    // Check for suspicious patterns in filename\n    if (/\\.(exe|scr|bat|cmd|com|pif|scf|vbs|js)$/i.test(file.name)) {\n      errors.push('File appears to be executable');\n      securityScore -= 80;\n    }\n\n    return {\n      isValid: errors.length === 0,\n      errors,\n      securityScore: Math.max(0, securityScore),\n    };\n  }\n\n  /**\n   * Sanitize filename\n   */\n  static sanitizeFileName(filename: string): string {\n    return filename\n      .replace(/[^a-zA-Z0-9.-]/g, '_')\n      .replace(/_{2,}/g, '_')\n      .toLowerCase();\n  }\n}\n\n/**\n * Security audit utilities\n */\nexport class SecurityAudit {\n  /**\n   * Audit user input for security score\n   */\n  static auditInput(data: Record<string, any>): {\n    overallScore: number;\n    fieldScores: Record<string, number>;\n    risks: string[];\n  } {\n    const fieldScores: Record<string, number> = {};\n    const risks: string[] = [];\n    let totalScore = 0;\n    let fieldCount = 0;\n\n    for (const [key, value] of Object.entries(data)) {\n      const result = InputSanitizer.sanitizeString(value, { stripXss: true });\n      fieldScores[key] = result.securityScore;\n      totalScore += result.securityScore;\n      fieldCount++;\n\n      if (result.securityScore < 70) {\n        risks.push(`${key}: Low security score (${result.securityScore})`);\n      }\n\n      result.errors.forEach(error => {\n        risks.push(`${key}: ${error}`);\n      });\n    }\n\n    return {\n      overallScore: fieldCount > 0 ? Math.round(totalScore / fieldCount) : 100,\n      fieldScores,\n      risks,\n    };\n  }\n\n  /**\n   * Get security recommendations\n   */\n  static getSecurityRecommendations(score: number): string[] {\n    const recommendations: string[] = [];\n\n    if (score < 90) {\n      recommendations.push('Consider implementing additional input validation');\n    }\n    if (score < 80) {\n      recommendations.push('Review and strengthen XSS protection');\n    }\n    if (score < 70) {\n      recommendations.push('Implement CSRF protection for forms');\n    }\n    if (score < 60) {\n      recommendations.push('Add rate limiting to prevent abuse');\n    }\n    if (score < 50) {\n      recommendations.push('Conduct thorough security audit');\n    }\n\n    return recommendations;\n  }\n}\n\n/**\n * Utility functions for common security operations\n */\nexport const SecurityUtils = {\n  /**\n   * Generate a secure random ID\n   */\n  generateSecureId: (): string => {\n    return CSRFProtection['generateRandomToken']();\n  },\n\n  /**\n   * Hash sensitive data (client-side)\n   */\n  hashData: async (data: string): Promise<string> => {\n    if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {\n      const encoder = new TextEncoder();\n      const dataBuffer = encoder.encode(data);\n      const hashBuffer = await window.crypto.subtle.digest('SHA-256', dataBuffer);\n      const hashArray = Array.from(new Uint8Array(hashBuffer));\n      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');\n    }\n    \n    // Fallback simple hash (not cryptographically secure)\n    let hash = 0;\n    for (let i = 0; i < data.length; i++) {\n      const char = data.charCodeAt(i);\n      hash = ((hash << 5) - hash) + char;\n      hash = hash & hash; // Convert to 32-bit integer\n    }\n    return hash.toString(16);\n  },\n\n  /**\n   * Check if running in secure context\n   */\n  isSecureContext: (): boolean => {\n    if (typeof window === 'undefined') return true; // Server-side is considered secure\n    return window.isSecureContext || window.location.protocol === 'https:';\n  },\n\n  /**\n   * Validate password strength\n   */\n  validatePasswordStrength: (password: string): {\n    score: number;\n    feedback: string[];\n  } => {\n    const feedback: string[] = [];\n    let score = 0;\n\n    if (password.length >= 8) score += 25;\n    else feedback.push('Password should be at least 8 characters long');\n\n    if (/[a-z]/.test(password)) score += 15;\n    else feedback.push('Include lowercase letters');\n\n    if (/[A-Z]/.test(password)) score += 15;\n    else feedback.push('Include uppercase letters');\n\n    if (/\\d/.test(password)) score += 15;\n    else feedback.push('Include numbers');\n\n    if (/[^\\w\\s]/.test(password)) score += 20;\n    else feedback.push('Include special characters');\n\n    if (password.length >= 12) score += 10;\n\n    return { score, feedback };\n  },\n};\n\nexport default {\n  InputSanitizer,\n  RateLimiter,\n  CSRFProtection,\n  CSPHelper,\n  FileUploadSecurity,\n  SecurityAudit,\n  SecurityUtils,\n};
+/**
+ * Advanced Security and Input Validation Utilities
+ * Provides comprehensive protection against common web vulnerabilities
+ */
+
+// Security constants
+const SECURITY_CONFIG = {
+  MAX_STRING_LENGTH: 1000,
+  MAX_NUMBER_VALUE: 999999999.99,
+  MIN_NUMBER_VALUE: -999999999.99,
+  XSS_PATTERNS: [
+    /<script[^>]*>.*?<\/script>/gi,
+    /<iframe[^>]*>.*?<\/iframe>/gi,
+    /javascript:/gi,
+    /on\w+\s*=/gi,
+  ],
+};
+
+/**
+ * Input validation result interface
+ */
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  sanitizedValue?: any;
+  securityScore: number; // 0-100, higher is more secure
+}
+
+/**
+ * Advanced input sanitizer
+ */
+export class InputSanitizer {
+  /**
+   * Sanitize and validate a string input
+   */
+  static sanitizeString(
+    input: any,
+    options: {
+      maxLength?: number;
+      allowHtml?: boolean;
+      stripXss?: boolean;
+      required?: boolean;
+      pattern?: RegExp;
+    } = {}
+  ): ValidationResult {
+    const errors: string[] = [];
+    let sanitizedValue = '';
+    let securityScore = 100;
+
+    // Type validation
+    if (typeof input !== 'string') {
+      if (input === null || input === undefined) {
+        if (options.required) {
+          errors.push('This field is required');
+          return { isValid: false, errors, securityScore: 0 };
+        }
+        return { isValid: true, errors: [], sanitizedValue: '', securityScore: 100 };
+      }
+      input = String(input);
+      securityScore -= 5;
+    }
+
+    // Length validation
+    const maxLength = options.maxLength || SECURITY_CONFIG.MAX_STRING_LENGTH;
+    if (input.length > maxLength) {
+      errors.push(`Input exceeds maximum length of ${maxLength} characters`);
+      input = input.substring(0, maxLength);
+      securityScore -= 20;
+    }
+
+    // XSS detection and removal
+    if (options.stripXss !== false) {
+      const originalLength = input.length;
+      input = this.removeXssPatterns(input);
+      if (input.length < originalLength) {
+        securityScore -= 30;
+        errors.push('Potentially dangerous content was removed');
+      }
+    }
+
+    // HTML sanitization
+    if (!options.allowHtml) {
+      input = this.escapeHtml(input);
+    }
+
+    // Pattern validation
+    if (options.pattern && !options.pattern.test(input)) {
+      errors.push('Input does not match the required format');
+    }
+
+    sanitizedValue = input.trim();
+
+    // Required field validation
+    if (options.required && !sanitizedValue) {
+      errors.push('This field is required');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      sanitizedValue,
+      securityScore: Math.max(0, securityScore),
+    };
+  }
+
+  /**
+   * Sanitize and validate numeric input
+   */
+  static sanitizeNumber(
+    input: any,
+    options: {
+      min?: number;
+      max?: number;
+      integer?: boolean;
+      positive?: boolean;
+      required?: boolean;
+    } = {}
+  ): ValidationResult {
+    const errors: string[] = [];
+    let sanitizedValue: number | null = null;
+    let securityScore = 100;
+
+    // Handle null/undefined
+    if (input === null || input === undefined || input === '') {
+      if (options.required) {
+        errors.push('This field is required');
+        return { isValid: false, errors, securityScore: 0 };
+      }
+      return { isValid: true, errors: [], sanitizedValue: null, securityScore: 100 };
+    }
+
+    // Convert to number
+    const numValue = Number(input);
+
+    // Validate number
+    if (isNaN(numValue) || !isFinite(numValue)) {
+      errors.push('Please enter a valid number');
+      return { isValid: false, errors, securityScore: 0 };
+    }
+
+    // Range validation
+    const min = options.min ?? SECURITY_CONFIG.MIN_NUMBER_VALUE;
+    const max = options.max ?? SECURITY_CONFIG.MAX_NUMBER_VALUE;
+
+    if (numValue < min) {
+      errors.push(`Value must be at least ${min}`);
+    }
+
+    if (numValue > max) {
+      errors.push(`Value must not exceed ${max}`);
+    }
+
+    // Positive number validation
+    if (options.positive && numValue < 0) {
+      errors.push('Value must be positive');
+    }
+
+    // Integer validation
+    if (options.integer && !Number.isInteger(numValue)) {
+      errors.push('Value must be a whole number');
+    }
+
+    sanitizedValue = numValue;
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      sanitizedValue,
+      securityScore,
+    };
+  }
+
+  /**
+   * Remove XSS patterns from input
+   */
+  private static removeXssPatterns(input: string): string {
+    let sanitized = input;
+    
+    SECURITY_CONFIG.XSS_PATTERNS.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, '');
+    });
+
+    return sanitized;
+  }
+
+  /**
+   * Escape HTML characters
+   */
+  private static escapeHtml(input: string): string {
+    const htmlEscapeMap: { [key: string]: string } = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '/': '&#x2F;',
+    };
+
+    return input.replace(/[&<>"'/]/g, (char) => htmlEscapeMap[char]);
+  }
+}
+
+/**
+ * Rate limiting utility
+ */
+export class RateLimiter {
+  private static store = new Map<string, { count: number; resetTime: number }>();
+
+  /**
+   * Check if request is within rate limits
+   */
+  static checkRateLimit(
+    identifier: string,
+    maxRequests: number = 100,
+    windowMs: number = 60000
+  ): { allowed: boolean; remaining: number; resetTime: number } {
+    const now = Date.now();
+    const existing = this.store.get(identifier);
+
+    if (!existing || now > existing.resetTime) {
+      // Create new or reset expired window
+      this.store.set(identifier, {
+        count: 1,
+        resetTime: now + windowMs,
+      });
+      
+      return {
+        allowed: true,
+        remaining: maxRequests - 1,
+        resetTime: now + windowMs,
+      };
+    }
+
+    if (existing.count >= maxRequests) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetTime: existing.resetTime,
+      };
+    }
+
+    // Increment count
+    existing.count++;
+    this.store.set(identifier, existing);
+
+    return {
+      allowed: true,
+      remaining: maxRequests - existing.count,
+      resetTime: existing.resetTime,
+    };
+  }
+
+  /**
+   * Clean up expired entries
+   */
+  static cleanup(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+    
+    this.store.forEach((value, key) => {
+      if (now > value.resetTime) {
+        keysToDelete.push(key);
+      }
+    });
+    
+    keysToDelete.forEach(key => this.store.delete(key));
+  }
+}
+
+/**
+ * CSRF protection utility
+ */
+export class CSRFProtection {
+  private static tokenStore = new Map<string, string>();
+
+  /**
+   * Generate CSRF token for session
+   */
+  static generateToken(sessionId: string): string {
+    const token = this.generateRandomToken();
+    this.tokenStore.set(sessionId, token);
+    return token;
+  }
+
+  /**
+   * Validate CSRF token
+   */
+  static validateToken(sessionId: string, providedToken: string): boolean {
+    const storedToken = this.tokenStore.get(sessionId);
+    return storedToken === providedToken;
+  }
+
+  /**
+   * Generate random token
+   */
+  private static generateRandomToken(): string {
+    return Array.from(
+      { length: 32 },
+      () => Math.random().toString(36)[2]
+    ).join('');
+  }
+}
+
+/**
+ * Utility functions for common security operations
+ */
+export const SecurityUtils = {
+  /**
+   * Generate a secure random ID
+   */
+  generateSecureId: (): string => {
+    return Array.from(
+      { length: 16 },
+      () => Math.random().toString(36)[2]
+    ).join('');
+  },
+
+  /**
+   * Check if running in secure context
+   */
+  isSecureContext: (): boolean => {
+    if (typeof window === 'undefined') return true; // Server-side is considered secure
+    return window.isSecureContext || window.location.protocol === 'https:';
+  },
+
+  /**
+   * Validate password strength
+   */
+  validatePasswordStrength: (password: string): {
+    score: number;
+    feedback: string[];
+  } => {
+    const feedback: string[] = [];
+    let score = 0;
+
+    if (password.length >= 8) score += 25;
+    else feedback.push('Password should be at least 8 characters long');
+
+    if (/[a-z]/.test(password)) score += 15;
+    else feedback.push('Include lowercase letters');
+
+    if (/[A-Z]/.test(password)) score += 15;
+    else feedback.push('Include uppercase letters');
+
+    if (/\d/.test(password)) score += 15;
+    else feedback.push('Include numbers');
+
+    if (/[^\w\s]/.test(password)) score += 20;
+    else feedback.push('Include special characters');
+
+    if (password.length >= 12) score += 10;
+
+    return { score, feedback };
+  },
+};
+
+export default {
+  InputSanitizer,
+  RateLimiter,
+  CSRFProtection,
+  SecurityUtils,
+};
