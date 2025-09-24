@@ -1059,8 +1059,73 @@ export default function Home() {
       return incomeDate.getMonth() === targetMonth && incomeDate.getFullYear() === targetYear;
     });
 
-    // Combine into a unified format for display
+    // Get recurring bills projected for this month
+    const projectedRecurringBills = recurringBills.filter(bill => {
+      if (!bill.isActive) return false;
+      
+      const startDate = new Date(bill.startDate);
+      const endDate = bill.endDate ? new Date(bill.endDate) : null;
+      const targetDate = new Date(targetYear, targetMonth, 1);
+      
+      // Check if bill is active during target month
+      if (startDate > targetDate) return false;
+      if (endDate && endDate < targetDate) return false;
+      
+      return true;
+    }).map(bill => {
+      // Calculate the next due date for this bill in the target month
+      const getNextDueDate = (bill: any, targetMonth: number, targetYear: number) => {
+        const startDate = new Date(bill.startDate);
+        let dueDate = new Date(startDate);
+        
+        // Move to target month/year
+        dueDate.setFullYear(targetYear);
+        dueDate.setMonth(targetMonth);
+        
+        // For monthly bills, use the same day of month as start date
+        if (bill.frequency === 'monthly') {
+          dueDate.setDate(startDate.getDate());
+        }
+        // For other frequencies, we can expand this logic
+        
+        return dueDate;
+      };
+
+      const dueDate = getNextDueDate(bill, targetMonth, targetYear);
+      
+      return {
+        id: `recurring-${bill.id}-${targetMonth}`,
+        name: bill.name,
+        amount: bill.amount,
+        date: dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        category: bill.category,
+        isIncome: false,
+        isPaid: false, // Recurring bills are projected, not yet paid
+        type: 'recurring',
+        originalData: bill,
+        dueDate: dueDate
+      };
+    });
+
+    // Get the original hardcoded bills for the selected month (for any remaining bills not yet converted to recurring)
+    const getHardcodedBills = () => {
+      switch(currentMonth) {
+        case 'october': return octoberBills;
+        case 'november': return novemberBills;
+        case 'december': return decemberBills;
+        default: return octoberBills;
+      }
+    };
+
+    const hardcodedBills = getHardcodedBills().map(bill => ({
+      ...bill,
+      type: 'hardcoded',
+      originalData: bill
+    }));
+
+    // Combine all data sources
     const combinedData = [
+      // Recorded expenses
       ...monthExpenses.map(expense => ({
         id: expense.id,
         name: expense.description,
@@ -1072,6 +1137,7 @@ export default function Home() {
         type: 'expense',
         originalData: expense
       })),
+      // Recorded income
       ...monthIncome.map(incomeItem => ({
         id: incomeItem.id,
         name: incomeItem.description,
@@ -1082,8 +1148,22 @@ export default function Home() {
         isPaid: true, // Income is always "paid" since it's recorded
         type: 'income',
         originalData: incomeItem
-      }))
-    ].sort((a, b) => new Date(a.originalData.date || a.originalData.createdAt).getTime() - new Date(b.originalData.date || b.originalData.createdAt).getTime());
+      })),
+      // Projected recurring bills
+      ...projectedRecurringBills,
+      // Hardcoded bills (temporary, until all are converted to recurring)
+      ...hardcodedBills
+    ].sort((a, b) => {
+      // Sort by date
+      const getDateForSorting = (item: any) => {
+        if (item.dueDate) return item.dueDate;
+        if (item.originalData?.date) return new Date(item.originalData.date);
+        if (item.originalData?.createdAt) return new Date(item.originalData.createdAt);
+        return new Date();
+      };
+      
+      return getDateForSorting(a).getTime() - getDateForSorting(b).getTime();
+    });
 
     return combinedData;
   };
@@ -1631,63 +1711,140 @@ export default function Home() {
                       {item.isPaid ? '✅ Recorded' : '⏳ Pending'}
                     </span>
                     <div className="bill-actions">
-                      <button
-                        onClick={() => {
-                          if (item.type === 'expense') {
-                            setEditingExpense(item.originalData);
-                            setExpenseForm({
-                              amount: item.originalData.amount.toString(),
-                              description: item.originalData.description,
-                              category: item.originalData.category,
-                              date: item.originalData.date ? new Date(item.originalData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                            });
-                            setShowExpenseForm(true);
-                          } else {
-                            setEditingIncome(item.originalData);
-                            setIncomeForm({
-                              amount: item.originalData.amount.toString(),
-                              description: item.originalData.description,
-                              source: item.originalData.category,
-                              date: item.originalData.date ? new Date(item.originalData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                            });
-                            setShowIncomeForm(true);
-                          }
-                        }}
-                        style={{
+                      {(item.type === 'expense' || item.type === 'income') && (
+                        <>
+                          <button
+                            onClick={() => {
+                              if (item.type === 'expense') {
+                                setEditingExpense(item.originalData);
+                                setExpenseForm({
+                                  amount: item.originalData.amount.toString(),
+                                  description: item.originalData.description,
+                                  category: item.originalData.category,
+                                  date: item.originalData.date ? new Date(item.originalData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                                });
+                                setShowExpenseForm(true);
+                              } else {
+                                setEditingIncome(item.originalData);
+                                setIncomeForm({
+                                  amount: item.originalData.amount.toString(),
+                                  description: item.originalData.description,
+                                  source: item.originalData.category,
+                                  date: item.originalData.date ? new Date(item.originalData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                                });
+                                setShowIncomeForm(true);
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--primary)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              marginRight: '8px'
+                            }}
+                            title={`Edit ${item.type}`}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (item.type === 'expense') {
+                                deleteExpense(item.id);
+                              } else {
+                                deleteIncome(item.id);
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--danger)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                            title={`Delete ${item.type}`}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </>
+                      )}
+                      {item.type === 'recurring' && (
+                        <>
+                          <button
+                            onClick={() => markBillAsPaid(item.originalData)}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--success)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              marginRight: '8px'
+                            }}
+                            title="Mark as Paid"
+                          >
+                            ✅ Pay
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingRecurringBill(item.originalData);
+                              setRecurringForm({
+                                name: item.originalData.name,
+                                amount: item.originalData.amount.toString(),
+                                frequency: item.originalData.frequency,
+                                category: item.originalData.category,
+                                startDate: item.originalData.startDate ? new Date(item.originalData.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                                endDate: item.originalData.endDate ? new Date(item.originalData.endDate).toISOString().split('T')[0] : ''
+                              });
+                              setShowRecurringForm(true);
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--primary)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              marginRight: '8px'
+                            }}
+                            title="Edit recurring bill"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => deleteRecurringBill(item.originalData.id)}
+                            style={{
+                              padding: '4px 8px',
+                              background: 'var(--danger)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                            title="Delete recurring bill"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </>
+                      )}
+                      {item.type === 'hardcoded' && (
+                        <span style={{
                           padding: '4px 8px',
-                          background: 'var(--primary)',
-                          color: 'white',
-                          border: 'none',
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          color: 'var(--text-secondary)',
                           borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          marginRight: '8px'
-                        }}
-                        title={`Edit ${item.type}`}
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (item.type === 'expense') {
-                            deleteExpense(item.id);
-                          } else {
-                            deleteIncome(item.id);
-                          }
-                        }}
-                        style={{
-                          padding: '4px 8px',
-                          background: 'var(--danger)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
                           fontSize: '12px'
-                        }}
-                        title={`Delete ${item.type}`}
-                      >
-                        🗑️ Delete
-                      </button>
+                        }}>
+                          📅 Projected
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))
