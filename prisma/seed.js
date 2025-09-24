@@ -5,18 +5,44 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Create default user
-  const user = await prisma.user.upsert({
-    where: { email: 'user@astralmoney.com' },
+  // Create test users with PINs
+  const testUser = await prisma.user.upsert({
+    where: { email: 'test@astral.money' },
     update: {},
     create: {
-      email: 'user@astralmoney.com',
-      name: 'Astral User',
-      balance: 11.29, // Current balance from bank statement
+      email: 'test@astral.money',
+      name: 'Test User',
+      pin: '7347',
+      balance: 11.29,
     },
   });
 
-  console.log('✅ User created:', user.email);
+  const demoUser = await prisma.user.upsert({
+    where: { email: 'demo@astral.money' },
+    update: {},
+    create: {
+      email: 'demo@astral.money',
+      name: 'Demo User',
+      pin: '7347',
+      balance: 11.29,
+    },
+  });
+
+  const sampleUser = await prisma.user.upsert({
+    where: { email: 'user@astral.money' },
+    update: {},
+    create: {
+      email: 'user@astral.money',
+      name: 'Sample User',
+      pin: '7347',
+      balance: 11.29,
+    },
+  });
+
+  console.log('✅ Test users created:', [testUser.email, demoUser.email, sampleUser.email]);
+  
+  // Use test user for budget data
+  const user = testUser;
 
   // Create October 2025 budget
   const budget = await prisma.budget.upsert({
