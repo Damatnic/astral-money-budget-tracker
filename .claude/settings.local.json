@@ -23,7 +23,10 @@
       "Bash(npx next:*)",
       "WebFetch(domain:astral-budget-gbz3s5qoc-astral-productions.vercel.app)",
       "WebFetch(domain:astral-budget-ggh57j4c6-astral-productions.vercel.app)",
-      "WebFetch(domain:astral-budget-35yascrwl-astral-productions.vercel.app)"
+      "WebFetch(domain:astral-budget-35yascrwl-astral-productions.vercel.app)",
+      "Bash(npm run test:ci:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:coverage:*)"
     ],
     "deny": [],
     "ask": []
