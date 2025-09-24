@@ -12,6 +12,12 @@ export async function GET() {
 
     const recurringBills = await prisma.recurringBill.findMany({
       where: { isActive: true },
+      include: {
+        billHistory: {
+          orderBy: { billDate: 'desc' },
+          take: 5, // Get last 5 history entries
+        },
+      },
       orderBy: { name: 'asc' }
     });
 
@@ -32,7 +38,18 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, amount, frequency, category, startDate, endDate } = await request.json();
+    const { 
+      name, 
+      amount, 
+      frequency, 
+      category, 
+      startDate, 
+      endDate,
+      isVariableAmount,
+      provider,
+      notes,
+      billType 
+    } = await request.json();
 
     // Validation
     if (!name || typeof name !== 'string') {
@@ -69,11 +86,16 @@ export async function POST(request: Request) {
           id: 'sim_' + Date.now(),
           name,
           amount,
+          baseAmount: amount,
           frequency,
           category,
           startDate: startDate || new Date().toISOString(),
           endDate: endDate || null,
           isActive: true,
+          isVariableAmount: isVariableAmount || false,
+          provider: provider || null,
+          notes: notes || null,
+          billType: billType || 'expense',
           createdAt: new Date().toISOString()
         },
         note: 'Simulated recurring bill - database not configured'
@@ -85,11 +107,21 @@ export async function POST(request: Request) {
       data: {
         name,
         amount,
+        baseAmount: amount, // Set baseAmount to the initial amount
         frequency,
         category,
         startDate: startDate ? new Date(startDate) : new Date(),
         endDate: endDate ? new Date(endDate) : null,
         isActive: true,
+        isVariableAmount: isVariableAmount || false,
+        averageAmount: amount, // Start with current amount as average
+        minAmount: amount,
+        maxAmount: amount,
+        lastBillAmount: amount,
+        estimationMethod: isVariableAmount ? 'average' : 'base',
+        provider: provider || null,
+        notes: notes || null,
+        billType: billType || 'expense',
       }
     });
 
@@ -109,7 +141,22 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { id, name, amount, frequency, category, startDate, endDate, isActive } = await request.json();
+    const { 
+      id, 
+      name, 
+      amount, 
+      baseAmount,
+      frequency, 
+      category, 
+      startDate, 
+      endDate, 
+      isActive,
+      isVariableAmount,
+      provider,
+      notes,
+      billType,
+      estimationMethod
+    } = await request.json();
 
     if (!id) {
       return NextResponse.json(
@@ -129,11 +176,17 @@ export async function PUT(request: Request) {
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (amount !== undefined) updateData.amount = amount;
+    if (baseAmount !== undefined) updateData.baseAmount = baseAmount;
     if (frequency !== undefined) updateData.frequency = frequency;
     if (category !== undefined) updateData.category = category;
     if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null;
     if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (isVariableAmount !== undefined) updateData.isVariableAmount = isVariableAmount;
+    if (provider !== undefined) updateData.provider = provider;
+    if (notes !== undefined) updateData.notes = notes;
+    if (billType !== undefined) updateData.billType = billType;
+    if (estimationMethod !== undefined) updateData.estimationMethod = estimationMethod;
 
     // Update recurring bill
     const updatedBill = await prisma.recurringBill.update({

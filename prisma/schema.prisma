@@ -96,16 +96,49 @@ model FinancialGoal {
 }
 
 model RecurringBill {
-  id        String   @id @default(cuid())
-  name      String
-  amount    Float
-  frequency String   // "monthly", "weekly", "biweekly"
-  category  String
-  startDate DateTime
-  endDate   DateTime?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  name                  String
+  amount                Float    // Keep existing amount field for now
+  baseAmount            Float?   // Base/estimated amount (initially nullable for migration)
+  frequency             String   // "monthly", "weekly", "biweekly"
+  category              String
+  startDate             DateTime
+  endDate               DateTime?
+  isActive              Boolean  @default(true)
+  isVariableAmount      Boolean  @default(false)  // True for bills like Verizon that vary monthly
+  averageAmount         Float?   // Calculated average from bill history
+  minAmount             Float?   // Historical minimum amount
+  maxAmount             Float?   // Historical maximum amount
+  lastBillAmount        Float?   // Most recent actual bill amount
+  estimationMethod      String   @default("base") // "base", "average", "lastBill"
+  notes                 String?  // Notes about variable billing
+  provider              String?  // e.g., "Verizon", "ConEd", "National Grid"
+  billType              String   @default("expense") // "expense", "income"
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  billHistory BillHistory[]
 
   @@map("recurring_bills")
+}
+
+model BillHistory {
+  id              String        @id @default(cuid())
+  recurringBillId String
+  actualAmount    Float         // Actual amount paid/billed
+  estimatedAmount Float         // What we estimated vs actual
+  billDate        DateTime      // When the bill was due/paid
+  isPaid          Boolean       @default(false)
+  paidDate        DateTime?     // When it was actually paid
+  variance        Float         // actualAmount - estimatedAmount
+  variancePercent Float         // (variance / estimatedAmount) * 100
+  notes           String?       // Notes about this specific bill
+  paymentMethod   String?       // How it was paid
+  transactionId   String?       // Link to actual transaction if exists
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  recurringBill RecurringBill @relation(fields: [recurringBillId], references: [id], onDelete: Cascade)
+
+  @@map("bill_history")
 }
