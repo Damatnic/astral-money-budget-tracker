@@ -129,12 +129,14 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    await AuditLogger.logSecurityEvent('API_ERROR', {
-      endpoint: '/api/expenses',
-      method: 'GET',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      requestId,
-      severity: 'high',
+    await AuditLogger.logSecurityEvent('api', 'error', {
+      level: 'error' as any,
+      data: {
+        endpoint: '/api/expenses',
+        method: 'GET',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        requestId,
+      },
     });
 
     if (error instanceof Error && error.message === 'Authentication required') {
