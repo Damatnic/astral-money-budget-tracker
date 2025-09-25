@@ -1,4 +1,4 @@
-# 🚀 Astral Money - Enterprise Financial Management System
+# 🚀 Astral Balance - Enterprise Financial Management System
 
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Damatnic/astral-money-budget-tracker)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -71,7 +71,7 @@ NEXTAUTH_SECRET="your-256-bit-cryptographically-secure-random-secret-key"
 
 # Application Configuration
 NODE_ENV="development"
-APP_NAME="Astral Money"
+APP_NAME="Astral Balance"
 APP_VERSION="2.0.0"
 
 # Security Configuration
@@ -540,6 +540,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ by the Astral Money Team**
+**Built with ❤️ by the Astral Balance Team**
 
 *Enterprise-grade security and production-ready architecture for modern financial applications.*

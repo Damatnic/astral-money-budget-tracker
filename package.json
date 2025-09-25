@@ -1,7 +1,7 @@
 {
-  "name": "astral-money",
+  "name": "astral-balance",
   "version": "2.0.0",
-  "description": "Enterprise-grade financial management application with comprehensive security, monitoring, and production-ready features",
+  "description": "Enterprise-grade financial balance management application with comprehensive security, monitoring, and production-ready features",
   "main": "src/app/page.tsx",
   "engines": {
     "node": ">=18.17.0",
@@ -36,8 +36,8 @@
     "db:backup": "tsx scripts/backup-database.ts",
     "monitoring:health": "tsx scripts/health-check.ts",
     "monitoring:metrics": "tsx scripts/collect-metrics.ts",
-    "docker:build": "docker build -t astral-money .",
-    "docker:run": "docker run -p 3000:3000 astral-money",
+    "docker:build": "docker build -t astral-balance .",
+    "docker:run": "docker run -p 3000:3000 astral-balance",
     "production:build": "npm run type-check && npm run security:audit && npm run test:ci && npm run build",
     "production:start": "NODE_ENV=production npm start",
     "production:migrate": "npm run db:migrate:prod",
@@ -65,9 +65,9 @@
     "production-ready"
   ],
   "author": {
-    "name": "Astral Money Team",
-    "email": "security@astralmoney.com",
-    "url": "https://astralmoney.com"
+    "name": "Astral Balance Team",
+    "email": "security@astralbalance.com",
+    "url": "https://astralbalance.com"
   },
   "license": "MIT",
   "repository": {
@@ -83,6 +83,8 @@
     "@next/bundle-analyzer": "^14.2.13",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-icons": "^1.3.0",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tabs": "^1.1.13",
     "@sentry/nextjs": "^8.40.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
@@ -98,7 +100,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.460.0",
     "next": "^14.2.32",
-    "next-auth": "^4.24.11",
+    "next-auth": "^4.24.7",
     "next-themes": "^0.4.4",
     "prisma": "^5.22.0",
     "react": "^18.3.1",
@@ -106,7 +108,7 @@
     "react-hook-form": "^7.53.2",
     "recharts": "^2.15.4",
     "sharp": "^0.33.5",
-    "tailwind-merge": "^2.5.4",
+    "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.19.2",
     "uuid": "^10.0.0",

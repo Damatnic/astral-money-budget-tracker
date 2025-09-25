@@ -6,6 +6,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { server } from '../../__tests__/api/__mocks__/server';
+import { rest } from 'msw';
 
 // Mock the GoalsSection component since it uses client-side hooks
 const MockGoalsSection = () => {

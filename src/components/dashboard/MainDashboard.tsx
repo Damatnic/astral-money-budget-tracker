@@ -545,7 +545,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                 </svg>
               </div>
               {!sidebarCollapsed && (
-                <span className="ml-3 font-bold text-gray-900 dark:text-white">Astral Money</span>
+                <span className="ml-3 font-bold text-gray-900 dark:text-white">Astral Balance</span>
               )}
             </div>
             <button

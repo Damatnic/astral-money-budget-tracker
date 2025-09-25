@@ -1,7 +1,7 @@
 import { Inter } from 'next/font/google'
 import { Suspense } from 'react'
 import './globals.css'
-import ErrorBoundary from '@/components/ErrorBoundary'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AppProvider } from '@/contexts/AppContext'
 import SessionProvider from '@/components/providers/SessionProvider'
 import { ThemeProvider } from '@/contexts/ThemeContext'
@@ -9,12 +9,12 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata = {
-  title: '🌟 Astral Money - Ultimate Budget Tracker 2025',
-  description: 'Professional budget tracking with AI-powered insights, real-time financial health scoring, and smart bill management. Track expenses, manage income, and achieve your financial goals.',
-  keywords: 'budget tracker, expense management, financial health, bill tracking, money management, personal finance, savings goals',
-  authors: [{ name: 'Astral Money Team' }],
-  creator: 'Astral Money',
-  publisher: 'Astral Money',
+  title: '⚖️ Astral Balance - Ultimate Financial Balance Tracker 2025',
+  description: 'Professional financial balance management with AI-powered insights, real-time financial health scoring, and smart balance tracking. Manage expenses, income, and achieve perfect financial balance.',
+  keywords: 'balance tracker, financial balance, expense management, financial health, money balance, personal finance, financial equilibrium',
+  authors: [{ name: 'Astral Balance Team' }],
+  creator: 'Astral Balance',
+  publisher: 'Astral Balance',
   formatDetection: {
     email: false,
     address: false,
@@ -25,10 +25,10 @@ export const metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: '🌟 Astral Money - Ultimate Budget Tracker 2025',
-    description: 'Professional budget tracking with AI-powered insights, real-time financial health scoring, and smart bill management.',
+    title: '⚖️ Astral Balance - Ultimate Financial Balance Tracker 2025',
+    description: 'Professional financial balance management with AI-powered insights, real-time financial health scoring, and smart balance tracking.',
     url: 'https://astral-budget.vercel.app',
-    siteName: 'Astral Money',
+    siteName: 'Astral Balance',
     images: [
       {
         url: '/og-image.png',

@@ -1,9 +1,0 @@
-DATABASE_URL=postgresql://neondb_owner:npg_HDCQpG1dOi9W@ep-crimson-cloud-ad4kqyji-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
-DATABASE_URL_UNPOOLED=postgresql://neondb_owner:npg_HDCQpG1dOi9W@ep-crimson-cloud-ad4kqyji.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
-POSTGRES_PRISMA_URL=postgresql://neondb_owner:npg_HDCQpG1dOi9W@ep-crimson-cloud-ad4kqyji-pooler.c-2.us-east-1.aws.neon.tech/neondb?connect_timeout=15&sslmode=require
-PGHOST=ep-crimson-cloud-ad4kqyji-pooler.c-2.us-east-1.aws.neon.tech
-PGUSER=neondb_owner
-PGDATABASE=neondb
-PGPASSWORD=npg_HDCQpG1dOi9W
-NEXTAUTH_SECRET=astral-money-secret-key-2025
-NEXTAUTH_URL=https://astral-budget.vercel.app

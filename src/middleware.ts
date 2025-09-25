@@ -5,6 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { performanceMiddleware } from '@/middleware/performance-monitor';
+import { logger } from '@/lib/advanced-logger';
 
 // Configuration
 const CONFIG = {
@@ -78,6 +80,9 @@ export async function middleware(request: NextRequest) {
   const url = new URL(request.url);
   const path = url.pathname;
   
+  // Initialize performance monitoring
+  const performanceMonitor = performanceMiddleware(request);
+  
   try {
     // 1. Apply security headers
     applySecurityHeaders(response);
@@ -88,6 +93,19 @@ export async function middleware(request: NextRequest) {
     // 3. Check rate limiting
     const rateLimitCheck = await checkRateLimit(request);
     if (!rateLimitCheck.allowed) {
+      logger.logSecurity('rate_limit_exceeded', {
+        clientId: getClientIdentifier(request),
+        path,
+        retryAfter: rateLimitCheck.retryAfter,
+      }, {
+        requestId,
+        context: {
+          userAgent: request.headers.get('user-agent') || undefined,
+          ip: getClientIdentifier(request),
+          route: path,
+          method: request.method,
+        },
+      });
       return createRateLimitResponse(rateLimitCheck.retryAfter);
     }
     
@@ -95,6 +113,18 @@ export async function middleware(request: NextRequest) {
     if (isProtectedRoute(path)) {
       const authCheck = await checkAuthentication(request);
       if (!authCheck.authenticated) {
+        logger.logSecurity('unauthorized_access_attempt', {
+          path,
+          protected: true,
+        }, {
+          requestId,
+          context: {
+            userAgent: request.headers.get('user-agent') || undefined,
+            ip: getClientIdentifier(request),
+            route: path,
+            method: request.method,
+          },
+        });
         return createAuthRequiredResponse(path);
       }
       
@@ -106,9 +136,9 @@ export async function middleware(request: NextRequest) {
     }
     
     // 5. Handle root path based on authentication
-    const authCheck = await checkAuthentication(request);
+    let globalAuthCheck = await checkAuthentication(request);
     if (path === '/') {
-      if (!authCheck.authenticated) {
+      if (!globalAuthCheck.authenticated) {
         // Redirect unauthenticated users to signin
         return NextResponse.redirect(new URL('/auth/signin', request.url));
       }
@@ -116,7 +146,7 @@ export async function middleware(request: NextRequest) {
     }
     
     // 6. Handle authenticated users accessing auth pages
-    if (authCheck.authenticated && path.startsWith('/auth/')) {
+    if (globalAuthCheck.authenticated && path.startsWith('/auth/')) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
@@ -129,16 +159,38 @@ export async function middleware(request: NextRequest) {
     const requestId = generateRequestId();
     response.headers.set('X-Request-Id', requestId);
     
-    // 9. Security logging
+    // 9. Security and performance logging
     if (shouldLogRequest(path)) {
       logSecurityEvent(request, requestId);
+      
+      // Log API requests with advanced logger
+      if (path.startsWith('/api/')) {
+        logger.logApiRequest(
+          request.method,
+          path,
+          response.status || 200,
+          Date.now() - (performanceMonitor.metrics?.startTime || Date.now()),
+          {
+            requestId,
+            userId: globalAuthCheck.userId,
+            sessionId: globalAuthCheck.userEmail,
+            context: {
+              userAgent: request.headers.get('user-agent') || undefined,
+              ip: getClientIdentifier(request),
+              route: path,
+              method: request.method,
+            },
+          }
+        );
+      }
     }
     
     // 10. Add security metadata
     response.headers.set('X-Security-Version', '1.0.0');
     response.headers.set('X-Protected', isProtectedRoute(path) ? 'true' : 'false');
     
-    return response;
+    // 11. Complete performance monitoring
+    return performanceMonitor.enhance(response, globalAuthCheck.userId);
     
   } catch (error) {
     console.error('Middleware error:', error);

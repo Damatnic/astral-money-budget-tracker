@@ -282,7 +282,7 @@ export default function SignInPage() {
             margin: '0 0 12px 0',
             letterSpacing: '-0.5px'
           }}>
-            Astral Money
+            Astral Balance
           </h1>
           <p style={{ 
             color: '#6b7280', 
@@ -583,7 +583,7 @@ export default function SignInPage() {
           borderTop: '1px solid #e5e7eb'
         }}>
           <span style={{ fontSize: '14px', color: '#6b7280' }}>
-            New to Astral Money?{' '}
+            New to Astral Balance?{' '}
             <Link 
               href="/auth/signup" 
               style={{ 

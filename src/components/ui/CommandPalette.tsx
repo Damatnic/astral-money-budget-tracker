@@ -531,7 +531,7 @@ export function CommandPalette({
               </div>
             </div>
             <div className="text-right">
-              <span className="opacity-60">Astral Money Command Palette</span>
+              <span className="opacity-60">Astral Balance Command Palette</span>
             </div>
           </div>
         </div>

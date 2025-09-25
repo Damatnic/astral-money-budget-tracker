@@ -279,3 +279,22 @@ export class UserActionTracker {
 export const performanceMonitor = PerformanceMonitor.getInstance();
 export const errorLogger = ErrorLogger.getInstance();
 export const userActionTracker = UserActionTracker.getInstance();
+
+// Export unified monitoring service for compatibility
+export const MonitoringService = {
+  trackMetric: (name: string, value: number, tags?: Record<string, string>) => {
+    performanceMonitor.trackMetric(name, value, tags);
+  },
+  
+  trackError: (error: Error, metadata?: Record<string, any>) => {
+    errorLogger.logError(error, metadata);
+  },
+  
+  trackUserAction: (action: string, component: string, metadata?: Record<string, any>) => {
+    userActionTracker.trackAction(action, component, metadata);
+  },
+  
+  getMetrics: () => performanceMonitor.getMetrics(),
+  getErrors: () => errorLogger.getErrors(),
+  getActions: () => userActionTracker.getActions(),
+};

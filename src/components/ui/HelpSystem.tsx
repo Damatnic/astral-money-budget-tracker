@@ -230,7 +230,7 @@ export function HelpCenter({ isOpen, onClose }: { isOpen: boolean; onClose: () =
     'getting-started': {
       title: 'Getting Started',
       category: 'basics',
-      content: 'Learn the basics of using Astral Money to track your finances.',
+      content: 'Learn the basics of using Astral Balance to track your finances.',
       keywords: ['start', 'begin', 'basics', 'intro']
     },
     'add-transaction': {
@@ -279,7 +279,7 @@ export function HelpCenter({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Help Center</h2>
-            <p className="text-gray-700 mt-1">Find answers and learn how to use Astral Money</p>
+            <p className="text-gray-700 mt-1">Find answers and learn how to use Astral Balance</p>
           </div>
           <button
             onClick={onClose}

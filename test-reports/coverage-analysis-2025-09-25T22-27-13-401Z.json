@@ -1,0 +1,4311 @@
+{
+  "summary": {
+    "totalFiles": 69,
+    "coveredFiles": 12,
+    "statements": {
+      "covered": 674,
+      "total": 5509,
+      "percentage": 12
+    },
+    "branches": {
+      "covered": 276,
+      "total": 3278,
+      "percentage": 8
+    },
+    "functions": {
+      "covered": 158,
+      "total": 1276,
+      "percentage": 12
+    },
+    "lines": {
+      "covered": 0,
+      "total": 0,
+      "percentage": 100
+    }
+  },
+  "fileAnalysis": [
+    {
+      "path": "src\\app\\api\\auth\\[...nextauth]\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\auth\\[...nextauth]\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 5,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\app\\api\\auth\\signup\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\auth\\signup\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 28,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 3,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\app\\api\\expenses\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\expenses\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 137,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 70,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 11,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\app\\api\\goals\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\goals\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 149,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 99,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 13,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\app\\api\\goals\\[id]\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\goals\\[id]\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 120,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 104,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 5,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\app\\api\\health\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\health\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 117,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 52,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 14,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\app\\api\\income\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\income\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 64,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 30,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 5,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\app\\api\\logs\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\logs\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 114,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 41,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 21,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\app\\api\\performance\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\performance\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 72,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 18,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 5,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "medium"
+    },
+    {
+      "path": "src\\app\\api\\recurring\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\recurring\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 83,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 64,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 4,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\app\\api\\recurring\\history\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\recurring\\history\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 53,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 29,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 6,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\app\\api\\user\\balance\\route.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\user\\balance\\route.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 30,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 13,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "medium"
+    },
+    {
+      "path": "src\\components\\EnhancedDashboard.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\EnhancedDashboard.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 32,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 16,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 14,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\ErrorBoundary.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ErrorBoundary.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 51,
+          "total": 52,
+          "percentage": 98
+        },
+        "branches": {
+          "covered": 31,
+          "total": 31,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 15,
+          "total": 16,
+          "percentage": 94
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\admin\\MonitoringDashboard.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\admin\\MonitoringDashboard.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 88,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 54,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 17,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\analytics\\BudgetTracker.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\analytics\\BudgetTracker.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 56,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 42,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 15,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\analytics\\SpendingAnalytics.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\analytics\\SpendingAnalytics.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 71,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 39,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 27,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\budget\\BudgetManager.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\budget\\BudgetManager.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 73,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 78,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 26,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\charts\\AdvancedCharts.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\charts\\AdvancedCharts.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 120,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 115,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 45,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\charts\\SimpleCharts.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\charts\\SimpleCharts.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 69,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 31,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 17,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\charts\\Sparkline.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\charts\\Sparkline.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 81,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 113,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 18,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\common\\LoadingSpinner.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\common\\LoadingSpinner.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 1,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\components\\common\\ThemeToggle.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\common\\ThemeToggle.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 5,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 19,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "medium"
+    },
+    {
+      "path": "src\\components\\common\\Toast.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\common\\Toast.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 9,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 5,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 3,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\components\\dashboard\\BillsSection.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\BillsSection.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 93,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 95,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 26,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\dashboard\\DashboardHeader.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\DashboardHeader.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 7,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 17,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 1,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "medium"
+    },
+    {
+      "path": "src\\components\\dashboard\\FinancialSummary.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\FinancialSummary.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 32,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 17,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 14,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\dashboard\\GoalsSection.refactored.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\GoalsSection.refactored.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 114,
+          "total": 134,
+          "percentage": 85
+        },
+        "branches": {
+          "covered": 57,
+          "total": 74,
+          "percentage": 77
+        },
+        "functions": {
+          "covered": 35,
+          "total": 39,
+          "percentage": 90
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\dashboard\\GoalsSection.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\GoalsSection.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 111,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 127,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 32,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\dashboard\\MainDashboard.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\MainDashboard.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 240,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 134,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 69,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\dashboard\\NotificationOverlay.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\NotificationOverlay.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 8,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 21,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 5,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "medium"
+    },
+    {
+      "path": "src\\components\\dashboard\\TransactionManager.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\TransactionManager.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 71,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 75,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 33,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\dashboard\\WelcomeMessage.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\WelcomeMessage.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 53,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 17,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 15,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\export\\DataExporter.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\export\\DataExporter.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 105,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 57,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 27,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\insights\\FinancialHealthScore.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\insights\\FinancialHealthScore.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 186,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 122,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 26,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\insights\\SmartInsights.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\insights\\SmartInsights.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 108,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 64,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 28,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\notifications\\NotificationSystem.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\notifications\\NotificationSystem.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 94,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 63,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 27,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\providers\\SessionProvider.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\providers\\SessionProvider.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 0,
+          "total": 1,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\components\\ui\\AnimatedCounter.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\AnimatedCounter.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 60,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 53,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 14,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\ui\\CommandPalette.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\CommandPalette.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 120,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 91,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 40,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\ui\\HelpSystem.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\HelpSystem.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 117,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 55,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 27,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\ui\\LoadingSpinner.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\LoadingSpinner.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 6,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 26,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "medium"
+    },
+    {
+      "path": "src\\components\\ui\\QuickActions.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\QuickActions.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 85,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 49,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 21,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\ui\\Skeleton.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\Skeleton.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 24,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 35,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 19,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\ui\\SkeletonLoader.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\SkeletonLoader.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 20,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 15,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 11,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\components\\ui\\alert.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\alert.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 10,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\components\\ui\\badge.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\badge.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 6,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 0,
+          "total": 1,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\components\\ui\\button.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\button.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 10,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 3,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 1,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\components\\ui\\card.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\card.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 14,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\components\\ui\\tabs.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\tabs.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 11,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\components\\wealth\\NetWorthTracker.tsx",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\wealth\\NetWorthTracker.tsx",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 123,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 57,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 52,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\lib\\advanced-logger.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\advanced-logger.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 167,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 107,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 39,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\lib\\api-error-handler.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\api-error-handler.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 84,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 55,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 19,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\lib\\auth-utils.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\auth-utils.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 17,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\lib\\auth.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\auth.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 46,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 32,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 8,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\lib\\database-optimizer.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\database-optimizer.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 147,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 43,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 41,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\lib\\prisma.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\prisma.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 13,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 5,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 2,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\lib\\utils.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\utils.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 95,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 21,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 28,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\lib\\validation.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\validation.ts",
+      "coverage": {
+        "statements": {
+          "covered": 0,
+          "total": 193,
+          "percentage": 0
+        },
+        "branches": {
+          "covered": 0,
+          "total": 105,
+          "percentage": 0
+        },
+        "functions": {
+          "covered": 0,
+          "total": 15,
+          "percentage": 0
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\utils\\billEstimation.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\billEstimation.ts",
+      "coverage": {
+        "statements": {
+          "covered": 76,
+          "total": 109,
+          "percentage": 70
+        },
+        "branches": {
+          "covered": 45,
+          "total": 80,
+          "percentage": 56
+        },
+        "functions": {
+          "covered": 16,
+          "total": 22,
+          "percentage": 73
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\utils\\categorization.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\categorization.ts",
+      "coverage": {
+        "statements": {
+          "covered": 15,
+          "total": 98,
+          "percentage": 15
+        },
+        "branches": {
+          "covered": 4,
+          "total": 58,
+          "percentage": 7
+        },
+        "functions": {
+          "covered": 1,
+          "total": 11,
+          "percentage": 9
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\utils\\exportUtils.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\exportUtils.ts",
+      "coverage": {
+        "statements": {
+          "covered": 27,
+          "total": 27,
+          "percentage": 100
+        },
+        "branches": {
+          "covered": 2,
+          "total": 2,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 4,
+          "total": 4,
+          "percentage": 100
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\utils\\financialHealth.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\financialHealth.ts",
+      "coverage": {
+        "statements": {
+          "covered": 35,
+          "total": 35,
+          "percentage": 100
+        },
+        "branches": {
+          "covered": 15,
+          "total": 15,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 3,
+          "total": 3,
+          "percentage": 100
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "medium"
+    },
+    {
+      "path": "src\\utils\\formatters.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\formatters.ts",
+      "coverage": {
+        "statements": {
+          "covered": 10,
+          "total": 10,
+          "percentage": 100
+        },
+        "branches": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        },
+        "functions": {
+          "covered": 3,
+          "total": 3,
+          "percentage": 100
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "low"
+    },
+    {
+      "path": "src\\utils\\indexedDB.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\indexedDB.ts",
+      "coverage": {
+        "statements": {
+          "covered": 19,
+          "total": 152,
+          "percentage": 13
+        },
+        "branches": {
+          "covered": 3,
+          "total": 23,
+          "percentage": 13
+        },
+        "functions": {
+          "covered": 9,
+          "total": 61,
+          "percentage": 15
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\utils\\monitoring.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\monitoring.ts",
+      "coverage": {
+        "statements": {
+          "covered": 33,
+          "total": 71,
+          "percentage": 46
+        },
+        "branches": {
+          "covered": 4,
+          "total": 19,
+          "percentage": 21
+        },
+        "functions": {
+          "covered": 13,
+          "total": 30,
+          "percentage": 43
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\utils\\security.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\security.ts",
+      "coverage": {
+        "statements": {
+          "covered": 193,
+          "total": 467,
+          "percentage": 41
+        },
+        "branches": {
+          "covered": 87,
+          "total": 255,
+          "percentage": 34
+        },
+        "functions": {
+          "covered": 32,
+          "total": 93,
+          "percentage": 34
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\utils\\smartFeatures.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\smartFeatures.ts",
+      "coverage": {
+        "statements": {
+          "covered": 72,
+          "total": 163,
+          "percentage": 44
+        },
+        "branches": {
+          "covered": 21,
+          "total": 76,
+          "percentage": 28
+        },
+        "functions": {
+          "covered": 17,
+          "total": 39,
+          "percentage": 44
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    },
+    {
+      "path": "src\\utils\\undoRedo.ts",
+      "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\undoRedo.ts",
+      "coverage": {
+        "statements": {
+          "covered": 29,
+          "total": 135,
+          "percentage": 21
+        },
+        "branches": {
+          "covered": 7,
+          "total": 45,
+          "percentage": 16
+        },
+        "functions": {
+          "covered": 10,
+          "total": 36,
+          "percentage": 28
+        },
+        "lines": {
+          "covered": 0,
+          "total": 0,
+          "percentage": 100
+        }
+      },
+      "uncoveredLines": [],
+      "complexity": "high"
+    }
+  ],
+  "categories": {
+    "components": {
+      "files": [],
+      "coverage": {
+        "statements": 0,
+        "branches": 0,
+        "functions": 0,
+        "lines": 0
+      }
+    },
+    "utils": {
+      "files": [],
+      "coverage": {
+        "statements": 0,
+        "branches": 0,
+        "functions": 0,
+        "lines": 0
+      }
+    },
+    "api": {
+      "files": [],
+      "coverage": {
+        "statements": 0,
+        "branches": 0,
+        "functions": 0,
+        "lines": 0
+      }
+    },
+    "lib": {
+      "files": [],
+      "coverage": {
+        "statements": 0,
+        "branches": 0,
+        "functions": 0,
+        "lines": 0
+      }
+    },
+    "other": {
+      "files": [
+        {
+          "path": "src\\app\\api\\auth\\[...nextauth]\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\auth\\[...nextauth]\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 5,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\app\\api\\auth\\signup\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\auth\\signup\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 28,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 3,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\app\\api\\expenses\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\expenses\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 137,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 70,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 11,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\app\\api\\goals\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\goals\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 149,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 99,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 13,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\app\\api\\goals\\[id]\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\goals\\[id]\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 120,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 104,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 5,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\app\\api\\health\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\health\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 117,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 52,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 14,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\app\\api\\income\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\income\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 64,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 30,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 5,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\app\\api\\logs\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\logs\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 114,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 41,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 21,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\app\\api\\performance\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\performance\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 72,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 18,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 5,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "medium"
+        },
+        {
+          "path": "src\\app\\api\\recurring\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\recurring\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 83,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 64,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 4,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\app\\api\\recurring\\history\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\recurring\\history\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 53,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 29,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 6,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\app\\api\\user\\balance\\route.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\app\\api\\user\\balance\\route.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 30,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 13,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "medium"
+        },
+        {
+          "path": "src\\components\\EnhancedDashboard.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\EnhancedDashboard.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 32,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 16,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 14,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\ErrorBoundary.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ErrorBoundary.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 51,
+              "total": 52,
+              "percentage": 98
+            },
+            "branches": {
+              "covered": 31,
+              "total": 31,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 15,
+              "total": 16,
+              "percentage": 94
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\admin\\MonitoringDashboard.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\admin\\MonitoringDashboard.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 88,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 54,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 17,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\analytics\\BudgetTracker.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\analytics\\BudgetTracker.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 56,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 42,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 15,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\analytics\\SpendingAnalytics.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\analytics\\SpendingAnalytics.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 71,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 39,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 27,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\budget\\BudgetManager.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\budget\\BudgetManager.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 73,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 78,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 26,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\charts\\AdvancedCharts.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\charts\\AdvancedCharts.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 120,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 115,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 45,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\charts\\SimpleCharts.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\charts\\SimpleCharts.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 69,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 31,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 17,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\charts\\Sparkline.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\charts\\Sparkline.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 81,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 113,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 18,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\common\\LoadingSpinner.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\common\\LoadingSpinner.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 1,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\components\\common\\ThemeToggle.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\common\\ThemeToggle.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 5,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 19,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "medium"
+        },
+        {
+          "path": "src\\components\\common\\Toast.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\common\\Toast.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 9,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 5,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 3,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\components\\dashboard\\BillsSection.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\BillsSection.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 93,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 95,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 26,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\dashboard\\DashboardHeader.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\DashboardHeader.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 7,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 17,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 1,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "medium"
+        },
+        {
+          "path": "src\\components\\dashboard\\FinancialSummary.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\FinancialSummary.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 32,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 17,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 14,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\dashboard\\GoalsSection.refactored.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\GoalsSection.refactored.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 114,
+              "total": 134,
+              "percentage": 85
+            },
+            "branches": {
+              "covered": 57,
+              "total": 74,
+              "percentage": 77
+            },
+            "functions": {
+              "covered": 35,
+              "total": 39,
+              "percentage": 90
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\dashboard\\GoalsSection.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\GoalsSection.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 111,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 127,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 32,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\dashboard\\MainDashboard.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\MainDashboard.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 240,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 134,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 69,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\dashboard\\NotificationOverlay.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\NotificationOverlay.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 8,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 21,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 5,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "medium"
+        },
+        {
+          "path": "src\\components\\dashboard\\TransactionManager.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\TransactionManager.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 71,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 75,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 33,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\dashboard\\WelcomeMessage.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\dashboard\\WelcomeMessage.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 53,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 17,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 15,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\export\\DataExporter.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\export\\DataExporter.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 105,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 57,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 27,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\insights\\FinancialHealthScore.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\insights\\FinancialHealthScore.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 186,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 122,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 26,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\insights\\SmartInsights.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\insights\\SmartInsights.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 108,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 64,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 28,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\notifications\\NotificationSystem.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\notifications\\NotificationSystem.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 94,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 63,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 27,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\providers\\SessionProvider.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\providers\\SessionProvider.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 0,
+              "total": 1,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\components\\ui\\AnimatedCounter.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\AnimatedCounter.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 60,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 53,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 14,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\ui\\CommandPalette.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\CommandPalette.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 120,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 91,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 40,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\ui\\HelpSystem.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\HelpSystem.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 117,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 55,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 27,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\ui\\LoadingSpinner.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\LoadingSpinner.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 6,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 26,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "medium"
+        },
+        {
+          "path": "src\\components\\ui\\QuickActions.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\QuickActions.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 85,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 49,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 21,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\ui\\Skeleton.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\Skeleton.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 24,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 35,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 19,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\ui\\SkeletonLoader.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\SkeletonLoader.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 20,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 15,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 11,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\components\\ui\\alert.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\alert.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 10,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\components\\ui\\badge.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\badge.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 6,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 0,
+              "total": 1,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\components\\ui\\button.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\button.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 10,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 3,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 1,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\components\\ui\\card.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\card.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 14,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\components\\ui\\tabs.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\ui\\tabs.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 11,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\components\\wealth\\NetWorthTracker.tsx",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\components\\wealth\\NetWorthTracker.tsx",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 123,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 57,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 52,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\lib\\advanced-logger.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\advanced-logger.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 167,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 107,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 39,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\lib\\api-error-handler.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\api-error-handler.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 84,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 55,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 19,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\lib\\auth-utils.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\auth-utils.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 17,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\lib\\auth.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\auth.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 46,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 32,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 8,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\lib\\database-optimizer.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\database-optimizer.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 147,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 43,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 41,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\lib\\prisma.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\prisma.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 13,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 5,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 2,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\lib\\utils.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\utils.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 95,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 21,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 28,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\lib\\validation.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\lib\\validation.ts",
+          "coverage": {
+            "statements": {
+              "covered": 0,
+              "total": 193,
+              "percentage": 0
+            },
+            "branches": {
+              "covered": 0,
+              "total": 105,
+              "percentage": 0
+            },
+            "functions": {
+              "covered": 0,
+              "total": 15,
+              "percentage": 0
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\utils\\billEstimation.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\billEstimation.ts",
+          "coverage": {
+            "statements": {
+              "covered": 76,
+              "total": 109,
+              "percentage": 70
+            },
+            "branches": {
+              "covered": 45,
+              "total": 80,
+              "percentage": 56
+            },
+            "functions": {
+              "covered": 16,
+              "total": 22,
+              "percentage": 73
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\utils\\categorization.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\categorization.ts",
+          "coverage": {
+            "statements": {
+              "covered": 15,
+              "total": 98,
+              "percentage": 15
+            },
+            "branches": {
+              "covered": 4,
+              "total": 58,
+              "percentage": 7
+            },
+            "functions": {
+              "covered": 1,
+              "total": 11,
+              "percentage": 9
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\utils\\exportUtils.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\exportUtils.ts",
+          "coverage": {
+            "statements": {
+              "covered": 27,
+              "total": 27,
+              "percentage": 100
+            },
+            "branches": {
+              "covered": 2,
+              "total": 2,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 4,
+              "total": 4,
+              "percentage": 100
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\utils\\financialHealth.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\financialHealth.ts",
+          "coverage": {
+            "statements": {
+              "covered": 35,
+              "total": 35,
+              "percentage": 100
+            },
+            "branches": {
+              "covered": 15,
+              "total": 15,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 3,
+              "total": 3,
+              "percentage": 100
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "medium"
+        },
+        {
+          "path": "src\\utils\\formatters.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\formatters.ts",
+          "coverage": {
+            "statements": {
+              "covered": 10,
+              "total": 10,
+              "percentage": 100
+            },
+            "branches": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            },
+            "functions": {
+              "covered": 3,
+              "total": 3,
+              "percentage": 100
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "low"
+        },
+        {
+          "path": "src\\utils\\indexedDB.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\indexedDB.ts",
+          "coverage": {
+            "statements": {
+              "covered": 19,
+              "total": 152,
+              "percentage": 13
+            },
+            "branches": {
+              "covered": 3,
+              "total": 23,
+              "percentage": 13
+            },
+            "functions": {
+              "covered": 9,
+              "total": 61,
+              "percentage": 15
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\utils\\monitoring.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\monitoring.ts",
+          "coverage": {
+            "statements": {
+              "covered": 33,
+              "total": 71,
+              "percentage": 46
+            },
+            "branches": {
+              "covered": 4,
+              "total": 19,
+              "percentage": 21
+            },
+            "functions": {
+              "covered": 13,
+              "total": 30,
+              "percentage": 43
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\utils\\security.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\security.ts",
+          "coverage": {
+            "statements": {
+              "covered": 193,
+              "total": 467,
+              "percentage": 41
+            },
+            "branches": {
+              "covered": 87,
+              "total": 255,
+              "percentage": 34
+            },
+            "functions": {
+              "covered": 32,
+              "total": 93,
+              "percentage": 34
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\utils\\smartFeatures.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\smartFeatures.ts",
+          "coverage": {
+            "statements": {
+              "covered": 72,
+              "total": 163,
+              "percentage": 44
+            },
+            "branches": {
+              "covered": 21,
+              "total": 76,
+              "percentage": 28
+            },
+            "functions": {
+              "covered": 17,
+              "total": 39,
+              "percentage": 44
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        },
+        {
+          "path": "src\\utils\\undoRedo.ts",
+          "fullPath": "C:\\Users\\damat\\_REPOS\\ASTRAL_MONEY\\src\\utils\\undoRedo.ts",
+          "coverage": {
+            "statements": {
+              "covered": 29,
+              "total": 135,
+              "percentage": 21
+            },
+            "branches": {
+              "covered": 7,
+              "total": 45,
+              "percentage": 16
+            },
+            "functions": {
+              "covered": 10,
+              "total": 36,
+              "percentage": 28
+            },
+            "lines": {
+              "covered": 0,
+              "total": 0,
+              "percentage": 100
+            }
+          },
+          "uncoveredLines": [],
+          "complexity": "high"
+        }
+      ],
+      "coverage": {
+        "statements": 11,
+        "branches": 18,
+        "functions": 16,
+        "lines": 100
+      }
+    }
+  },
+  "recommendations": [
+    {
+      "type": "file",
+      "priority": "critical",
+      "message": "src\\app\\api\\auth\\[...nextauth]\\route.ts has 0% statement coverage.",
+      "action": "Add comprehensive tests for src\\app\\api\\auth\\[...nextauth]\\route.ts",
+      "file": "src\\app\\api\\auth\\[...nextauth]\\route.ts"
+    },
+    {
+      "type": "file",
+      "priority": "critical",
+      "message": "src\\app\\api\\auth\\signup\\route.ts has 0% statement coverage.",
+      "action": "Add comprehensive tests for src\\app\\api\\auth\\signup\\route.ts",
+      "file": "src\\app\\api\\auth\\signup\\route.ts"
+    },
+    {
+      "type": "file",
+      "priority": "critical",
+      "message": "src\\app\\api\\expenses\\route.ts has 0% statement coverage.",
+      "action": "Add comprehensive tests for src\\app\\api\\expenses\\route.ts",
+      "file": "src\\app\\api\\expenses\\route.ts"
+    },
+    {
+      "type": "file",
+      "priority": "critical",
+      "message": "src\\app\\api\\goals\\route.ts has 0% statement coverage.",
+      "action": "Add comprehensive tests for src\\app\\api\\goals\\route.ts",
+      "file": "src\\app\\api\\goals\\route.ts"
+    },
+    {
+      "type": "file",
+      "priority": "critical",
+      "message": "src\\app\\api\\goals\\[id]\\route.ts has 0% statement coverage.",
+      "action": "Add comprehensive tests for src\\app\\api\\goals\\[id]\\route.ts",
+      "file": "src\\app\\api\\goals\\[id]\\route.ts"
+    },
+    {
+      "type": "coverage",
+      "priority": "high",
+      "message": "Overall statement coverage is 12%. Aim for 80%+ coverage.",
+      "action": "Add more unit tests for core functionality."
+    },
+    {
+      "type": "coverage",
+      "priority": "high",
+      "message": "Branch coverage is 8%. Focus on testing edge cases and error conditions.",
+      "action": "Add tests for if/else branches, error handling, and conditional logic."
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\app\\api\\expenses\\route.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\app\\api\\expenses\\route.ts",
+      "file": "src\\app\\api\\expenses\\route.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\app\\api\\goals\\route.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\app\\api\\goals\\route.ts",
+      "file": "src\\app\\api\\goals\\route.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\app\\api\\goals\\[id]\\route.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\app\\api\\goals\\[id]\\route.ts",
+      "file": "src\\app\\api\\goals\\[id]\\route.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\app\\api\\health\\route.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\app\\api\\health\\route.ts",
+      "file": "src\\app\\api\\health\\route.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\app\\api\\income\\route.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\app\\api\\income\\route.ts",
+      "file": "src\\app\\api\\income\\route.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\app\\api\\logs\\route.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\app\\api\\logs\\route.ts",
+      "file": "src\\app\\api\\logs\\route.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\app\\api\\recurring\\route.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\app\\api\\recurring\\route.ts",
+      "file": "src\\app\\api\\recurring\\route.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\app\\api\\recurring\\history\\route.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\app\\api\\recurring\\history\\route.ts",
+      "file": "src\\app\\api\\recurring\\history\\route.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\EnhancedDashboard.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\EnhancedDashboard.tsx",
+      "file": "src\\components\\EnhancedDashboard.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\admin\\MonitoringDashboard.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\admin\\MonitoringDashboard.tsx",
+      "file": "src\\components\\admin\\MonitoringDashboard.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\analytics\\BudgetTracker.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\analytics\\BudgetTracker.tsx",
+      "file": "src\\components\\analytics\\BudgetTracker.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\analytics\\SpendingAnalytics.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\analytics\\SpendingAnalytics.tsx",
+      "file": "src\\components\\analytics\\SpendingAnalytics.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\budget\\BudgetManager.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\budget\\BudgetManager.tsx",
+      "file": "src\\components\\budget\\BudgetManager.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\charts\\AdvancedCharts.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\charts\\AdvancedCharts.tsx",
+      "file": "src\\components\\charts\\AdvancedCharts.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\charts\\SimpleCharts.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\charts\\SimpleCharts.tsx",
+      "file": "src\\components\\charts\\SimpleCharts.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\charts\\Sparkline.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\charts\\Sparkline.tsx",
+      "file": "src\\components\\charts\\Sparkline.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\dashboard\\BillsSection.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\dashboard\\BillsSection.tsx",
+      "file": "src\\components\\dashboard\\BillsSection.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\dashboard\\FinancialSummary.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\dashboard\\FinancialSummary.tsx",
+      "file": "src\\components\\dashboard\\FinancialSummary.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\dashboard\\GoalsSection.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\dashboard\\GoalsSection.tsx",
+      "file": "src\\components\\dashboard\\GoalsSection.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\dashboard\\MainDashboard.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\dashboard\\MainDashboard.tsx",
+      "file": "src\\components\\dashboard\\MainDashboard.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\dashboard\\TransactionManager.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\dashboard\\TransactionManager.tsx",
+      "file": "src\\components\\dashboard\\TransactionManager.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\dashboard\\WelcomeMessage.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\dashboard\\WelcomeMessage.tsx",
+      "file": "src\\components\\dashboard\\WelcomeMessage.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\export\\DataExporter.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\export\\DataExporter.tsx",
+      "file": "src\\components\\export\\DataExporter.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\insights\\FinancialHealthScore.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\insights\\FinancialHealthScore.tsx",
+      "file": "src\\components\\insights\\FinancialHealthScore.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\insights\\SmartInsights.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\insights\\SmartInsights.tsx",
+      "file": "src\\components\\insights\\SmartInsights.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\notifications\\NotificationSystem.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\notifications\\NotificationSystem.tsx",
+      "file": "src\\components\\notifications\\NotificationSystem.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\ui\\AnimatedCounter.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\ui\\AnimatedCounter.tsx",
+      "file": "src\\components\\ui\\AnimatedCounter.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\ui\\CommandPalette.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\ui\\CommandPalette.tsx",
+      "file": "src\\components\\ui\\CommandPalette.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\ui\\HelpSystem.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\ui\\HelpSystem.tsx",
+      "file": "src\\components\\ui\\HelpSystem.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\ui\\QuickActions.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\ui\\QuickActions.tsx",
+      "file": "src\\components\\ui\\QuickActions.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\ui\\Skeleton.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\ui\\Skeleton.tsx",
+      "file": "src\\components\\ui\\Skeleton.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\ui\\SkeletonLoader.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\ui\\SkeletonLoader.tsx",
+      "file": "src\\components\\ui\\SkeletonLoader.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\components\\wealth\\NetWorthTracker.tsx is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\components\\wealth\\NetWorthTracker.tsx",
+      "file": "src\\components\\wealth\\NetWorthTracker.tsx"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\lib\\advanced-logger.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\lib\\advanced-logger.ts",
+      "file": "src\\lib\\advanced-logger.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\lib\\api-error-handler.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\lib\\api-error-handler.ts",
+      "file": "src\\lib\\api-error-handler.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\lib\\auth.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\lib\\auth.ts",
+      "file": "src\\lib\\auth.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\lib\\database-optimizer.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\lib\\database-optimizer.ts",
+      "file": "src\\lib\\database-optimizer.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\lib\\utils.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\lib\\utils.ts",
+      "file": "src\\lib\\utils.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\lib\\validation.ts is complex but has only 0% coverage.",
+      "action": "Prioritize testing for this complex file: src\\lib\\validation.ts",
+      "file": "src\\lib\\validation.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\utils\\categorization.ts is complex but has only 15% coverage.",
+      "action": "Prioritize testing for this complex file: src\\utils\\categorization.ts",
+      "file": "src\\utils\\categorization.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\utils\\indexedDB.ts is complex but has only 13% coverage.",
+      "action": "Prioritize testing for this complex file: src\\utils\\indexedDB.ts",
+      "file": "src\\utils\\indexedDB.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\utils\\monitoring.ts is complex but has only 46% coverage.",
+      "action": "Prioritize testing for this complex file: src\\utils\\monitoring.ts",
+      "file": "src\\utils\\monitoring.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\utils\\security.ts is complex but has only 41% coverage.",
+      "action": "Prioritize testing for this complex file: src\\utils\\security.ts",
+      "file": "src\\utils\\security.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\utils\\smartFeatures.ts is complex but has only 44% coverage.",
+      "action": "Prioritize testing for this complex file: src\\utils\\smartFeatures.ts",
+      "file": "src\\utils\\smartFeatures.ts"
+    },
+    {
+      "type": "complexity",
+      "priority": "high",
+      "message": "src\\utils\\undoRedo.ts is complex but has only 21% coverage.",
+      "action": "Prioritize testing for this complex file: src\\utils\\undoRedo.ts",
+      "file": "src\\utils\\undoRedo.ts"
+    },
+    {
+      "type": "category",
+      "priority": "medium",
+      "message": "other category has low coverage (11%).",
+      "action": "Focus testing efforts on other files."
+    }
+  ],
+  "trends": []
+}

@@ -1,440 +1,386 @@
 /**
- * Enterprise Health Check Endpoint
- * Provides comprehensive system health monitoring and diagnostics
+ * System Health Check API
+ * Comprehensive monitoring of all system components
  */
 
-import { NextResponse } from 'next/server';
-import prisma from '../../../../lib/db';
+export const runtime = 'nodejs';
 
-// Health check configuration
-const HEALTH_CONFIG = {
-  version: process.env.APP_VERSION || '1.0.0',
-  name: process.env.APP_NAME || 'Astral Money',
-  environment: process.env.NODE_ENV || 'development',
-  timeout: {
-    database: 5000, // 5 second timeout for DB checks
-    external: 3000, // 3 second timeout for external services
-  },
-  thresholds: {
-    memory: {
-      warning: 80,  // 80% memory usage warning
-      critical: 95, // 95% memory usage critical
-    },
-    responseTime: {
-      warning: 500,   // 500ms response time warning  
-      critical: 2000, // 2000ms response time critical
-    },
-  },
-};
+import { NextRequest, NextResponse } from 'next/server';
+import { APIErrorHandler } from '@/lib/api-error-handler';
+import { createHealthCheckResponse } from '@/lib/database-optimizer';
+import { MonitoringService } from '@/utils/monitoring';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
-  version: string;
   timestamp: string;
   uptime: number;
+  version: string;
   environment: string;
-  checks: {
-    database: HealthCheck;
-    memory: HealthCheck;
-    disk: HealthCheck;
-    security: HealthCheck;
-    dependencies: HealthCheck;
+  components: {
+    database: ComponentHealth;
+    api: ComponentHealth;
+    memory: ComponentHealth;
+    disk: ComponentHealth;
+    external: ComponentHealth;
   };
-  metrics: {
-    responseTime: number;
-    memoryUsage: NodeJS.MemoryUsage;
-    processUptime: number;
-    requestCount?: number;
-  };
+  metrics: SystemMetrics;
+  alerts: HealthAlert[];
 }
 
-interface HealthCheck {
-  status: 'pass' | 'warn' | 'fail';
-  message: string;
-  details?: any;
+interface ComponentHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy';
   responseTime?: number;
-  lastChecked: string;
+  details?: any;
+  lastCheck: string;
+  uptime?: number;
 }
 
-const startTime = Date.now();
-let requestCount = 0;
+interface SystemMetrics {
+  requestsPerMinute: number;
+  averageResponseTime: number;
+  errorRate: number;
+  memoryUsage: {
+    used: number;
+    total: number;
+    percentage: number;
+  };
+  cpuUsage?: number;
+  activeConnections: number;
+}
 
-export async function GET(request: Request): Promise<NextResponse> {
-  const checkStartTime = Date.now();
-  requestCount++;
-  
-  try {
-    // Verify health check token for security
-    const url = new URL(request.url);
-    const token = url.searchParams.get('token') || request.headers.get('x-health-token');
+interface HealthAlert {
+  level: 'info' | 'warning' | 'error' | 'critical';
+  message: string;
+  component: string;
+  timestamp: string;
+  details?: any;
+}
+
+class HealthMonitor {
+  private static alerts: HealthAlert[] = [];
+  private static startTime = Date.now();
+  private static requestCount = 0;
+  private static errorCount = 0;
+  private static responseTimes: number[] = [];
+
+  static trackRequest(responseTime: number, isError: boolean = false): void {
+    this.requestCount++;
+    if (isError) this.errorCount++;
     
-    if (process.env.NODE_ENV === 'production' && 
-        process.env.HEALTH_CHECK_TOKEN && 
-        token !== process.env.HEALTH_CHECK_TOKEN) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    this.responseTimes.push(responseTime);
+    
+    // Keep only recent response times (last 1000 requests)
+    if (this.responseTimes.length > 1000) {
+      this.responseTimes = this.responseTimes.slice(-500);
     }
+  }
 
-    // Perform all health checks
-    const [
-      databaseCheck,
-      memoryCheck,
-      diskCheck,
-      securityCheck,
-      dependenciesCheck,
-    ] = await Promise.allSettled([
-      checkDatabase(),
-      checkMemory(),
-      checkDisk(),
-      checkSecurity(),
-      checkDependencies(),
-    ]);
-
-    // Calculate overall status
-    const checks = {
-      database: getCheckResult(databaseCheck),
-      memory: getCheckResult(memoryCheck),
-      disk: getCheckResult(diskCheck),
-      security: getCheckResult(securityCheck),
-      dependencies: getCheckResult(dependenciesCheck),
-    };
-
-    const overallStatus = determineOverallStatus(checks);
-    const responseTime = Date.now() - checkStartTime;
-
-    const healthStatus: HealthStatus = {
-      status: overallStatus,
-      version: HEALTH_CONFIG.version,
+  static addAlert(alert: Omit<HealthAlert, 'timestamp'>): void {
+    this.alerts.push({
+      ...alert,
       timestamp: new Date().toISOString(),
-      uptime: Date.now() - startTime,
-      environment: HEALTH_CONFIG.environment,
-      checks,
-      metrics: {
-        responseTime,
-        memoryUsage: process.memoryUsage(),
-        processUptime: process.uptime(),
-        requestCount,
-      },
-    };
-
-    // Return appropriate HTTP status code
-    const httpStatus = getHttpStatus(overallStatus);
-    
-    return NextResponse.json(healthStatus, { 
-      status: httpStatus,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'X-Health-Check-Version': '1.0.0',
-        'X-Response-Time': `${responseTime}ms`,
-      },
     });
 
-  } catch (error) {
-    // Error logged via proper error handling
-    
-    return NextResponse.json(
-      {
-        status: 'unhealthy',
-        version: HEALTH_CONFIG.version,
-        timestamp: new Date().toISOString(),
-        error: 'Health check failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 503 }
-    );
-  }
-}
+    // Keep only recent alerts (last 100)
+    if (this.alerts.length > 100) {
+      this.alerts = this.alerts.slice(-50);
+    }
 
-/**
- * Check database connectivity and performance
- */
-async function checkDatabase(): Promise<HealthCheck> {
-  const startTime = Date.now();
-  
-  try {
-    if (!process.env.DATABASE_URL) {
+    // Log critical alerts
+    if (alert.level === 'critical' || alert.level === 'error') {
+      console.error(`Health Alert [${alert.level.toUpperCase()}]:`, alert.message);
+      MonitoringService.trackError(new Error(alert.message), {
+        component: alert.component,
+        level: alert.level,
+        details: alert.details,
+      });
+    }
+  }
+
+  static async checkDatabaseHealth(): Promise<ComponentHealth> {
+    try {
+      const dbHealth = await createHealthCheckResponse();
+      const isHealthy = dbHealth.database.status === 'healthy';
+      const responseTime = dbHealth.database.responseTime;
+
+      if (!isHealthy) {
+        this.addAlert({
+          level: 'error',
+          message: `Database unhealthy: ${dbHealth.database.lastError}`,
+          component: 'database',
+          details: dbHealth.database,
+        });
+      } else if (responseTime > 1000) {
+        this.addAlert({
+          level: 'warning',
+          message: `Database slow response: ${responseTime}ms`,
+          component: 'database',
+          details: { responseTime },
+        });
+      }
+
       return {
-        status: 'fail',
-        message: 'Database URL not configured',
-        responseTime: Date.now() - startTime,
-        lastChecked: new Date().toISOString(),
+        status: isHealthy ? 'healthy' : 'unhealthy',
+        responseTime,
+        details: dbHealth.database,
+        lastCheck: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.addAlert({
+        level: 'critical',
+        message: `Database check failed: ${(error as Error).message}`,
+        component: 'database',
+        details: { error: (error as Error).message },
+      });
+
+      return {
+        status: 'unhealthy',
+        details: { error: (error as Error).message },
+        lastCheck: new Date().toISOString(),
       };
     }
-
-    // Test database connection with timeout
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('Database timeout')), HEALTH_CONFIG.timeout.database);
-    });
-
-    const dbPromise = prisma.$queryRaw`SELECT 1 as test`;
-    
-    await Promise.race([dbPromise, timeoutPromise]);
-    
-    // Test basic query performance
-    const userCount = await prisma.user.count();
-    
-    const responseTime = Date.now() - startTime;
-    
-    return {
-      status: responseTime > 1000 ? 'warn' : 'pass',
-      message: responseTime > 1000 ? 'Database responding slowly' : 'Database healthy',
-      details: {
-        userCount,
-        connectionPool: 'active',
-      },
-      responseTime,
-      lastChecked: new Date().toISOString(),
-    };
-
-  } catch (error) {
-    return {
-      status: 'fail',
-      message: `Database check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      responseTime: Date.now() - startTime,
-      lastChecked: new Date().toISOString(),
-    };
   }
-}
 
-/**
- * Check memory usage
- */
-async function checkMemory(): Promise<HealthCheck> {
-  try {
-    const memUsage = process.memoryUsage();
-    const totalMemory = memUsage.heapTotal;
-    const usedMemory = memUsage.heapUsed;
-    const memoryPercentage = (usedMemory / totalMemory) * 100;
+  static checkAPIHealth(): ComponentHealth {
+    const uptime = Date.now() - this.startTime;
+    const minutesUp = uptime / (1000 * 60);
+    const requestsPerMinute = minutesUp > 0 ? this.requestCount / minutesUp : 0;
+    const errorRate = this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;
+    const avgResponseTime = this.responseTimes.length > 0 
+      ? this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length 
+      : 0;
 
-    let status: 'pass' | 'warn' | 'fail' = 'pass';
-    let message = 'Memory usage normal';
+    let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
 
-    if (memoryPercentage >= HEALTH_CONFIG.thresholds.memory.critical) {
-      status = 'fail';
-      message = 'Critical memory usage';
-    } else if (memoryPercentage >= HEALTH_CONFIG.thresholds.memory.warning) {
-      status = 'warn';
-      message = 'High memory usage';
+    if (errorRate > 10) {
+      status = 'unhealthy';
+      this.addAlert({
+        level: 'error',
+        message: `High error rate: ${errorRate.toFixed(2)}%`,
+        component: 'api',
+        details: { errorRate, requestCount: this.requestCount, errorCount: this.errorCount },
+      });
+    } else if (errorRate > 5) {
+      status = 'degraded';
+      this.addAlert({
+        level: 'warning',
+        message: `Elevated error rate: ${errorRate.toFixed(2)}%`,
+        component: 'api',
+        details: { errorRate },
+      });
+    }
+
+    if (avgResponseTime > 2000) {
+      status = status === 'healthy' ? 'degraded' : status;
+      this.addAlert({
+        level: 'warning',
+        message: `Slow API response time: ${avgResponseTime.toFixed(0)}ms`,
+        component: 'api',
+        details: { avgResponseTime },
+      });
     }
 
     return {
       status,
-      message,
+      responseTime: avgResponseTime,
+      uptime,
       details: {
-        usedMB: Math.round(usedMemory / 1024 / 1024),
-        totalMB: Math.round(totalMemory / 1024 / 1024),
-        percentage: Math.round(memoryPercentage),
-        rss: Math.round(memUsage.rss / 1024 / 1024),
-        external: Math.round(memUsage.external / 1024 / 1024),
+        requestsPerMinute: requestsPerMinute.toFixed(2),
+        errorRate: errorRate.toFixed(2),
+        totalRequests: this.requestCount,
+        totalErrors: this.errorCount,
       },
-      lastChecked: new Date().toISOString(),
-    };
-
-  } catch (error) {
-    return {
-      status: 'fail',
-      message: `Memory check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      lastChecked: new Date().toISOString(),
+      lastCheck: new Date().toISOString(),
     };
   }
-}
 
-/**
- * Check disk space (simplified for Node.js environment)
- */
-async function checkDisk(): Promise<HealthCheck> {
-  try {
-    // In a real production environment, you would check actual disk usage
-    // For now, we'll check if we can write to the temp directory
-    const { promises: fs } = await import('fs');
-    const path = await import('path');
-    const os = await import('os');
-    
-    const testFile = path.join(os.tmpdir(), `health-check-${Date.now()}.tmp`);
-    
-    await fs.writeFile(testFile, 'health check test');
-    await fs.unlink(testFile);
-    
-    return {
-      status: 'pass',
-      message: 'Disk write test successful',
-      details: {
-        tempDir: os.tmpdir(),
-        writable: true,
-      },
-      lastChecked: new Date().toISOString(),
-    };
+  static checkMemoryHealth(): ComponentHealth {
+    const usage = process.memoryUsage();
+    const totalMB = Math.round(usage.heapTotal / 1024 / 1024);
+    const usedMB = Math.round(usage.heapUsed / 1024 / 1024);
+    const percentage = (usedMB / totalMB) * 100;
 
-  } catch (error) {
-    return {
-      status: 'fail',
-      message: `Disk check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      lastChecked: new Date().toISOString(),
-    };
-  }
-}
+    let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
 
-/**
- * Check security configuration
- */
-async function checkSecurity(): Promise<HealthCheck> {
-  try {
-    const issues: string[] = [];
-    
-    // Check environment variables
-    if (!process.env.NEXTAUTH_SECRET) {
-      issues.push('NEXTAUTH_SECRET not configured');
+    if (percentage > 90) {
+      status = 'unhealthy';
+      this.addAlert({
+        level: 'critical',
+        message: `Critical memory usage: ${percentage.toFixed(1)}%`,
+        component: 'memory',
+        details: { usedMB, totalMB, percentage },
+      });
+    } else if (percentage > 80) {
+      status = 'degraded';
+      this.addAlert({
+        level: 'warning',
+        message: `High memory usage: ${percentage.toFixed(1)}%`,
+        component: 'memory',
+        details: { usedMB, totalMB, percentage },
+      });
     }
-    
-    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.includes('ssl')) {
-      issues.push('Database SSL not configured for production');
-    }
-    
-    if (process.env.NODE_ENV === 'development' && !process.env.NEXTAUTH_URL) {
-      issues.push('NEXTAUTH_URL not configured for development');
-    }
-
-    // Check for secure session configuration
-    const sessionMaxAge = parseInt(process.env.SESSION_MAX_AGE || '3600');
-    if (sessionMaxAge > 86400) { // More than 24 hours
-      issues.push('Session timeout too long for financial application');
-    }
-
-    const status = issues.length === 0 ? 'pass' : issues.length <= 2 ? 'warn' : 'fail';
-    const message = issues.length === 0 
-      ? 'Security configuration healthy' 
-      : `Security issues found: ${issues.length}`;
 
     return {
       status,
-      message,
       details: {
-        issues,
-        environment: process.env.NODE_ENV,
-        sessionTimeout: `${sessionMaxAge}s`,
-        sslConfigured: !!process.env.DATABASE_URL?.includes('ssl'),
+        used: usedMB,
+        total: totalMB,
+        percentage: percentage.toFixed(1),
+        rss: Math.round(usage.rss / 1024 / 1024),
+        external: Math.round(usage.external / 1024 / 1024),
       },
-      lastChecked: new Date().toISOString(),
-    };
-
-  } catch (error) {
-    return {
-      status: 'fail',
-      message: `Security check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      lastChecked: new Date().toISOString(),
+      lastCheck: new Date().toISOString(),
     };
   }
-}
 
-/**
- * Check dependencies and external services
- */
-async function checkDependencies(): Promise<HealthCheck> {
-  try {
-    const dependencies = {
-      nextauth: 'required',
-      prisma: 'required',
-      bcryptjs: 'required',
-      tailwindcss: 'required',
-    };
+  static async checkExternalHealth(): Promise<ComponentHealth> {
+    // Check critical external dependencies
+    const checks = [];
 
-    const issues: string[] = [];
-    
-    // Check if critical packages are available
+    // Check if we can resolve DNS
     try {
-      await import('next-auth');
-      await import('@prisma/client');
-      await import('bcryptjs');
+      const dns = require('dns').promises;
+      await dns.lookup('google.com');
+      checks.push({ name: 'DNS', status: 'healthy' });
     } catch {
-      issues.push('Critical dependency missing');
+      checks.push({ name: 'DNS', status: 'unhealthy' });
     }
 
-    // Check Node.js version
-    const nodeVersion = process.version;
-    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
-    if (majorVersion < 18) {
-      issues.push(`Node.js version ${nodeVersion} is outdated (requires 18+)`);
+    // Check environment variables
+    const requiredEnvVars = ['DATABASE_URL', 'NEXTAUTH_SECRET'];
+    const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+    
+    if (missingEnvVars.length > 0) {
+      checks.push({ name: 'Environment', status: 'unhealthy', details: { missing: missingEnvVars } });
+      this.addAlert({
+        level: 'critical',
+        message: `Missing environment variables: ${missingEnvVars.join(', ')}`,
+        component: 'external',
+        details: { missingEnvVars },
+      });
+    } else {
+      checks.push({ name: 'Environment', status: 'healthy' });
     }
 
-    const status = issues.length === 0 ? 'pass' : 'warn';
-    const message = issues.length === 0 
-      ? 'All dependencies healthy' 
-      : `Dependency issues: ${issues.length}`;
+    const unhealthyChecks = checks.filter(c => c.status === 'unhealthy');
+    const status = unhealthyChecks.length > 0 ? 'unhealthy' : 'healthy';
 
     return {
       status,
-      message,
-      details: {
-        nodeVersion,
-        issues,
-        dependencies,
-      },
-      lastChecked: new Date().toISOString(),
-    };
-
-  } catch (error) {
-    return {
-      status: 'fail',
-      message: `Dependencies check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      lastChecked: new Date().toISOString(),
+      details: { checks },
+      lastCheck: new Date().toISOString(),
     };
   }
-}
 
-/**
- * Extract health check result from Promise.allSettled result
- */
-function getCheckResult(result: PromiseSettledResult<HealthCheck>): HealthCheck {
-  if (result.status === 'fulfilled') {
-    return result.value;
-  } else {
+  static getSystemMetrics(): SystemMetrics {
+    const uptime = Date.now() - this.startTime;
+    const minutesUp = uptime / (1000 * 60);
+    const requestsPerMinute = minutesUp > 0 ? this.requestCount / minutesUp : 0;
+    const errorRate = this.requestCount > 0 ? (this.errorCount / this.requestCount) * 100 : 0;
+    const avgResponseTime = this.responseTimes.length > 0 
+      ? this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length 
+      : 0;
+
+    const memUsage = process.memoryUsage();
+    const memoryUsage = {
+      used: Math.round(memUsage.heapUsed / 1024 / 1024),
+      total: Math.round(memUsage.heapTotal / 1024 / 1024),
+      percentage: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100),
+    };
+
     return {
-      status: 'fail',
-      message: `Check failed: ${result.reason}`,
-      lastChecked: new Date().toISOString(),
+      requestsPerMinute: Math.round(requestsPerMinute * 100) / 100,
+      averageResponseTime: Math.round(avgResponseTime),
+      errorRate: Math.round(errorRate * 100) / 100,
+      memoryUsage,
+      activeConnections: this.requestCount, // Simplified
     };
   }
-}
 
-/**
- * Determine overall system status
- */
-function determineOverallStatus(checks: Record<string, HealthCheck>): 'healthy' | 'degraded' | 'unhealthy' {
-  const checkResults = Object.values(checks);
-  
-  const failCount = checkResults.filter(check => check.status === 'fail').length;
-  const warnCount = checkResults.filter(check => check.status === 'warn').length;
-  
-  if (failCount > 0) {
-    return 'unhealthy';
-  } else if (warnCount > 0) {
-    return 'degraded';
-  } else {
+  static getOverallStatus(components: HealthStatus['components']): 'healthy' | 'degraded' | 'unhealthy' {
+    const statuses = Object.values(components).map(c => c.status);
+    
+    if (statuses.includes('unhealthy')) return 'unhealthy';
+    if (statuses.includes('degraded')) return 'degraded';
     return 'healthy';
   }
 }
 
-/**
- * Get HTTP status code based on health status
- */
-function getHttpStatus(status: 'healthy' | 'degraded' | 'unhealthy'): number {
-  switch (status) {
-    case 'healthy': return 200;
-    case 'degraded': return 200; // Still operational
-    case 'unhealthy': return 503; // Service unavailable
-    default: return 500;
-  }
-}
+// Note: Middleware removed to avoid Next.js build issues
 
-// Additional endpoint for simple ping check
-export async function HEAD(): Promise<NextResponse> {
-  return new NextResponse(null, { 
-    status: 200,
-    headers: {
-      'X-Health': 'ok',
-      'X-Version': HEALTH_CONFIG.version,
-    },
-  });
-}
+// Health check endpoint
+export const GET = APIErrorHandler.withErrorHandling(async (request: NextRequest) => {
+  const startTime = Date.now();
+  
+  // Check query parameters for detailed health check
+  const url = new URL(request.url);
+  const detailed = url.searchParams.get('detailed') === 'true';
+  const component = url.searchParams.get('component');
+
+  try {
+    // Perform health checks
+    const [databaseHealth, externalHealth] = await Promise.all([
+      HealthMonitor.checkDatabaseHealth(),
+      HealthMonitor.checkExternalHealth(),
+    ]);
+
+    const apiHealth = HealthMonitor.checkAPIHealth();
+    const memoryHealth = HealthMonitor.checkMemoryHealth();
+    
+    const components = {
+      database: databaseHealth,
+      api: apiHealth,
+      memory: memoryHealth,
+      disk: { status: 'healthy' as const, lastCheck: new Date().toISOString() }, // Placeholder
+      external: externalHealth,
+    };
+
+    // If specific component requested, return only that
+    if (component && components[component as keyof typeof components]) {
+      return APIErrorHandler.createSuccessResponse({
+        component,
+        ...components[component as keyof typeof components],
+      });
+    }
+
+    const overallStatus = HealthMonitor.getOverallStatus(components);
+    const responseTime = Date.now() - startTime;
+
+    const healthStatus: HealthStatus = {
+      status: overallStatus,
+      timestamp: new Date().toISOString(),
+      uptime: Date.now() - HealthMonitor['startTime'],
+      version: process.env.npm_package_version || '1.0.0',
+      environment: process.env.NODE_ENV || 'development',
+      components,
+      metrics: HealthMonitor.getSystemMetrics(),
+      alerts: detailed ? HealthMonitor['alerts'].slice(-20) : [], // Last 20 alerts if detailed
+    };
+
+    // Set appropriate HTTP status based on health
+    const httpStatus = overallStatus === 'healthy' ? 200 : 
+                      overallStatus === 'degraded' ? 200 : 503;
+
+    return NextResponse.json(healthStatus, { 
+      status: httpStatus,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'X-Health-Status': overallStatus,
+        'X-Response-Time': responseTime.toString(),
+      }
+    });
+
+  } catch (error) {
+    HealthMonitor.addAlert({
+      level: 'critical',
+      message: `Health check failed: ${(error as Error).message}`,
+      component: 'health-system',
+      details: { error: (error as Error).message },
+    });
+
+    throw error;
+  }
+}, { route: '/api/health' });
+
+// Export health monitor for use in other parts of the application
+export { HealthMonitor };

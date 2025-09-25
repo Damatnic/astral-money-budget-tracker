@@ -31,7 +31,7 @@ export function DashboardHeader({
 
   const balanceColor = balance >= 0 ? 'text-green-600' : 'text-red-600';
   const displayName = session?.user?.name || userName;
-  const isDemoAccount = session?.user?.email === 'demo@astral.money';
+  const isDemoAccount = session?.user?.email === 'demo@astral.balance';
 
   return (
     <header className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-indigo-100 rounded-2xl shadow-xl backdrop-blur-sm border border-white/60 p-6 lg:p-8">
@@ -48,7 +48,7 @@ export function DashboardHeader({
                 <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
               </svg>
             </div>
-            Astral Money
+            Astral Balance
             {isOffline && (
               <span className="ml-4 px-3 py-1 text-xs font-medium bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full shadow-lg animate-pulse">
                 Offline Mode

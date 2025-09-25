@@ -1,6 +1,6 @@
 /**
  * Enterprise Expenses API Route
- * Comprehensive validation, security, and error handling
+ * Comprehensive validation, security, and error handling with centralized error system
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,159 +8,118 @@ import prisma from '../../../../lib/db';
 import { requireAuth } from '@/lib/auth-utils';
 import { ValidationEngine, ValidationSchemas } from '@/lib/validation';
 import { AuditLogger } from '@/utils/security';
+import { 
+  APIErrorHandler, 
+  ValidationError, 
+  AuthenticationError,
+  NotFoundError,
+  validateRequired,
+  validatePositiveNumber
+} from '@/lib/api-error-handler';
 
-export async function GET(request: NextRequest) {
-  const requestId = request.headers.get('x-request-id') || 'unknown';
-  
-  try {
-    // Check database availability
-    if (!process.env.DATABASE_URL) {
-      await AuditLogger.logSecurityEvent('system', 'database_unavailable', {
-        level: 'error' as any,
-        data: {
-          endpoint: '/api/expenses',
-          method: 'GET',
-          requestId,
-        },
-      });
-      
-      return NextResponse.json({
-        error: 'Service temporarily unavailable',
-        code: 'SERVICE_UNAVAILABLE',
-        requestId,
-      }, { status: 503 });
-    }
-
-    // Require authentication
-    const user = await requireAuth();
-
-    // Parse query parameters with validation
-    const url = new URL(request.url);
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 1000);
-    const offset = Math.max(parseInt(url.searchParams.get('offset') || '0'), 0);
-    const category = url.searchParams.get('category');
-    const startDate = url.searchParams.get('startDate');
-    const endDate = url.searchParams.get('endDate');
-
-    // Build where clause
-    const whereClause: any = {
-      userId: user.id,
-      type: 'expense',
-    };
-
-    // Add category filter if provided
-    if (category && ValidationSchemas.transaction.category.enum!.includes(category)) {
-      whereClause.category = category;
-    }
-
-    // Add date filters with validation
-    if (startDate || endDate) {
-      whereClause.date = {};
-      
-      if (startDate) {
-        const parsedStartDate = new Date(startDate);
-        if (!isNaN(parsedStartDate.getTime())) {
-          whereClause.date.gte = parsedStartDate;
-        }
-      }
-      
-      if (endDate) {
-        const parsedEndDate = new Date(endDate);
-        if (!isNaN(parsedEndDate.getTime())) {
-          whereClause.date.lte = parsedEndDate;
-        }
-      }
-    } else {
-      // Default to last 30 days if no date filters
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      whereClause.createdAt = { gte: thirtyDaysAgo };
-    }
-
-    // Execute query with performance monitoring
-    const queryStart = Date.now();
-    const [expenses, totalCount] = await Promise.all([
-      prisma.transaction.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-        select: {
-          id: true,
-          amount: true,
-          description: true,
-          category: true,
-          date: true,
-          createdAt: true,
-        },
-      }),
-      prisma.transaction.count({ where: whereClause }),
-    ]);
-    const queryTime = Date.now() - queryStart;
-
-    // Log data access
-    await AuditLogger.logDataAccessEvent('read', user.id, 'expenses', {
-      recordsAffected: expenses.length,
-      success: true,
-      metadata: { 
-        totalCount,
-        queryTime,
-        filters: { category, startDate, endDate, limit, offset },
-        requestId,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        transactions: expenses,
-        pagination: {
-          limit,
-          offset,
-          total: totalCount,
-          hasMore: offset + expenses.length < totalCount,
-        },
-      },
-      metadata: {
-        source: 'database',
-        queryTime,
-        requestId,
-      },
-    });
-
-  } catch (error) {
-    await AuditLogger.logSecurityEvent('api', 'error', {
-      level: 'error' as any,
-      data: {
-        endpoint: '/api/expenses',
-        method: 'GET',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        requestId,
-      },
-    });
-
-    if (error instanceof Error && error.message === 'Authentication required') {
-      return NextResponse.json(
-        { 
-          error: 'Authentication required',
-          code: 'UNAUTHORIZED',
-          requestId,
-        },
-        { status: 401 }
-      );
-    }
-
-    // Error already logged via AuditLogger
-    return NextResponse.json(
-      { 
-        error: 'Failed to fetch expenses',
-        code: 'INTERNAL_ERROR',
-        requestId,
-      },
-      { status: 500 }
-    );
+export const GET = APIErrorHandler.withErrorHandling(async (request: NextRequest) => {
+  // Check database availability
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_UNAVAILABLE');
   }
-}
+
+  // Require authentication
+  const user = await requireAuth();
+  if (!user) {
+    throw new AuthenticationError();
+  }
+
+  // Parse query parameters with validation
+  const url = new URL(request.url);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 1000);
+  const offset = Math.max(parseInt(url.searchParams.get('offset') || '0'), 0);
+  const category = url.searchParams.get('category');
+  const startDate = url.searchParams.get('startDate');
+  const endDate = url.searchParams.get('endDate');
+
+  // Build where clause
+  const whereClause: any = {
+    userId: user.id,
+    type: 'expense',
+  };
+
+  // Add category filter if provided
+  if (category && ValidationSchemas.transaction.category.enum!.includes(category)) {
+    whereClause.category = category;
+  }
+
+  // Add date filters with validation
+  if (startDate || endDate) {
+    whereClause.date = {};
+    
+    if (startDate) {
+      const parsedStartDate = new Date(startDate);
+      if (isNaN(parsedStartDate.getTime())) {
+        throw new ValidationError('Invalid start date format');
+      }
+      whereClause.date.gte = parsedStartDate;
+    }
+    
+    if (endDate) {
+      const parsedEndDate = new Date(endDate);
+      if (isNaN(parsedEndDate.getTime())) {
+        throw new ValidationError('Invalid end date format');
+      }
+      whereClause.date.lte = parsedEndDate;
+    }
+  } else {
+    // Default to last 30 days if no date filters
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    whereClause.createdAt = { gte: thirtyDaysAgo };
+  }
+
+  // Execute query with performance monitoring
+  const queryStart = Date.now();
+  const [expenses, totalCount] = await Promise.all([
+    prisma.transaction.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+      select: {
+        id: true,
+        amount: true,
+        description: true,
+        category: true,
+        date: true,
+        createdAt: true,
+      },
+    }),
+    prisma.transaction.count({ where: whereClause }),
+  ]);
+  const queryTime = Date.now() - queryStart;
+
+  // Log data access
+  await AuditLogger.logDataAccessEvent('read', user.id, 'expenses', {
+    recordsAffected: expenses.length,
+    success: true,
+    metadata: { 
+      totalCount,
+      queryTime,
+      filters: { category, startDate, endDate, limit, offset },
+    },
+  });
+
+  return APIErrorHandler.createSuccessResponse({
+    transactions: expenses,
+    pagination: {
+      limit,
+      offset,
+      total: totalCount,
+      hasMore: offset + expenses.length < totalCount,
+    },
+    metadata: {
+      source: 'database',
+      queryTime,
+    },
+  });
+}, { route: '/api/expenses' });
 
 export async function POST(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') || 'unknown';

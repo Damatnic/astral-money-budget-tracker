@@ -136,7 +136,7 @@ export default function SignUpPage() {
               Account Created!
             </h2>
             <p className="mt-2 text-gray-600">
-              Welcome to Astral Money. You're being signed in...
+              Welcome to Astral Balance. You're being signed in...
             </p>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function SignUpPage() {
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your Astral Money account
+            Create your Astral Balance account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
