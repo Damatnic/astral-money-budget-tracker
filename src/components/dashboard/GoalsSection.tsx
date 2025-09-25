@@ -37,6 +37,7 @@ const CATEGORY_CONFIG = {
 export function GoalsSection({ goals, loading, onUpdate, className = '', compact = false, onNavigate }: GoalsSectionProps) {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
   const [formData, setFormData] = useState<GoalFormData>({
     title: '',
@@ -241,7 +242,7 @@ export function GoalsSection({ goals, loading, onUpdate, className = '', compact
               <p className="text-sm">No goals yet</p>
             </div>
           ) : (
-            goals.slice(0, 3).map((goal) => {
+            (showAll ? goals : goals.slice(0, 3)).map((goal) => {
               const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
               const config = CATEGORY_CONFIG[goal.category as keyof typeof CATEGORY_CONFIG];
               
@@ -285,9 +286,15 @@ export function GoalsSection({ goals, loading, onUpdate, className = '', compact
         {goals.length > 3 && (
           <div className="mt-4 text-center">
             <button 
-              onClick={() => onNavigate?.('goals')}
+              onClick={() => {
+                if (compact && onNavigate) {
+                  onNavigate('goals');
+                } else {
+                  setShowAll(!showAll);
+                }
+              }}
               className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium cursor-pointer">
-              View all ({goals.length})
+              {showAll ? 'Show less' : `View all (${goals.length})`}
             </button>
           </div>
         )}
@@ -460,7 +467,7 @@ export function GoalsSection({ goals, loading, onUpdate, className = '', compact
         </div>
       ) : (
         <div className="space-y-4">
-          {goals.map((goal) => {
+          {(showAll ? goals : goals.slice(0, 5)).map((goal) => {
             const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
             const isCompleted = goal.isCompleted || progress >= 100;
             const daysUntilDeadline = getDaysUntilDeadline(goal.deadline);
@@ -574,6 +581,26 @@ export function GoalsSection({ goals, loading, onUpdate, className = '', compact
               </div>
             );
           })}
+        </div>
+      )}
+
+      {goals.length > 5 && !showAll && (
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => setShowAll(true)}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium cursor-pointer">
+            View all goals ({goals.length})
+          </button>
+        </div>
+      )}
+      
+      {showAll && goals.length > 5 && (
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => setShowAll(false)}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium cursor-pointer">
+            Show less
+          </button>
         </div>
       )}
 

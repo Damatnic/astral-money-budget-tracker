@@ -30,6 +30,7 @@ interface BillFormData {
 export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete, compact = false, onNavigate }: BillsSectionProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBill, setEditingBill] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const [formData, setFormData] = useState<BillFormData>({
     name: '',
     amount: '',
@@ -40,7 +41,7 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
   });
 
   const activeBills = bills.filter(bill => bill.isActive !== false);
-  const upcomingBills = activeBills.slice(0, 5); // Show next 5 bills
+  const displayedBills = showAll ? activeBills : activeBills.slice(0, 5); // Show all or first 5 bills
 
   const getNextDueDate = (bill: RecurringBill) => {
     const today = new Date();
@@ -166,7 +167,7 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
               <p className="text-sm">No upcoming bills</p>
             </div>
           ) : (
-            activeBills.slice(0, 3).map((bill) => {
+            (showAll ? activeBills : activeBills.slice(0, 3)).map((bill) => {
               const dueDate = getNextDueDate(bill);
               const daysUntil = getDaysUntilDue(dueDate);
               const isOverdue = daysUntil < 0;
@@ -207,9 +208,15 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
         {bills.length > 3 && (
           <div className="mt-4 text-center">
             <button 
-              onClick={() => onNavigate?.('bills')}
+              onClick={() => {
+                if (compact && onNavigate) {
+                  onNavigate('bills');
+                } else {
+                  setShowAll(!showAll);
+                }
+              }}
               className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium cursor-pointer">
-              View all ({bills.length})
+              {showAll ? 'Show less' : `View all (${bills.length})`}
             </button>
           </div>
         )}
@@ -378,7 +385,7 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
         </div>
       ) : (
         <div className="space-y-3">
-          {upcomingBills.map((bill) => {
+          {displayedBills.map((bill) => {
             const dueDate = getNextDueDate(bill);
             const daysUntil = getDaysUntilDue(dueDate);
             const isOverdue = daysUntil < 0;
@@ -520,12 +527,22 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
         </div>
       )}
 
-      {bills.length > upcomingBills.length && (
+      {bills.length > displayedBills.length && !showAll && (
         <div className="mt-4 text-center">
           <button 
-            onClick={() => onNavigate?.('bills')}
+            onClick={() => setShowAll(true)}
             className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium cursor-pointer">
             View all bills ({bills.length})
+          </button>
+        </div>
+      )}
+      
+      {showAll && bills.length > 5 && (
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => setShowAll(false)}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium cursor-pointer">
+            Show less
           </button>
         </div>
       )}

@@ -30,6 +30,7 @@ export function TransactionManager({
   onNavigate
 }: TransactionManagerProps) {
   const [showForm, setShowForm] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
@@ -85,7 +86,7 @@ export function TransactionManager({
       const matchesCategory = filterCategory === 'all' || t.category === filterCategory;
       return matchesSearch && matchesType && matchesCategory;
     })
-    .slice(0, compact ? 5 : undefined);
+    .slice(0, showAll ? undefined : (compact ? 5 : 10));
 
   const categories = [...new Set(transactions.map(t => t.category).filter(Boolean))];
 
@@ -278,9 +279,15 @@ export function TransactionManager({
         {transactions.length > 5 && (
           <div className="mt-4 text-center">
             <button 
-              onClick={() => onNavigate?.('transactions')}
+              onClick={() => {
+                if (compact && onNavigate) {
+                  onNavigate('transactions');
+                } else {
+                  setShowAll(!showAll);
+                }
+              }}
               className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium cursor-pointer">
-              View all ({transactions.length})
+              {showAll ? 'Show less' : `View all (${transactions.length})`}
             </button>
           </div>
         )}
@@ -453,6 +460,26 @@ export function TransactionManager({
           </tbody>
         </table>
       </div>
+      
+      {transactions.length > 10 && !showAll && (
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => setShowAll(true)}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium cursor-pointer">
+            View all transactions ({transactions.length})
+          </button>
+        </div>
+      )}
+      
+      {showAll && transactions.length > 10 && (
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => setShowAll(false)}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium cursor-pointer">
+            Show less
+          </button>
+        </div>
+      )}
     </div>
   );
 }
