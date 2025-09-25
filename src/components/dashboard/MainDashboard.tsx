@@ -534,9 +534,9 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
       </div>
 
       {/* Sidebar Navigation */}
-      <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shadow-sm`}>
+      <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 flex flex-col shadow-sm`}>
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : ''}`}>
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
@@ -545,12 +545,12 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                 </svg>
               </div>
               {!sidebarCollapsed && (
-                <span className="ml-3 font-bold text-gray-900">Astral Money</span>
+                <span className="ml-3 font-bold text-gray-900 dark:text-white">Astral Money</span>
               )}
             </div>
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-1.5 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-md text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <svg className={`w-4 h-4 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -561,7 +561,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
 
         {/* User Info */}
         {!sidebarCollapsed && session && (
-          <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold text-sm">
@@ -569,12 +569,12 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{session.user?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{session.user?.email}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{session.user?.name}</p>
+                <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{session.user?.email}</p>
               </div>
             </div>
-            <div className="mt-3 p-2 bg-white rounded-lg">
-              <p className="text-xs text-gray-600 mb-1">Current Balance</p>
+            <div className="mt-3 p-2 bg-white dark:bg-gray-700 rounded-lg">
+              <p className="text-xs text-gray-800 dark:text-gray-200 mb-1">Current Balance</p>
               <p className={`text-lg font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatCurrency(balance)}
               </p>
@@ -599,7 +599,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover-lift ${
                 activeTab === item.id
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shadow-sm'
-                  : 'text-gray-900 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold'
+                  : 'text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
               title={sidebarCollapsed ? item.label : ''}
             >
@@ -612,18 +612,18 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           {!sidebarCollapsed && isOffline && (
-            <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="mb-3 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse mr-2"></div>
-                <span className="text-xs text-orange-800">Offline Mode</span>
+                <span className="text-xs text-orange-800 dark:text-orange-300">Offline Mode</span>
               </div>
             </div>
           )}
           <button
             onClick={handleSignOut}
-            className={`w-full flex items-center px-3 py-2 text-sm font-medium text-gray-800 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ${sidebarCollapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ${sidebarCollapsed ? 'justify-center' : ''}`}
             title={sidebarCollapsed ? 'Sign Out' : ''}
           >
             <svg className={`w-5 h-5 ${!sidebarCollapsed && 'mr-3'}`} fill="currentColor" viewBox="0 0 20 20">
