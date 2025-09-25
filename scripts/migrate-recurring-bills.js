@@ -4,58 +4,62 @@ const prisma = new PrismaClient();
 
 async function migrateRecurringBills() {
   try {
-    console.log('🔄 Starting migration of recurring bills...');
+    console.log('🔧 Starting recurring bills migration...');
     
-    // Get all existing recurring bills
-    const bills = await prisma.recurringBill.findMany({
-      where: {
-        baseAmount: null
-      }
+    // Get the user
+    const user = await prisma.user.findUnique({
+      where: { email: 'user@astralmoney.com' }
     });
     
-    console.log(`📊 Found ${bills.length} bills to migrate`);
-    
-    for (const bill of bills) {
-      // Identify common variable amount providers
-      const isVariableAmount = 
-        bill.name.toLowerCase().includes('verizon') ||
-        bill.name.toLowerCase().includes('electric') ||
-        bill.name.toLowerCase().includes('gas') ||
-        bill.name.toLowerCase().includes('water') ||
-        bill.name.toLowerCase().includes('utility') ||
-        bill.category.toLowerCase().includes('utilities');
-      
-      const provider = bill.name.toLowerCase().includes('verizon') ? 'Verizon' :
-                      bill.name.toLowerCase().includes('electric') ? 'Electric Company' :
-                      bill.name.toLowerCase().includes('gas') ? 'Gas Company' :
-                      null;
-      
-      // Update the bill with new fields
-      await prisma.recurringBill.update({
-        where: { id: bill.id },
-        data: {
-          baseAmount: bill.amount,
-          isVariableAmount: isVariableAmount,
-          averageAmount: bill.amount, // Start with current amount as average
-          minAmount: isVariableAmount ? bill.amount * 0.8 : bill.amount, // Estimate 20% variance
-          maxAmount: isVariableAmount ? bill.amount * 1.2 : bill.amount,
-          lastBillAmount: bill.amount,
-          estimationMethod: isVariableAmount ? 'average' : 'base',
-          provider: provider,
-          notes: isVariableAmount ? 'Amount varies monthly - check actual bills' : null
-        }
-      });
-      
-      console.log(`✅ Migrated: ${bill.name} (${isVariableAmount ? 'Variable' : 'Fixed'} amount)`);
+    if (!user) {
+      console.error('❌ User not found! Please run fix-user-data.js first.');
+      return;
     }
     
-    console.log('🎉 Migration completed successfully!');
+    console.log('✅ Found user:', user.name);
+    
+    // First, let's add userId column with a default value using raw SQL
+    console.log('📝 Adding userId column to recurring_bills table...');
+    
+    try {
+      // Add the column as nullable first
+      await prisma.$executeRaw`ALTER TABLE recurring_bills ADD COLUMN IF NOT EXISTS "userId" TEXT`;
+      console.log('✅ Column added or already exists');
+      
+      // Update all existing records to have the user ID
+      await prisma.$executeRaw`UPDATE recurring_bills SET "userId" = ${user.id} WHERE "userId" IS NULL`;
+      console.log('✅ Updated all recurring bills with userId');
+      
+      // Now make the column required
+      await prisma.$executeRaw`ALTER TABLE recurring_bills ALTER COLUMN "userId" SET NOT NULL`;
+      console.log('✅ Made userId column required');
+      
+    } catch (error) {
+      if (error.code === '42701') {
+        console.log('ℹ️ Column already exists, updating records...');
+        // Column already exists, just update the records
+        await prisma.$executeRaw`UPDATE recurring_bills SET "userId" = ${user.id} WHERE "userId" IS NULL OR "userId" != ${user.id}`;
+        console.log('✅ Updated all recurring bills with userId');
+      } else {
+        console.log('Error code:', error.code);
+        throw error;
+      }
+    }
+    
+    // Get count of recurring bills
+    const recurringBillCount = await prisma.$queryRaw`
+      SELECT COUNT(*) as count FROM recurring_bills WHERE "userId" = ${user.id}
+    `;
+    
+    console.log(`\n📊 Migration complete!`);
+    console.log(`   - Recurring bills linked to ${user.name}: ${recurringBillCount[0].count}`);
     
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error('❌ Migration error:', error);
   } finally {
     await prisma.$disconnect();
   }
 }
 
+// Run the migration
 migrateRecurringBills();
