@@ -57,7 +57,10 @@
       "Bash(npm uninstall:*)",
       "Bash(npm audit:*)",
       "Bash(timeout 30 npm run build)",
-      "Bash(npm update:*)"
+      "Bash(npm update:*)",
+      "Bash(gh repo view:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx vercel:*)"
     ],
     "deny": [],
     "ask": []

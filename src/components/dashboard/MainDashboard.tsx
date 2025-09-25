@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Transaction, Goal, RecurringBill, Notification, LoadingState, ErrorState } from '@/types';
 import { Toast } from '@/components/common/Toast';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -29,6 +30,7 @@ interface MainDashboardProps {
 export function MainDashboard({ initialData }: MainDashboardProps) {
   // Session management
   const { data: session, status } = useSession();
+  const router = useRouter();
   
   // Global state management
   const [transactions, setTransactions] = useState<Transaction[]>(initialData?.transactions || []);
@@ -71,6 +73,12 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
 
   const removeToast = (id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.push('/auth/signin');
   };
 
   // Offline detection
@@ -226,7 +234,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
           balance={balance}
           isOffline={isOffline}
           session={session}
-          onSignOut={signOut}
+          onSignOut={handleSignOut}
         />
 
         <FinancialSummary 

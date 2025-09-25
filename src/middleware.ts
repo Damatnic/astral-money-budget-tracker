@@ -50,6 +50,7 @@ const CONFIG = {
     '/api/income',
     '/api/recurring',
     '/api/bills',
+    '/api/goals',
     '/dashboard',
   ],
   
@@ -59,7 +60,6 @@ const CONFIG = {
     '/api/health',
     '/auth/signin',
     '/auth/signup',
-    '/',
   ],
   
   // API routes requiring stricter validation
@@ -105,27 +105,36 @@ export async function middleware(request: NextRequest) {
       }
     }
     
-    // 5. Handle authenticated users accessing auth pages
+    // 5. Handle root path based on authentication
     const authCheck = await checkAuthentication(request);
+    if (path === '/') {
+      if (!authCheck.authenticated) {
+        // Redirect unauthenticated users to signin
+        return NextResponse.redirect(new URL('/auth/signin', request.url));
+      }
+      // Authenticated users can access the dashboard at root
+    }
+    
+    // 6. Handle authenticated users accessing auth pages
     if (authCheck.authenticated && path.startsWith('/auth/')) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // 6. CORS handling for API routes
+    // 7. CORS handling for API routes
     if (path.startsWith('/api/')) {
       applyCORS(request, response);
     }
     
-    // 7. Request ID generation for tracking
+    // 8. Request ID generation for tracking
     const requestId = generateRequestId();
     response.headers.set('X-Request-Id', requestId);
     
-    // 8. Security logging
+    // 9. Security logging
     if (shouldLogRequest(path)) {
       logSecurityEvent(request, requestId);
     }
     
-    // 9. Add security metadata
+    // 10. Add security metadata
     response.headers.set('X-Security-Version', '1.0.0');
     response.headers.set('X-Protected', isProtectedRoute(path) ? 'true' : 'false');
     
