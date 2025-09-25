@@ -91,6 +91,12 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  // Navigation state management - MUST be before any returns
+  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'budget' | 'goals' | 'bills' | 'analytics' | 'export'>('overview');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [pageTransition, setPageTransition] = useState(false);
+
   // Handle sign out
   const handleSignOut = async () => {
     await signOut({ redirect: false });
@@ -178,6 +184,19 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
+  }, []);
+
+  // Global keyboard shortcuts - MUST be before any returns
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Transaction handlers
@@ -453,12 +472,6 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
     );
   }
 
-  // Navigation state management
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'budget' | 'goals' | 'bills' | 'analytics' | 'export'>('overview');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [pageTransition, setPageTransition] = useState(false);
-
   // Calculate monthly income for components
   const monthlyIncome = transactions
     .filter(t => t.type === 'income' && 
@@ -488,19 +501,6 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
     setActiveTab('bills');
     // Could trigger bill creation modal
   };
-
-  // Global keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setCommandPaletteOpen(true);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   return (
     <div className="h-screen bg-slate-50 flex overflow-hidden">
