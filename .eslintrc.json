@@ -10,8 +10,10 @@
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-require-imports": "warn",
+    "import/no-anonymous-default-export": "warn",
     "react/no-unescaped-entities": "warn",
-    "react-hooks/exhaustive-deps": "warn"
+    "react-hooks/exhaustive-deps": "warn",
+    "@next/next/no-img-element": "warn"
   },
   "env": {
     "browser": true,
@@ -24,6 +26,9 @@
     "out/",
     "dist/",
     "coverage/",
-    "*.d.ts"
+    "*.d.ts",
+    "src/__tests__/**/*",
+    "src/utils/__tests__/**/*",
+    "src/components/__tests__/**/*"
   ]
 }
