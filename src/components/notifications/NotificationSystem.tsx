@@ -307,6 +307,7 @@ export function NotificationSystem({
         console.error('Failed to load dismissed alerts:', error);
       }
     }
+    */
   }, []);
 
   if (activeAlerts.length === 0) return null;
