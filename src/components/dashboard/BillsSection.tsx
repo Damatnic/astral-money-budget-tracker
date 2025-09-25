@@ -15,6 +15,7 @@ interface BillsSectionProps {
   onUpdate: (id: string, updates: Partial<RecurringBill>) => void;
   onDelete: (id: string) => void;
   compact?: boolean;
+  onNavigate?: (tab: string) => void;
 }
 
 interface BillFormData {
@@ -26,7 +27,7 @@ interface BillFormData {
   notes?: string;
 }
 
-export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete, compact = false }: BillsSectionProps) {
+export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete, compact = false, onNavigate }: BillsSectionProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBill, setEditingBill] = useState<string | null>(null);
   const [formData, setFormData] = useState<BillFormData>({
@@ -205,7 +206,9 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
         
         {bills.length > 3 && (
           <div className="mt-4 text-center">
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            <button 
+              onClick={() => onNavigate?.('bills')}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium cursor-pointer">
               View all ({bills.length})
             </button>
           </div>
@@ -519,7 +522,9 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
 
       {bills.length > upcomingBills.length && (
         <div className="mt-4 text-center">
-          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          <button 
+            onClick={() => onNavigate?.('bills')}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium cursor-pointer">
             View all bills ({bills.length})
           </button>
         </div>

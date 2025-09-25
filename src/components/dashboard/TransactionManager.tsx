@@ -16,6 +16,7 @@ interface TransactionManagerProps {
   loading: LoadingState;
   compact?: boolean;
   showForm?: boolean;
+  onNavigate?: (tab: string) => void;
 }
 
 export function TransactionManager({ 
@@ -25,7 +26,8 @@ export function TransactionManager({
   onDelete, 
   loading,
   compact = false,
-  showForm: showFormProp = true
+  showForm: showFormProp = true,
+  onNavigate
 }: TransactionManagerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -275,7 +277,9 @@ export function TransactionManager({
         
         {transactions.length > 5 && (
           <div className="mt-4 text-center">
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            <button 
+              onClick={() => onNavigate?.('transactions')}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium cursor-pointer">
               View all ({transactions.length})
             </button>
           </div>

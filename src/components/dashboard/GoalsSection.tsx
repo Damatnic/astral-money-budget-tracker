@@ -15,6 +15,7 @@ interface GoalsSectionProps {
   onUpdate: (goals: FinancialGoal[]) => void;
   className?: string;
   compact?: boolean;
+  onNavigate?: (tab: string) => void;
 }
 
 interface GoalFormData {
@@ -33,7 +34,7 @@ const CATEGORY_CONFIG = {
   purchase: { icon: '🛒', label: 'Purchase Goal', color: 'purple' },
 };
 
-export function GoalsSection({ goals, loading, onUpdate, className = '', compact = false }: GoalsSectionProps) {
+export function GoalsSection({ goals, loading, onUpdate, className = '', compact = false, onNavigate }: GoalsSectionProps) {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
@@ -283,7 +284,9 @@ export function GoalsSection({ goals, loading, onUpdate, className = '', compact
         
         {goals.length > 3 && (
           <div className="mt-4 text-center">
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            <button 
+              onClick={() => onNavigate?.('goals')}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium cursor-pointer">
               View all ({goals.length})
             </button>
           </div>

@@ -783,6 +783,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                   onDelete={handleDeleteTransaction}
                   loading={loading}
                   compact={true}
+                  onNavigate={handleNavigateToTab}
                 />
               </div>
               
@@ -793,6 +794,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                   loading={loading.goals} 
                   onUpdate={(updatedGoals) => setGoals(updatedGoals)} 
                   compact={true}
+                  onNavigate={handleNavigateToTab}
                 />
                 
                 {/* Upcoming Bills */}
@@ -803,6 +805,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                   onUpdate={handleUpdateBill}
                   onDelete={handleDeleteBill}
                   compact={true}
+                  onNavigate={handleNavigateToTab}
                 />
               </div>
             </div>
@@ -816,6 +819,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                 onUpdate={handleUpdateTransaction}
                 onDelete={handleDeleteTransaction}
                 loading={loading}
+                onNavigate={handleNavigateToTab}
               />
             </div>
           )}
@@ -841,7 +845,8 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
               <GoalsSection 
                 goals={goals} 
                 loading={loading.goals} 
-                onUpdate={(updatedGoals) => setGoals(updatedGoals)} 
+                onUpdate={(updatedGoals) => setGoals(updatedGoals)}
+                onNavigate={handleNavigateToTab} 
               />
             </div>
           )}
@@ -854,6 +859,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                 onAdd={handleAddBill}
                 onUpdate={handleUpdateBill}
                 onDelete={handleDeleteBill}
+                onNavigate={handleNavigateToTab}
               />
             </div>
           )}
