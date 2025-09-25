@@ -100,7 +100,7 @@ describe('exportUtils', () => {
       expect(lines[0]).toBe('ID,Amount,Description,Category,Date,Type');
       expect(lines[1]).toBe('1,25.5,"Coffee Shop",food,2024-09-24,expense');
       expect(lines[2]).toBe('2,1200,"Salary Deposit",income,2024-09-23,income');
-      expect(lines[3]).toBe('3,45.75,""Quote ""Special"" Deal"",shopping,2024-09-22,expense');
+      expect(lines[3]).toBe('3,45.75,"Quote ""Special"" Deal",shopping,2024-09-22,expense');
     });
 
     it('should handle empty data with headers only', () => {
@@ -123,7 +123,7 @@ describe('exportUtils', () => {
       
       const result = exportToCSV(dataWithQuotes);
       const lines = result.data.split('\n');
-      expect(lines[1]).toContain('""Item with ""quotes"" and more ""quotes""""');
+      expect(lines[1]).toContain('"Item with ""quotes"" and more ""quotes""');
     });
 
     it('should handle single item correctly', () => {

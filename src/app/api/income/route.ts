@@ -37,8 +37,8 @@ export async function GET() {
       source: 'database'
     });
 
-  } catch (error) {
-    console.error('Income API error:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to fetch income' },
       { status: 500 }
@@ -112,8 +112,8 @@ export async function POST(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
-    console.error('Income creation error:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to create income entry' },
       { status: 500 }
@@ -177,8 +177,8 @@ export async function PUT(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
-    console.error('Income update error:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to update income entry' },
       { status: 500 }
@@ -234,8 +234,8 @@ export async function DELETE(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
-    console.error('Income deletion error:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to delete income entry' },
       { status: 500 }

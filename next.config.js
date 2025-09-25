@@ -139,14 +139,14 @@ const nextConfig = {
   // Compression
   compress: true,
   
-  // TypeScript configuration - temporarily disabled for immediate deployment
+  // TypeScript configuration - strict checking enabled for production quality
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   
-  // ESLint configuration - temporarily disabled for immediate deployment
+  // ESLint configuration - enabled for production quality
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
     dirs: ['src'],
   },
 }

@@ -1,13 +1,50 @@
 /**
- * Enterprise Expenses API Route
- * Comprehensive validation, security, and error handling
+ * Financial Goals API Route
+ * Complete CRUD operations with comprehensive validation, security, and error handling
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../../lib/db';
 import { requireAuth } from '@/lib/auth-utils';
-import { ValidationEngine, ValidationSchemas } from '@/lib/validation';
+import { ValidationEngine } from '@/lib/validation';
 import { AuditLogger } from '@/utils/security';
+import type { CreateFinancialGoalRequest, UpdateFinancialGoalRequest } from '@/types';
+
+// Validation schema for financial goals
+const goalValidationSchema = {
+  title: {
+    type: 'string' as const,
+    required: true,
+    minLength: 1,
+    maxLength: 200,
+    sanitize: true
+  },
+  targetAmount: {
+    type: 'number' as const,
+    required: true,
+    min: 0.01,
+    max: 1000000,
+    sanitize: true
+  },
+  currentAmount: {
+    type: 'number' as const,
+    required: false,
+    min: 0,
+    max: 1000000,
+    sanitize: true
+  },
+  deadline: {
+    type: 'string' as const,
+    required: false,
+    pattern: /^\d{4}-\d{2}-\d{2}$/
+  },
+  category: {
+    type: 'string' as const,
+    required: true,
+    enum: ['emergency', 'savings', 'debt', 'investment', 'purchase'],
+    sanitize: true
+  }
+};
 
 export async function GET(request: NextRequest) {
   const requestId = request.headers.get('x-request-id') || 'unknown';
@@ -18,13 +55,14 @@ export async function GET(request: NextRequest) {
       await AuditLogger.logSecurityEvent('system', 'database_unavailable', {
         level: 'error' as any,
         data: {
-          endpoint: '/api/expenses',
+          endpoint: '/api/goals',
           method: 'GET',
           requestId,
         },
       });
       
       return NextResponse.json({
+        success: false,
         error: 'Service temporarily unavailable',
         code: 'SERVICE_UNAVAILABLE',
         requestId,
@@ -34,78 +72,71 @@ export async function GET(request: NextRequest) {
     // Require authentication
     const user = await requireAuth();
 
-    // Parse query parameters with validation
+    // Parse query parameters
     const url = new URL(request.url);
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 1000);
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
     const offset = Math.max(parseInt(url.searchParams.get('offset') || '0'), 0);
     const category = url.searchParams.get('category');
-    const startDate = url.searchParams.get('startDate');
-    const endDate = url.searchParams.get('endDate');
+    const completed = url.searchParams.get('completed');
 
     // Build where clause
     const whereClause: any = {
       userId: user.id,
-      type: 'expense',
     };
 
     // Add category filter if provided
-    if (category && ValidationSchemas.transaction.category.enum!.includes(category)) {
+    if (category && ['emergency', 'savings', 'debt', 'investment', 'purchase'].includes(category)) {
       whereClause.category = category;
     }
 
-    // Add date filters with validation
-    if (startDate || endDate) {
-      whereClause.date = {};
-      
-      if (startDate) {
-        const parsedStartDate = new Date(startDate);
-        if (!isNaN(parsedStartDate.getTime())) {
-          whereClause.date.gte = parsedStartDate;
-        }
-      }
-      
-      if (endDate) {
-        const parsedEndDate = new Date(endDate);
-        if (!isNaN(parsedEndDate.getTime())) {
-          whereClause.date.lte = parsedEndDate;
-        }
-      }
-    } else {
-      // Default to last 30 days if no date filters
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      whereClause.createdAt = { gte: thirtyDaysAgo };
+    // Add completion filter if provided
+    if (completed !== null) {
+      whereClause.isCompleted = completed === 'true';
     }
 
     // Execute query with performance monitoring
     const queryStart = Date.now();
-    const [expenses, totalCount] = await Promise.all([
-      prisma.transaction.findMany({
+    const [goals, totalCount] = await Promise.all([
+      prisma.financialGoal.findMany({
         where: whereClause,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { isCompleted: 'asc' }, // Show incomplete goals first
+          { deadline: 'asc' }, // Then by deadline
+          { createdAt: 'desc' } // Finally by creation date
+        ],
         take: limit,
         skip: offset,
         select: {
           id: true,
-          amount: true,
-          description: true,
+          title: true,
+          targetAmount: true,
+          currentAmount: true,
+          deadline: true,
           category: true,
-          date: true,
+          isCompleted: true,
           createdAt: true,
+          updatedAt: true,
         },
       }),
-      prisma.transaction.count({ where: whereClause }),
+      prisma.financialGoal.count({ where: whereClause }),
     ]);
     const queryTime = Date.now() - queryStart;
 
+    // Calculate progress for each goal
+    const goalsWithProgress = goals.map(goal => ({
+      ...goal,
+      progress: goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0,
+      remainingAmount: Math.max(0, goal.targetAmount - goal.currentAmount),
+    }));
+
     // Log data access
-    await AuditLogger.logDataAccessEvent('read', user.id, 'expenses', {
-      recordsAffected: expenses.length,
+    await AuditLogger.logDataAccessEvent('read', user.id, 'goals', {
+      recordsAffected: goals.length,
       success: true,
       metadata: { 
         totalCount,
         queryTime,
-        filters: { category, startDate, endDate, limit, offset },
+        filters: { category, completed, limit, offset },
         requestId,
       },
     });
@@ -113,12 +144,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        expenses,
+        goals: goalsWithProgress,
         pagination: {
           limit,
           offset,
           total: totalCount,
-          hasMore: offset + expenses.length < totalCount,
+          hasMore: offset + goals.length < totalCount,
+        },
+        summary: {
+          totalGoals: totalCount,
+          completedGoals: goals.filter(g => g.isCompleted).length,
+          totalTargetAmount: goals.reduce((sum, g) => sum + g.targetAmount, 0),
+          totalCurrentAmount: goals.reduce((sum, g) => sum + g.currentAmount, 0),
         },
       },
       metadata: {
@@ -132,7 +169,7 @@ export async function GET(request: NextRequest) {
     await AuditLogger.logSecurityEvent('api', 'error', {
       level: 'error' as any,
       data: {
-        endpoint: '/api/expenses',
+        endpoint: '/api/goals',
         method: 'GET',
         error: error instanceof Error ? error.message : 'Unknown error',
         requestId,
@@ -142,6 +179,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof Error && error.message === 'Authentication required') {
       return NextResponse.json(
         { 
+          success: false,
           error: 'Authentication required',
           code: 'UNAUTHORIZED',
           requestId,
@@ -150,10 +188,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Error already logged via AuditLogger
     return NextResponse.json(
       { 
-        error: 'Failed to fetch expenses',
+        success: false,
+        error: 'Failed to fetch financial goals',
         code: 'INTERNAL_ERROR',
         requestId,
       },
@@ -167,11 +205,12 @@ export async function POST(request: NextRequest) {
   
   try {
     // Parse and validate request body
-    let body: any;
+    let body: CreateFinancialGoalRequest;
     try {
       body = await request.json();
     } catch {
       return NextResponse.json({
+        success: false,
         error: 'Invalid JSON payload',
         code: 'INVALID_JSON',
         requestId,
@@ -181,7 +220,7 @@ export async function POST(request: NextRequest) {
     // Comprehensive validation
     const validationResult = await ValidationEngine.validateRequest(
       body, 
-      ValidationSchemas.transaction,
+      goalValidationSchema,
       { strictMode: true, sanitize: true }
     );
 
@@ -190,17 +229,16 @@ export async function POST(request: NextRequest) {
       await AuditLogger.logSecurityEvent('validation', 'failed', {
         level: 'warn' as any,
         data: {
-          endpoint: '/api/expenses',
+          endpoint: '/api/goals',
           method: 'POST',
           errors: validationResult.errors,
           securityScore: validationResult.securityScore,
-          securityFlags: validationResult.metadata.securityFlags,
           requestId,
-          severity: validationResult.errors.some(e => e.severity === 'critical') ? 'critical' : 'medium',
         }
       });
 
       return NextResponse.json({
+        success: false,
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
         details: validationResult.errors.map(e => ({
@@ -213,11 +251,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { amount, description, category, date } = validationResult.sanitizedData;
+    const { title, targetAmount, currentAmount, deadline, category } = validationResult.sanitizedData;
 
     // Check database availability
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
+        success: false,
         error: 'Service temporarily unavailable',
         code: 'SERVICE_UNAVAILABLE',
         requestId,
@@ -228,58 +267,55 @@ export async function POST(request: NextRequest) {
     const user = await requireAuth();
 
     // Business logic validation
-    if (amount > user.balance + 10000) { // Allow some overdraft
-      await AuditLogger.logSecurityEvent('transaction', 'suspicious', {
-        level: 'error' as any,
-        userId: user.id,
-        data: {
-          amount,
-          userBalance: user.balance,
-          requestId,
-          severity: 'high',
-        }
-      });
-
+    if (currentAmount && currentAmount > targetAmount) {
       return NextResponse.json({
-        error: 'Transaction amount exceeds available balance',
-        code: 'INSUFFICIENT_FUNDS',
+        success: false,
+        error: 'Current amount cannot exceed target amount',
+        code: 'BUSINESS_RULE_VIOLATION',
         requestId,
       }, { status: 422 });
     }
 
-    // Create expense within transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create expense
-      const expense = await tx.transaction.create({
-        data: {
-          userId: user.id,
-          type: 'expense',
-          amount,
-          description,
-          category,
-          date: date ? new Date(date) : new Date(),
-        },
-      });
-
-      // Update user balance
-      const newBalance = user.balance - amount;
-      const updatedUser = await tx.user.update({
-        where: { id: user.id },
-        data: { balance: newBalance },
-      });
-
-      return { expense, newBalance: updatedUser.balance };
+    // Check for duplicate goal titles for the user
+    const existingGoal = await prisma.financialGoal.findFirst({
+      where: {
+        userId: user.id,
+        title: title.trim(),
+        isCompleted: false,
+      },
     });
 
-    // Log successful transaction
-    await AuditLogger.logDataAccessEvent('write', user.id, 'expenses', {
+    if (existingGoal) {
+      return NextResponse.json({
+        success: false,
+        error: 'A goal with this title already exists',
+        code: 'DUPLICATE_GOAL',
+        requestId,
+      }, { status: 409 });
+    }
+
+    // Create goal
+    const goal = await prisma.financialGoal.create({
+      data: {
+        userId: user.id,
+        title: title.trim(),
+        targetAmount,
+        currentAmount: currentAmount || 0,
+        deadline: deadline ? new Date(deadline) : null,
+        category,
+        isCompleted: currentAmount ? currentAmount >= targetAmount : false,
+      },
+    });
+
+    // Log successful creation
+    await AuditLogger.logDataAccessEvent('write', user.id, 'goals', {
       recordsAffected: 1,
       success: true,
       metadata: {
-        transactionId: result.expense.id,
-        amount,
+        goalId: goal.id,
+        targetAmount,
+        currentAmount: currentAmount || 0,
         category,
-        newBalance: result.newBalance,
         requestId,
       }
     });
@@ -287,8 +323,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        expense: result.expense,
-        newBalance: result.newBalance,
+        goal: {
+          ...goal,
+          progress: goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0,
+          remainingAmount: Math.max(0, goal.targetAmount - goal.currentAmount),
+        },
       },
       metadata: {
         source: 'database',
@@ -300,17 +339,17 @@ export async function POST(request: NextRequest) {
     await AuditLogger.logSecurityEvent('api', 'error', {
       level: 'error' as any,
       data: {
-        endpoint: '/api/expenses',
+        endpoint: '/api/goals',
         method: 'POST',
         error: error instanceof Error ? error.message : 'Unknown error',
         requestId,
-        severity: 'high',
       }
     });
 
     if (error instanceof Error && error.message === 'Authentication required') {
       return NextResponse.json(
         { 
+          success: false,
           error: 'Authentication required',
           code: 'UNAUTHORIZED',
           requestId,
@@ -319,10 +358,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Error already logged via AuditLogger
     return NextResponse.json(
       { 
-        error: 'Failed to create expense',
+        success: false,
+        error: 'Failed to create financial goal',
         code: 'INTERNAL_ERROR',
         requestId,
       },
@@ -336,11 +375,12 @@ export async function PUT(request: NextRequest) {
   
   try {
     // Parse and validate request body
-    let body: any;
+    let body: UpdateFinancialGoalRequest;
     try {
       body = await request.json();
     } catch {
       return NextResponse.json({
+        success: false,
         error: 'Invalid JSON payload',
         code: 'INVALID_JSON',
         requestId,
@@ -350,17 +390,19 @@ export async function PUT(request: NextRequest) {
     // Validate ID is provided
     if (!body.id || typeof body.id !== 'string') {
       return NextResponse.json({
-        error: 'Transaction ID is required',
+        success: false,
+        error: 'Goal ID is required',
         code: 'MISSING_ID',
         requestId,
       }, { status: 400 });
     }
 
-    // Validate update data (partial validation)
-    const updateSchema = { ...ValidationSchemas.transaction };
-    // Make all fields optional for updates except ID
+    // Create partial validation schema (all fields optional except ID)
+    const updateSchema = { ...goalValidationSchema };
     Object.keys(updateSchema).forEach(key => {
-      updateSchema[key] = { ...updateSchema[key], required: false };
+      if (key !== 'id') {
+        updateSchema[key] = { ...updateSchema[key], required: false };
+      }
     });
 
     const validationResult = await ValidationEngine.validateRequest(
@@ -373,15 +415,15 @@ export async function PUT(request: NextRequest) {
       await AuditLogger.logSecurityEvent('validation', 'failed', {
         level: 'warn' as any,
         data: {
-          endpoint: '/api/expenses',
+          endpoint: '/api/goals',
           method: 'PUT',
           errors: validationResult.errors,
           requestId,
-          severity: 'medium',
         }
       });
 
       return NextResponse.json({
+        success: false,
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
         details: validationResult.errors.map(e => ({
@@ -393,11 +435,12 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { id, amount, description, category, date } = validationResult.sanitizedData;
+    const { id, title, targetAmount, currentAmount, deadline, category, isCompleted } = validationResult.sanitizedData;
 
     // Check database availability
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
+        success: false,
         error: 'Service temporarily unavailable',
         code: 'SERVICE_UNAVAILABLE',
         requestId,
@@ -407,53 +450,72 @@ export async function PUT(request: NextRequest) {
     // Require authentication
     const user = await requireAuth();
 
-    // Update expense within transaction
+    // Update goal within transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Get the old expense with ownership check
-      const oldExpense = await tx.transaction.findUnique({
+      // Get the existing goal with ownership check
+      const existingGoal = await tx.financialGoal.findUnique({
         where: { id, userId: user.id },
       });
 
-      if (!oldExpense) {
-        throw new Error('EXPENSE_NOT_FOUND');
+      if (!existingGoal) {
+        throw new Error('GOAL_NOT_FOUND');
       }
 
-      // Update expense
-      const updatedExpense = await tx.transaction.update({
-        where: { id, userId: user.id },
-        data: {
-          amount: amount !== undefined ? amount : oldExpense.amount,
-          description: description !== undefined ? description : oldExpense.description,
-          category: category !== undefined ? category : oldExpense.category,
-          date: date !== undefined ? new Date(date) : oldExpense.date,
-        },
-      });
-
-      // Calculate and update balance adjustment
-      const balanceAdjustment = (oldExpense.amount as number) - (updatedExpense.amount as number);
-      const newBalance = user.balance + balanceAdjustment;
+      // Prepare update data
+      const updateData: any = {};
       
-      const updatedUser = await tx.user.update({
-        where: { id: user.id },
-        data: { balance: newBalance },
+      if (title !== undefined) updateData.title = title.trim();
+      if (targetAmount !== undefined) updateData.targetAmount = targetAmount;
+      if (currentAmount !== undefined) updateData.currentAmount = currentAmount;
+      if (deadline !== undefined) updateData.deadline = deadline ? new Date(deadline) : null;
+      if (category !== undefined) updateData.category = category;
+      if (isCompleted !== undefined) updateData.isCompleted = isCompleted;
+
+      // Auto-complete goal if current amount meets or exceeds target
+      const newCurrentAmount = currentAmount !== undefined ? currentAmount : existingGoal.currentAmount;
+      const newTargetAmount = targetAmount !== undefined ? targetAmount : existingGoal.targetAmount;
+      
+      if (newCurrentAmount >= newTargetAmount && !existingGoal.isCompleted) {
+        updateData.isCompleted = true;
+      }
+
+      // Business logic validation
+      if (newCurrentAmount > newTargetAmount && isCompleted !== true) {
+        throw new Error('CURRENT_EXCEEDS_TARGET');
+      }
+
+      // Check for duplicate titles (if title is being changed)
+      if (title && title.trim() !== existingGoal.title) {
+        const duplicateGoal = await tx.financialGoal.findFirst({
+          where: {
+            userId: user.id,
+            title: title.trim(),
+            isCompleted: false,
+            id: { not: id },
+          },
+        });
+
+        if (duplicateGoal) {
+          throw new Error('DUPLICATE_GOAL');
+        }
+      }
+
+      // Update the goal
+      const updatedGoal = await tx.financialGoal.update({
+        where: { id, userId: user.id },
+        data: updateData,
       });
 
-      return { 
-        expense: updatedExpense, 
-        newBalance: updatedUser.balance,
-        oldAmount: oldExpense.amount,
-      };
+      return updatedGoal;
     });
 
     // Log successful update
-    await AuditLogger.logDataAccessEvent('write', user.id, 'expenses', {
+    await AuditLogger.logDataAccessEvent('write', user.id, 'goals', {
       recordsAffected: 1,
       success: true,
       metadata: {
-        transactionId: id,
-        oldAmount: result.oldAmount,
-        newAmount: result.expense.amount,
-        balanceChange: (result.oldAmount as number) - (result.expense.amount as number),
+        goalId: id,
+        updatedFields: Object.keys(validationResult.sanitizedData).filter(k => k !== 'id'),
         requestId,
       }
     });
@@ -461,8 +523,11 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        expense: result.expense,
-        newBalance: result.newBalance,
+        goal: {
+          ...result,
+          progress: result.targetAmount > 0 ? (result.currentAmount / result.targetAmount) * 100 : 0,
+          remainingAmount: Math.max(0, result.targetAmount - result.currentAmount),
+        },
       },
       metadata: {
         source: 'database',
@@ -471,28 +536,49 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    if (error instanceof Error && error.message === 'EXPENSE_NOT_FOUND') {
-      return NextResponse.json({
-        error: 'Expense not found or access denied',
-        code: 'NOT_FOUND',
-        requestId,
-      }, { status: 404 });
+    if (error instanceof Error) {
+      if (error.message === 'GOAL_NOT_FOUND') {
+        return NextResponse.json({
+          success: false,
+          error: 'Financial goal not found or access denied',
+          code: 'NOT_FOUND',
+          requestId,
+        }, { status: 404 });
+      }
+      
+      if (error.message === 'CURRENT_EXCEEDS_TARGET') {
+        return NextResponse.json({
+          success: false,
+          error: 'Current amount cannot exceed target amount',
+          code: 'BUSINESS_RULE_VIOLATION',
+          requestId,
+        }, { status: 422 });
+      }
+      
+      if (error.message === 'DUPLICATE_GOAL') {
+        return NextResponse.json({
+          success: false,
+          error: 'A goal with this title already exists',
+          code: 'DUPLICATE_GOAL',
+          requestId,
+        }, { status: 409 });
+      }
     }
 
     await AuditLogger.logSecurityEvent('api', 'error', {
       level: 'error' as any,
       data: {
-        endpoint: '/api/expenses',
+        endpoint: '/api/goals',
         method: 'PUT',
         error: error instanceof Error ? error.message : 'Unknown error',
         requestId,
-        severity: 'high',
       }
     });
 
     if (error instanceof Error && error.message === 'Authentication required') {
       return NextResponse.json(
         { 
+          success: false,
           error: 'Authentication required',
           code: 'UNAUTHORIZED',
           requestId,
@@ -501,10 +587,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Error already logged via AuditLogger
     return NextResponse.json(
       { 
-        error: 'Failed to update expense',
+        success: false,
+        error: 'Failed to update financial goal',
         code: 'INTERNAL_ERROR',
         requestId,
       },
@@ -518,11 +604,12 @@ export async function DELETE(request: NextRequest) {
   
   try {
     // Parse request body
-    let body: any;
+    let body: { id: string };
     try {
       body = await request.json();
     } catch {
       return NextResponse.json({
+        success: false,
         error: 'Invalid JSON payload',
         code: 'INVALID_JSON',
         requestId,
@@ -532,7 +619,8 @@ export async function DELETE(request: NextRequest) {
     // Validate ID
     if (!body.id || typeof body.id !== 'string') {
       return NextResponse.json({
-        error: 'Transaction ID is required',
+        success: false,
+        error: 'Goal ID is required',
         code: 'MISSING_ID',
         requestId,
       }, { status: 400 });
@@ -543,6 +631,7 @@ export async function DELETE(request: NextRequest) {
     // Check database availability
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
+        success: false,
         error: 'Service temporarily unavailable',
         code: 'SERVICE_UNAVAILABLE',
         requestId,
@@ -552,43 +641,22 @@ export async function DELETE(request: NextRequest) {
     // Require authentication
     const user = await requireAuth();
 
-    // Delete expense within transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Get the expense with ownership check
-      const expense = await tx.transaction.findUnique({
-        where: { id, userId: user.id },
-      });
-
-      if (!expense) {
-        throw new Error('EXPENSE_NOT_FOUND');
-      }
-
-      // Delete expense
-      await tx.transaction.delete({
-        where: { id, userId: user.id },
-      });
-
-      // Refund balance
-      const newBalance = user.balance + (expense.amount as number);
-      const updatedUser = await tx.user.update({
-        where: { id: user.id },
-        data: { balance: newBalance },
-      });
-
-      return { 
-        deletedExpense: expense,
-        newBalance: updatedUser.balance,
-      };
+    // Delete goal with ownership check
+    const deletedGoal = await prisma.financialGoal.delete({
+      where: { 
+        id,
+        userId: user.id,
+      },
     });
 
     // Log successful deletion
-    await AuditLogger.logDataAccessEvent('delete', user.id, 'expenses', {
+    await AuditLogger.logDataAccessEvent('delete', user.id, 'goals', {
       recordsAffected: 1,
       success: true,
       metadata: {
-        transactionId: id,
-        refundedAmount: result.deletedExpense.amount,
-        newBalance: result.newBalance,
+        goalId: id,
+        deletedTitle: deletedGoal.title,
+        targetAmount: deletedGoal.targetAmount,
         requestId,
       }
     });
@@ -596,9 +664,11 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        message: 'Expense deleted successfully',
-        newBalance: result.newBalance,
-        refundedAmount: result.deletedExpense.amount,
+        message: 'Financial goal deleted successfully',
+        deletedGoal: {
+          id: deletedGoal.id,
+          title: deletedGoal.title,
+        },
       },
       metadata: {
         source: 'database',
@@ -607,9 +677,11 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error) {
-    if (error instanceof Error && error.message === 'EXPENSE_NOT_FOUND') {
+    // Handle Prisma not found error
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       return NextResponse.json({
-        error: 'Expense not found or access denied',
+        success: false,
+        error: 'Financial goal not found or access denied',
         code: 'NOT_FOUND',
         requestId,
       }, { status: 404 });
@@ -618,17 +690,17 @@ export async function DELETE(request: NextRequest) {
     await AuditLogger.logSecurityEvent('api', 'error', {
       level: 'error' as any,
       data: {
-        endpoint: '/api/expenses',
+        endpoint: '/api/goals',
         method: 'DELETE',
         error: error instanceof Error ? error.message : 'Unknown error',
         requestId,
-        severity: 'high',
       }
     });
 
     if (error instanceof Error && error.message === 'Authentication required') {
       return NextResponse.json(
         { 
+          success: false,
           error: 'Authentication required',
           code: 'UNAUTHORIZED',
           requestId,
@@ -637,10 +709,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Error already logged via AuditLogger
     return NextResponse.json(
       { 
-        error: 'Failed to delete expense',
+        success: false,
+        error: 'Failed to delete financial goal',
         code: 'INTERNAL_ERROR',
         requestId,
       },

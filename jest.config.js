@@ -13,9 +13,13 @@ const customJestConfig = {
   collectCoverageFrom: [
     'src/utils/**/*.{js,jsx,ts,tsx}',
     'src/components/**/*.{js,jsx,ts,tsx}',
+    'src/app/api/**/*.{js,jsx,ts,tsx}',
+    'src/lib/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/node_modules/**',
+    '!src/**/__tests__/**',
+    '!src/**/test-utils/**',
   ],
   coverageThreshold: {
     global: {
@@ -35,7 +39,7 @@ const customJestConfig = {
   },
   testPathIgnorePatterns: [
     '<rootDir>/tests/e2e/',
-    '<rootDir>/tests/unit/api/',
+    '<rootDir>/node_modules/',
   ],
 }
 

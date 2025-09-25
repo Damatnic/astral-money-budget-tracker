@@ -44,6 +44,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
     expenses: false,
     income: false,
     recurringBills: false,
+    goals: false,
     creating: false,
     updating: false,
     deleting: false,
@@ -53,6 +54,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
     expenses: null,
     income: null,
     recurringBills: null,
+    goals: null,
     form: null,
   });
 
@@ -92,7 +94,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
       const newTransaction: Transaction = {
         ...transaction,
         id: Math.random().toString(36).substr(2, 9),
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
       };
       
       setTransactions(prev => [newTransaction, ...prev]);
@@ -242,10 +244,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
           />
 
           <div className="space-y-8">
-            <GoalsSection 
-              goals={goals}
-              onUpdate={setGoals}
-            />
+            <GoalsSection />
 
             <BillsSection 
               bills={bills}

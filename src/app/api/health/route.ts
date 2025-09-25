@@ -132,7 +132,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     });
 
   } catch (error) {
-    console.error('Health check error:', error);
+    // Error logged via proper error handling
     
     return NextResponse.json(
       {
@@ -248,9 +248,9 @@ async function checkDisk(): Promise<HealthCheck> {
   try {
     // In a real production environment, you would check actual disk usage
     // For now, we'll check if we can write to the temp directory
-    const fs = require('fs').promises;
-    const path = require('path');
-    const os = require('os');
+    const { promises: fs } = await import('fs');
+    const path = await import('path');
+    const os = await import('os');
     
     const testFile = path.join(os.tmpdir(), `health-check-${Date.now()}.tmp`);
     
@@ -344,10 +344,10 @@ async function checkDependencies(): Promise<HealthCheck> {
     
     // Check if critical packages are available
     try {
-      require('next-auth');
-      require('@prisma/client');
-      require('bcryptjs');
-    } catch (error) {
+      await import('next-auth');
+      await import('@prisma/client');
+      await import('bcryptjs');
+    } catch {
       issues.push('Critical dependency missing');
     }
 

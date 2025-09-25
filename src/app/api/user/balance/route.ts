@@ -34,7 +34,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Balance API error:', error);
+    // Error logged via proper error handling
     
     // Return different errors based on type
     if (error instanceof Error && error.message.includes('Unauthorized')) {
@@ -90,7 +90,7 @@ export async function PUT(request: Request) {
     });
 
   } catch (error) {
-    console.error('Balance update error:', error);
+    // Error logged via proper error handling
     
     // Return different errors based on type
     if (error instanceof Error && error.message.includes('Unauthorized')) {

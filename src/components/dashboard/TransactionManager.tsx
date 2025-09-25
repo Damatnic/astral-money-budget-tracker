@@ -43,7 +43,7 @@ export function TransactionManager({
         amount: parseFloat(formData.amount),
         description: formData.description,
         category: formData.category,
-        date: formData.date,
+        date: new Date(formData.date),
         type: formData.type
       });
       

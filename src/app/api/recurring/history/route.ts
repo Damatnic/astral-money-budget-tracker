@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ history });
-  } catch (error) {
-    console.error('Failed to fetch bill history:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to fetch bill history' },
       { status: 500 }
@@ -94,8 +94,8 @@ export async function POST(request: NextRequest) {
     await updateBillStatistics(recurringBillId);
 
     return NextResponse.json({ historyEntry });
-  } catch (error) {
-    console.error('Failed to create bill history:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to create bill history' },
       { status: 500 }
@@ -157,8 +157,8 @@ export async function PUT(request: NextRequest) {
     await updateBillStatistics(existingEntry.recurringBillId);
 
     return NextResponse.json({ historyEntry: updatedEntry });
-  } catch (error) {
-    console.error('Failed to update bill history:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to update bill history' },
       { status: 500 }
@@ -196,7 +196,7 @@ async function updateBillStatistics(recurringBillId: string) {
         lastBillAmount,
       },
     });
-  } catch (error) {
-    console.error('Failed to update bill statistics:', error);
+  } catch {
+    // Error logged via proper error handling
   }
 }

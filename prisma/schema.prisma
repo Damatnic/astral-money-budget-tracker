@@ -27,6 +27,7 @@ model User {
   bills         Bill[]
   transactions  Transaction[]
   recurringBills RecurringBill[]
+  financialGoals FinancialGoal[]
 
   // NextAuth.js relations
   accounts Account[]
@@ -146,6 +147,8 @@ model FinancialGoal {
   isCompleted Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("financial_goals")
 }

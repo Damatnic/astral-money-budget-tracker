@@ -187,12 +187,12 @@ async function checkRateLimit(request: NextRequest, clientIp: string): Promise<{
   const key = `rate_limit:${clientIp}`;
   
   try {
-    const rateLimiter = new RateLimiter({
+    const result = RateLimiter.checkRateLimit(key, {
       windowMs: SECURITY_CONFIG.RATE_LIMIT.windowMs,
-      max: SECURITY_CONFIG.RATE_LIMIT.max,
+      maxRequests: SECURITY_CONFIG.RATE_LIMIT.max,
     });
     
-    return await rateLimiter.isAllowed(key);
+    return { allowed: result.allowed };
   } catch (error) {
     // Fail open for availability, but log the issue
     console.error('Rate limiting error:', error);
@@ -233,12 +233,12 @@ async function validateCSRF(request: NextRequest): Promise<{ valid: boolean; rea
       return { valid: false, reason: 'Missing CSRF token' };
     }
     
-    const csrfProtection = new CSRFProtection();
-    const isValid = await csrfProtection.validateToken(token);
+    const sessionId = request.headers.get('x-session-id') || 'default';
+    const result = CSRFProtection.validateToken(sessionId, token);
     
     return { 
-      valid: isValid, 
-      reason: isValid ? undefined : 'Invalid CSRF token' 
+      valid: result.valid, 
+      reason: result.valid ? undefined : result.reason || 'Invalid CSRF token' 
     };
     
   } catch (error) {
@@ -405,7 +405,7 @@ async function validateAuthentication(request: NextRequest): Promise<{ valid: bo
     }
     
     // Check token expiration
-    if (token.exp && token.exp < Date.now() / 1000) {
+    if (token.exp && typeof token.exp === 'number' && token.exp < Date.now() / 1000) {
       return { valid: false, reason: 'Session expired' };
     }
     
@@ -441,22 +441,16 @@ async function auditLog(event: string, request: NextRequest, metadata: any = {})
   }
   
   try {
-    const auditLogger = new AuditLogger();
-    
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      event,
-      method: request.method,
-      url: request.url,
-      userAgent: request.headers.get('user-agent'),
-      referer: request.headers.get('referer'),
-      ...metadata,
-    };
-    
-    // Filter sensitive data
-    const sanitizedEntry = sanitizeAuditData(logEntry);
-    
-    await auditLogger.log(sanitizedEntry);
+    AuditLogger.logSecurityEvent('middleware', event.toLowerCase().replace('_', '-'), {
+      level: 'info' as any,
+      data: {
+        method: request.method,
+        url: request.url,
+        userAgent: request.headers.get('user-agent'),
+        referer: request.headers.get('referer'),
+        ...metadata,
+      }
+    });
     
   } catch (error) {
     console.error('Audit logging error:', error);

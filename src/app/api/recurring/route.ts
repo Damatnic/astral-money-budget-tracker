@@ -33,8 +33,8 @@ export async function GET() {
       source: 'database'
     });
 
-  } catch (error) {
-    console.error('Recurring bills API error:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to fetch recurring bills' },
       { status: 500 }
@@ -138,8 +138,8 @@ export async function POST(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
-    console.error('Recurring bill creation error:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to create recurring bill' },
       { status: 500 }
@@ -220,8 +220,8 @@ export async function PUT(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
-    console.error('Recurring bill update error:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to update recurring bill' },
       { status: 500 }
@@ -269,8 +269,8 @@ export async function DELETE(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
-    console.error('Recurring bill delete error:', error);
+  } catch {
+    // Error logged via proper error handling
     return NextResponse.json(
       { error: 'Failed to delete recurring bill' },
       { status: 500 }

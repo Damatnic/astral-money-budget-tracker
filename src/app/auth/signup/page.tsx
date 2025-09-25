@@ -87,7 +87,7 @@ export default function SignUpPage() {
       }
 
     } catch (error: any) {
-      console.error('Signup error:', error);
+      // Error already handled in UI
       setError(error.message || 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -100,8 +100,8 @@ export default function SignUpPage() {
     
     try {
       await signIn(provider, { callbackUrl: '/' });
-    } catch (error) {
-      console.error(`${provider} sign in error:`, error);
+    } catch {
+      // Error already handled in UI
       setError(`Failed to sign up with ${provider}`);
     } finally {
       setIsLoading(false);

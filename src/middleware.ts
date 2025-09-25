@@ -227,7 +227,8 @@ function getRateLimitForPath(path: string): number {
  * Clean old rate limit entries
  */
 function cleanRateLimitStore(now: number): void {
-  for (const [key, entry] of rateLimitStore.entries()) {
+  const entries = Array.from(rateLimitStore.entries());
+  for (const [key, entry] of entries) {
     if (entry.resetTime < now) {
       rateLimitStore.delete(key);
     }
@@ -288,7 +289,7 @@ async function checkAuthentication(request: NextRequest): Promise<{
     }
     
     // Check token expiration
-    if (token.exp && token.exp < Date.now() / 1000) {
+    if (token.exp && typeof token.exp === 'number' && token.exp < Date.now() / 1000) {
       return { authenticated: false };
     }
     

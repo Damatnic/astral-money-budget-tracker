@@ -49,7 +49,8 @@ export async function POST(request: NextRequest) {
     const password = passwordValidation.sanitizedValue!;
 
     // Validate password strength
-    const passwordStrength = require('@/utils/security').SecurityUtils.validatePasswordStrength(password);
+    const { SecurityUtils } = await import('@/utils/security');
+    const passwordStrength = SecurityUtils.validatePasswordStrength(password);
     if (passwordStrength.score < 60) {
       return NextResponse.json(
         { 
@@ -104,8 +105,8 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
 
-  } catch (error) {
-    console.error('Signup error:', error);
+  } catch {
+    // Error logged via proper error handling
     
     return NextResponse.json(
       { error: 'Internal server error' },

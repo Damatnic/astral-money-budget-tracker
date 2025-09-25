@@ -6,8 +6,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { signIn, getSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 
 // Quick PIN Input Component
@@ -17,7 +16,7 @@ function QuickPinInput({ onPinComplete, disabled }: { onPinComplete: (pin: strin
 
   useEffect(() => {
     inputRefs[0].current?.focus();
-  }, []);
+  }, [inputRefs]);
 
   const handleChange = (index: number, value: string) => {
     if (value.length > 1) return; // Only allow single digit
@@ -83,7 +82,6 @@ function QuickPinInput({ onPinComplete, disabled }: { onPinComplete: (pin: strin
 }
 
 export default function SignInPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -111,8 +109,8 @@ export default function SignInPage() {
         // Force a hard redirect to avoid state issues
         window.location.href = '/';
       }
-    } catch (error) {
-      console.error('Sign in error:', error);
+    } catch {
+      // Error already handled in UI
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -144,8 +142,8 @@ export default function SignInPage() {
         // Force a hard redirect to avoid state issues
         window.location.href = '/';
       }
-    } catch (error) {
-      console.error('Sign in error:', error);
+    } catch {
+      // Error already handled in UI
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
