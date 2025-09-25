@@ -51,7 +51,8 @@
       "Bash(PORT=3013 npm run dev)",
       "Bash(PORT=3014 npm run dev)",
       "Bash(PORT=3020 npm run dev)",
-      "Bash(PORT=3025 npm run dev)"
+      "Bash(PORT=3025 npm run dev)",
+      "Bash(npx tailwindcss init:*)"
     ],
     "deny": [],
     "ask": []
