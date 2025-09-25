@@ -502,7 +502,7 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
               {formatCurrency(
                 activeBills
                   .filter(bill => bill.frequency === 'monthly')
-                  .reduce((total, bill) => total + bill.amount, 0)
+                  .reduce((total, bill) => total + (bill?.amount || 0), 0)
               )}
             </span>
           </div>
@@ -514,7 +514,7 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
               {formatCurrency(
                 activeBills.reduce((total, bill) => {
                   // Normalize to monthly
-                  let monthlyAmount = bill.amount;
+                  let monthlyAmount = bill?.amount || 0;
                   if (bill.frequency === 'weekly') monthlyAmount *= 4.33;
                   else if (bill.frequency === 'biweekly') monthlyAmount *= 2.17;
                   else if (bill.frequency === 'quarterly') monthlyAmount /= 3;

@@ -340,15 +340,15 @@ export function FinancialSparkline({
       if (type === 'income') {
         value = intervalTransactions
           .filter(t => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0);
+          .reduce((sum, t) => sum + (t?.amount || 0), 0);
       } else if (type === 'expense') {
         value = intervalTransactions
           .filter(t => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0);
+          .reduce((sum, t) => sum + (t?.amount || 0), 0);
       } else {
         // Balance calculation
         value = intervalTransactions.reduce((sum, t) => {
-          return sum + (t.type === 'income' ? t.amount : -t.amount);
+          return sum + (t.type === 'income' ? (t?.amount || 0) : -(t?.amount || 0));
         }, i === 0 ? 0 : values[i - 1] || 0);
       }
 

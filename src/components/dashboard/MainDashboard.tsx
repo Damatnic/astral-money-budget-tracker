@@ -476,7 +476,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
   const monthlyIncome = transactions
     .filter(t => t.type === 'income' && 
       new Date(t.date).getMonth() === new Date().getMonth())
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
   // Command palette handlers
   const handleNavigateToTab = (tab: string) => {

@@ -5,7 +5,7 @@
 
 import { useMemo } from 'react';
 import { Transaction } from '@/types';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, calculateTotal } from '@/utils/formatters';
 import { PieChart, LineChart, ProgressRing } from '@/components/charts/SimpleCharts';
 
 interface FinancialSummaryProps {
@@ -26,11 +26,11 @@ export function FinancialSummary({ transactions, balance }: FinancialSummaryProp
 
     const totalIncome = thisMonthTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
     const totalExpenses = thisMonthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
     const netFlow = totalIncome - totalExpenses;
     
@@ -100,11 +100,11 @@ export function DetailedFinancialSummary({ transactions, balance }: FinancialSum
 
     const totalIncome = thisMonthTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
     const totalExpenses = thisMonthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
     const netFlow = totalIncome - totalExpenses;
     

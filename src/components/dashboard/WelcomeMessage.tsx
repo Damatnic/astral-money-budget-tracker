@@ -46,19 +46,19 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
 
     const todaySpent = todayTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
     const weekSpent = weekTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
     const monthSpent = monthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
     const monthIncome = monthTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + (t?.amount || 0), 0);
 
     return {
       todayTransactions: todayTransactions.length,
