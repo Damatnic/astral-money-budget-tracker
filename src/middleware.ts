@@ -5,8 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { performanceMiddleware } from '@/middleware/performance-monitor';
-import { logger } from '@/lib/advanced-logger';
+// Performance monitoring and logging disabled for Edge Runtime compatibility
 
 // Configuration
 const CONFIG = {
@@ -81,7 +80,8 @@ export async function middleware(request: NextRequest) {
   const path = url.pathname;
   
   // Initialize performance monitoring
-  const performanceMonitor = performanceMiddleware(request);
+  // Performance monitoring disabled for Edge Runtime compatibility
+  // const performanceMonitor = performanceMiddleware(request);
   
   try {
     // 1. Apply security headers
@@ -93,7 +93,7 @@ export async function middleware(request: NextRequest) {
     // 3. Check rate limiting
     const rateLimitCheck = await checkRateLimit(request);
     if (!rateLimitCheck.allowed) {
-      logger.logSecurity('rate_limit_exceeded', {
+      // logger.logSecurity('rate_limit_exceeded', {
         clientId: getClientIdentifier(request),
         path,
         retryAfter: rateLimitCheck.retryAfter,
@@ -113,7 +113,7 @@ export async function middleware(request: NextRequest) {
     if (isProtectedRoute(path)) {
       const authCheck = await checkAuthentication(request);
       if (!authCheck.authenticated) {
-        logger.logSecurity('unauthorized_access_attempt', {
+        // logger.logSecurity('unauthorized_access_attempt', {
           path,
           protected: true,
         }, {
@@ -165,11 +165,12 @@ export async function middleware(request: NextRequest) {
       
       // Log API requests with advanced logger
       if (path.startsWith('/api/')) {
-        logger.logApiRequest(
+        // logger.logApiRequest(
           request.method,
           path,
           response.status || 200,
-          Date.now() - (performanceMonitor.metrics?.startTime || Date.now()),
+          // Date.now() - (performanceMonitor.metrics?.startTime || Date.now()),
+          0, // Response time placeholder
           {
             requestId,
             userId: globalAuthCheck.userId,
