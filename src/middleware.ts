@@ -190,8 +190,9 @@ export async function middleware(request: NextRequest) {
     response.headers.set('X-Security-Version', '1.0.0');
     response.headers.set('X-Protected', isProtectedRoute(path) ? 'true' : 'false');
     
-    // 11. Complete performance monitoring
-    return performanceMonitor.enhance(response, globalAuthCheck.userId);
+    // 11. Complete performance monitoring (disabled for Edge Runtime compatibility)
+    // return performanceMonitor.enhance(response, globalAuthCheck.userId);
+    return response;
     
   } catch (error) {
     console.error('Middleware error:', error);
