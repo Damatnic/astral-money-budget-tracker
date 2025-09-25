@@ -142,6 +142,7 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPinEntry, setShowPinEntry] = useState(false);
+  const [showDemoNotice, setShowDemoNotice] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     pin: ''
@@ -178,11 +179,35 @@ export default function SignInPage() {
     }
   };
 
-  const handleQuickAccess = () => {
-    // Set email and show PIN entry screen
-    setFormData({ email: 'ourmonies@astral.money', pin: '' });
-    setShowPinEntry(true);
+  const handleDemoAccess = async () => {
+    // Set demo account credentials
+    setFormData({ email: 'demo@astral.money', pin: '0000' });
+    setShowDemoNotice(true);
+    setIsLoading(true);
     setError('');
+    
+    // Auto-login with demo credentials after a brief delay
+    setTimeout(async () => {
+      try {
+        const result = await signIn('credentials', {
+          email: 'demo@astral.money',
+          pin: '0000',
+          redirect: false
+        });
+
+        if (result?.error) {
+          setError('Demo account not available. Please try again later.');
+          setIsLoading(false);
+          setShowDemoNotice(false);
+        } else if (result?.ok) {
+          window.location.href = '/';
+        }
+      } catch {
+        setError('An error occurred accessing the demo account');
+        setIsLoading(false);
+        setShowDemoNotice(false);
+      }
+    }, 1500); // Brief delay to show the demo notice
   };
 
   const resetForm = () => {
@@ -383,10 +408,10 @@ export default function SignInPage() {
               <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
             </div>
 
-            {/* Quick Access */}
+            {/* Demo Access */}
             <button
               type="button"
-              onClick={handleQuickAccess}
+              onClick={handleDemoAccess}
               disabled={isLoading}
               style={{
                 width: '100%',
@@ -404,7 +429,9 @@ export default function SignInPage() {
                 justifyContent: 'center',
                 gap: '12px',
                 boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)',
-                transform: 'translateY(0)'
+                transform: 'translateY(0)',
+                position: 'relative',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-2px)';
@@ -415,8 +442,20 @@ export default function SignInPage() {
                 e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(16, 185, 129, 0.2)';
               }}
             >
-              <span style={{ fontSize: '20px' }}>🏦</span>
-              <span>Quick Access: Our Monies Account</span>
+              <span style={{ fontSize: '20px' }}>🚀</span>
+              <span>Try Demo Account (PIN: 0000)</span>
+              <span style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-24px',
+                background: '#fbbf24',
+                color: '#78350f',
+                fontSize: '11px',
+                fontWeight: '700',
+                padding: '2px 20px',
+                transform: 'rotate(45deg)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}>NEW</span>
             </button>
           </>
         ) : (
@@ -519,37 +558,73 @@ export default function SignInPage() {
           </span>
         </div>
 
-        {/* Loading Overlay */}
-        {isLoading && (
+        {/* Loading/Demo Overlay */}
+        {(isLoading || showDemoNotice) && (
           <div style={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(255, 255, 255, 0.9)',
+            background: 'rgba(255, 255, 255, 0.95)',
             borderRadius: '24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexDirection: 'column',
             gap: '16px',
-            backdropFilter: 'blur(4px)'
+            backdropFilter: 'blur(8px)'
           }}>
             <div style={{
               width: '48px',
               height: '48px',
               border: '3px solid #e5e7eb',
-              borderTop: '3px solid #6366f1',
-              borderRadius: '50%'
+              borderTop: showDemoNotice ? '3px solid #10b981' : '3px solid #6366f1',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
             }} />
-            <p style={{ 
-              color: '#6b7280', 
-              fontSize: '14px',
-              fontWeight: '500'
-            }}>
-              Authenticating...
-            </p>
+            {showDemoNotice && (
+              <>
+                <p style={{ 
+                  color: '#059669', 
+                  fontSize: '18px',
+                  fontWeight: '700'
+                }}>
+                  Loading Demo Account
+                </p>
+                <div style={{
+                  background: '#ecfdf5',
+                  border: '1px solid #6ee7b7',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  textAlign: 'center'
+                }}>
+                  <p style={{ 
+                    color: '#047857', 
+                    fontSize: '13px',
+                    margin: '0 0 4px 0'
+                  }}>
+                    <strong>Demo Credentials:</strong>
+                  </p>
+                  <p style={{ 
+                    color: '#065f46', 
+                    fontSize: '12px',
+                    margin: '0'
+                  }}>
+                    Email: demo@astral.money | PIN: 0000
+                  </p>
+                </div>
+              </>
+            )}
+            {!showDemoNotice && (
+              <p style={{ 
+                color: '#6b7280', 
+                fontSize: '14px',
+                fontWeight: '500'
+              }}>
+                Authenticating...
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -8,6 +8,7 @@ async function main() {
 
   // Hash the PIN for security
   const hashedPin = await bcrypt.hash('7347', 10);
+  const demoHashedPin = await bcrypt.hash('0000', 10); // Special PIN for demo account
 
   // Create Our Monies user (main account)
   const ourMoniesUser = await prisma.user.upsert({
@@ -40,12 +41,12 @@ async function main() {
   const demoUser = await prisma.user.upsert({
     where: { email: 'demo@astral.money' },
     update: {
-      pin: hashedPin,
+      pin: demoHashedPin,
     },
     create: {
       email: 'demo@astral.money',
       name: 'Demo User',
-      pin: hashedPin,
+      pin: demoHashedPin,
       balance: 11.29,
     },
   });

@@ -31,6 +31,7 @@ export function DashboardHeader({
 
   const balanceColor = balance >= 0 ? 'text-green-600' : 'text-red-600';
   const displayName = session?.user?.name || userName;
+  const isDemoAccount = session?.user?.email === 'demo@astral.money';
 
   return (
     <header className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-indigo-100 rounded-2xl shadow-xl backdrop-blur-sm border border-white/60 p-6 lg:p-8">
@@ -51,6 +52,11 @@ export function DashboardHeader({
             {isOffline && (
               <span className="ml-4 px-3 py-1 text-xs font-medium bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full shadow-lg animate-pulse">
                 Offline Mode
+              </span>
+            )}
+            {isDemoAccount && (
+              <span className="ml-4 px-3 py-1 text-xs font-medium bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-full shadow-lg">
+                Demo Mode
               </span>
             )}
           </h1>
