@@ -379,7 +379,7 @@ export function CommandPalette({
           }`}>
             <svg 
               className={`w-5 h-5 mr-3 ${
-                isDark ? 'text-gray-700' : 'text-gray-700'
+                isDark ? 'text-gray-400' : 'text-gray-500'
               }`} 
               fill="currentColor" 
               viewBox="0 0 20 20"
@@ -390,7 +390,7 @@ export function CommandPalette({
               type="text"
               placeholder="Search commands or data..."
               className={`flex-1 bg-transparent border-none outline-none text-lg ${
-                isDark ? 'text-white placeholder-gray-600' : 'text-gray-900 placeholder-gray-500'
+                isDark ? 'text-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
               }`}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -398,8 +398,8 @@ export function CommandPalette({
             />
             <div className={`text-xs px-2 py-1 rounded border ${
               isDark 
-                ? 'border-gray-600 text-gray-700 bg-gray-700' 
-                : 'border-gray-200 text-gray-700 bg-gray-100'
+                ? 'border-gray-600 text-gray-300 bg-gray-700' 
+                : 'border-gray-200 text-gray-600 bg-gray-100'
             }`}>
               ESC
             </div>
@@ -409,7 +409,7 @@ export function CommandPalette({
           <div className="max-h-96 overflow-y-auto">
             {filteredCommands.length === 0 ? (
               <div className={`px-4 py-8 text-center ${
-                isDark ? 'text-gray-700' : 'text-gray-700'
+                isDark ? 'text-gray-400' : 'text-gray-500'
               }`}>
                 <svg className="w-12 h-12 mx-auto mb-4 opacity-70" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -460,7 +460,7 @@ export function CommandPalette({
                           <div className={`text-sm truncate ${
                             index === selectedIndex
                               ? isDark ? 'text-blue-200' : 'text-blue-700'
-                              : isDark ? 'text-gray-700' : 'text-gray-700'
+                              : isDark ? 'text-gray-400' : 'text-gray-500'
                           }`}>
                             {command.subtitle}
                           </div>
@@ -470,7 +470,7 @@ export function CommandPalette({
                     <div className={`text-xs px-2 py-1 rounded ${
                       index === selectedIndex
                         ? isDark ? 'bg-blue-700 text-blue-200' : 'bg-blue-200 text-blue-800'
-                        : isDark ? 'bg-gray-700 text-gray-700' : 'bg-gray-100 text-gray-800'
+                        : isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600'
                     }`}>
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d={getCategoryIcon(command.category)} clipRule="evenodd" />
@@ -488,7 +488,7 @@ export function CommandPalette({
               isDark ? 'border-gray-600 bg-gray-750' : 'border-gray-200 bg-gray-50'
             }`}>
               <div className={`text-xs font-medium mb-2 ${
-                isDark ? 'text-gray-700' : 'text-gray-700'
+                isDark ? 'text-gray-400' : 'text-gray-500'
               }`}>
                 Recent Searches
               </div>
@@ -513,8 +513,8 @@ export function CommandPalette({
           {/* Footer */}
           <div className={`flex items-center justify-between px-4 py-3 text-xs border-t ${
             isDark 
-              ? 'border-gray-600 text-gray-700 bg-gray-750' 
-              : 'border-gray-200 text-gray-700 bg-gray-50'
+              ? 'border-gray-600 text-gray-400 bg-gray-750' 
+              : 'border-gray-200 text-gray-500 bg-gray-50'
           }`}>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1">
