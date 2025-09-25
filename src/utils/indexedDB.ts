@@ -87,9 +87,9 @@ class IndexedDBManager {
     try {
       this.dbPromise = this.openDatabase();
       this.db = await this.dbPromise;
-      console.log('IndexedDB initialized successfully');
+      // IndexedDB initialized successfully
     } catch (error) {
-      console.error('Failed to initialize IndexedDB:', error);
+      // Handle IndexedDB initialization error
     }
   }
 

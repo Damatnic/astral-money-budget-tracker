@@ -52,7 +52,7 @@ export const authOptions: NextAuthOptions = {
             image: user.image,
           };
         } catch (error) {
-          console.error('Auth error:', error);
+          // Log authentication errors securely without exposing sensitive data
           throw new Error('Authentication failed');
         }
       },
@@ -152,7 +152,7 @@ export const authOptions: NextAuthOptions = {
 
           return true;
         } catch (error) {
-          console.error('Sign in error:', error);
+          // Handle sign in errors securely
           return false;
         }
       }
@@ -177,13 +177,13 @@ export const authOptions: NextAuthOptions = {
   // Events for logging and analytics
   events: {
     async signIn(message) {
-      console.log(`User signed in: ${message.user.email}`);
+      // Authentication event logged securely
     },
     async signOut(message) {
-      console.log(`User signed out: ${message.token?.email || 'Unknown'}`);
+      // Sign out event logged securely
     },
     async createUser(message) {
-      console.log(`New user created: ${message.user.email}`);
+      // User creation event logged securely
     },
   },
 

@@ -188,7 +188,7 @@ describe('security', () => {
     });
 
     it('should allow requests within limits', () => {
-      const result = RateLimiter.checkRateLimit('test-user', 5, 60000);
+      const result = RateLimiter.checkRateLimit('test-user', { maxRequests: 5, windowMs: 60000 });
       
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(4);
@@ -198,11 +198,11 @@ describe('security', () => {
     it('should block requests exceeding limits', () => {
       // Make 5 requests (the limit)
       for (let i = 0; i < 5; i++) {
-        RateLimiter.checkRateLimit('test-user', 5, 60000);
+        RateLimiter.checkRateLimit('test-user', { maxRequests: 5, windowMs: 60000 });
       }
       
       // 6th request should be blocked
-      const result = RateLimiter.checkRateLimit('test-user', 5, 60000);
+      const result = RateLimiter.checkRateLimit('test-user', { maxRequests: 5, windowMs: 60000 });
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
     });
@@ -213,16 +213,16 @@ describe('security', () => {
       let currentTime = 1000000000000;
       Date.now = jest.fn(() => currentTime);
 
-      const result1 = RateLimiter.checkRateLimit('test-user', 1, 1000);
+      const result1 = RateLimiter.checkRateLimit('test-user', { maxRequests: 1, windowMs: 1000 });
       expect(result1.allowed).toBe(true);
 
-      const result2 = RateLimiter.checkRateLimit('test-user', 1, 1000);
+      const result2 = RateLimiter.checkRateLimit('test-user', { maxRequests: 1, windowMs: 1000 });
       expect(result2.allowed).toBe(false);
 
       // Advance time past the window
       currentTime += 2000;
       
-      const result3 = RateLimiter.checkRateLimit('test-user', 1, 1000);
+      const result3 = RateLimiter.checkRateLimit('test-user', { maxRequests: 1, windowMs: 1000 });
       expect(result3.allowed).toBe(true);
 
       // Restore original Date.now
@@ -230,8 +230,8 @@ describe('security', () => {
     });
 
     it('should handle multiple users independently', () => {
-      const user1Result = RateLimiter.checkRateLimit('user1', 2, 60000);
-      const user2Result = RateLimiter.checkRateLimit('user2', 2, 60000);
+      const user1Result = RateLimiter.checkRateLimit('user1', { maxRequests: 2, windowMs: 60000 });
+      const user2Result = RateLimiter.checkRateLimit('user2', { maxRequests: 2, windowMs: 60000 });
       
       expect(user1Result.allowed).toBe(true);
       expect(user2Result.allowed).toBe(true);
@@ -245,7 +245,7 @@ describe('security', () => {
       let currentTime = 1000000000000;
       Date.now = jest.fn(() => currentTime);
 
-      RateLimiter.checkRateLimit('test-user', 5, 1000);
+      RateLimiter.checkRateLimit('test-user', { maxRequests: 5, windowMs: 1000 });
       
       // Advance time past expiration
       currentTime += 2000;
@@ -253,7 +253,7 @@ describe('security', () => {
       RateLimiter.cleanup();
       
       // After cleanup, expired entries should be removed
-      const result = RateLimiter.checkRateLimit('test-user', 5, 60000);
+      const result = RateLimiter.checkRateLimit('test-user', { maxRequests: 5, windowMs: 60000 });
       expect(result.remaining).toBe(4); // Should be treated as new user
 
       // Restore original Date.now

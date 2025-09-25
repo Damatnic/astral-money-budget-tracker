@@ -3,6 +3,7 @@ import {
   analyzeBillVariance, 
   checkForBillAnomalies 
 } from '../billEstimation';
+import { RecurringBill } from '@/types';
 
 describe('billEstimation', () => {
   describe('calculateNextBillEstimate', () => {
@@ -168,12 +169,14 @@ describe('billEstimation', () => {
       const bill = {
         id: '1',
         name: 'Netflix',
+        estimationMethod: 'base',
+        isVariableAmount: false,
         billHistory: [
           { actualAmount: 15.99, billDate: '2024-06-01', variance: 0, variancePercent: 0 },
           { actualAmount: 15.99, billDate: '2024-07-01', variance: 0, variancePercent: 0 },
           { actualAmount: 15.99, billDate: '2024-08-01', variance: 0, variancePercent: 0 },
         ]
-      };
+      } as unknown as RecurringBill;
 
       const result = analyzeBillVariance(bill);
       
@@ -186,13 +189,15 @@ describe('billEstimation', () => {
       const bill = {
         id: '2',
         name: 'Electric Bill',
+        estimationMethod: 'average',
+        isVariableAmount: true,
         billHistory: [
           { actualAmount: 80, billDate: '2024-01-01', variance: 10, variancePercent: 14 },
           { actualAmount: 60, billDate: '2024-04-01', variance: -10, variancePercent: -14 },
           { actualAmount: 120, billDate: '2024-07-01', variance: 50, variancePercent: 71 },
           { actualAmount: 90, billDate: '2024-10-01', variance: 20, variancePercent: 29 },
         ]
-      };
+      } as unknown as RecurringBill;
 
       const result = analyzeBillVariance(bill);
       
@@ -205,13 +210,15 @@ describe('billEstimation', () => {
       const bill = {
         id: '3',
         name: 'Business Expenses',
+        estimationMethod: 'average',
+        isVariableAmount: true,
         billHistory: [
           { actualAmount: 100, billDate: '2024-06-01', variance: 50, variancePercent: 100 },
           { actualAmount: 200, billDate: '2024-07-01', variance: 50, variancePercent: 33 },
           { actualAmount: 50, billDate: '2024-08-01', variance: -100, variancePercent: -67 },
           { actualAmount: 300, billDate: '2024-09-01', variance: 150, variancePercent: 100 },
         ]
-      };
+      } as unknown as RecurringBill;
 
       const result = analyzeBillVariance(bill);
       
@@ -224,10 +231,12 @@ describe('billEstimation', () => {
       const bill = {
         id: '4',
         name: 'New Bill',
+        estimationMethod: 'base',
+        isVariableAmount: false,
         billHistory: [
           { actualAmount: 75, billDate: '2024-09-01', variance: 0, variancePercent: 0 },
         ]
-      };
+      } as unknown as RecurringBill;
 
       const result = analyzeBillVariance(bill);
       

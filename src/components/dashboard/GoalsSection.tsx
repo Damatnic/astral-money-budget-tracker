@@ -5,11 +5,14 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FinancialGoal, CreateFinancialGoalRequest, UpdateFinancialGoalRequest, ApiResponse } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
 
 interface GoalsSectionProps {
+  goals: FinancialGoal[];
+  loading: boolean;
+  onUpdate: (goals: FinancialGoal[]) => void;
   className?: string;
 }
 
@@ -29,9 +32,7 @@ const CATEGORY_CONFIG = {
   purchase: { icon: '🛒', label: 'Purchase Goal', color: 'purple' },
 };
 
-export function GoalsSection({ className = '' }: GoalsSectionProps) {
-  const [goals, setGoals] = useState<FinancialGoal[]>([]);
-  const [loading, setLoading] = useState(true);
+export function GoalsSection({ goals, loading, onUpdate, className = '' }: GoalsSectionProps) {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
@@ -44,33 +45,6 @@ export function GoalsSection({ className = '' }: GoalsSectionProps) {
   });
   const [formLoading, setFormLoading] = useState(false);
 
-  // Fetch goals from API
-  const fetchGoals = async () => {
-    try {
-      setError(null);
-      const response = await fetch('/api/goals', {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: ApiResponse<{ goals: FinancialGoal[] }> = await response.json();
-      
-      if (result.success && result.data) {
-        setGoals(result.data.goals);
-      } else {
-        throw new Error(result.error || 'Failed to fetch goals');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch goals');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Create new goal
   const createGoal = async (data: CreateFinancialGoalRequest) => {
@@ -91,7 +65,8 @@ export function GoalsSection({ className = '' }: GoalsSectionProps) {
       const result: ApiResponse<{ goal: FinancialGoal }> = await response.json();
       
       if (result.success && result.data) {
-        setGoals(prev => [result.data!.goal, ...prev]);
+        const newGoals = [result.data.goal, ...goals];
+        onUpdate(newGoals);
         resetForm();
       } else {
         throw new Error(result.error || 'Failed to create goal');
@@ -122,7 +97,8 @@ export function GoalsSection({ className = '' }: GoalsSectionProps) {
       const result: ApiResponse<{ goal: FinancialGoal }> = await response.json();
       
       if (result.success && result.data) {
-        setGoals(prev => prev.map(g => g.id === id ? result.data!.goal : g));
+        const updatedGoals = goals.map(g => g.id === id ? result.data!.goal : g);
+        onUpdate(updatedGoals);
         resetForm();
       } else {
         throw new Error(result.error || 'Failed to update goal');
@@ -156,7 +132,8 @@ export function GoalsSection({ className = '' }: GoalsSectionProps) {
       const result: ApiResponse<any> = await response.json();
       
       if (result.success) {
-        setGoals(prev => prev.filter(g => g.id !== id));
+        const filteredGoals = goals.filter(g => g.id !== id);
+        onUpdate(filteredGoals);
       } else {
         throw new Error(result.error || 'Failed to delete goal');
       }
@@ -223,9 +200,6 @@ export function GoalsSection({ className = '' }: GoalsSectionProps) {
     return diffDays;
   };
 
-  useEffect(() => {
-    fetchGoals();
-  }, []);
 
   if (loading) {
     return (
@@ -246,25 +220,33 @@ export function GoalsSection({ className = '' }: GoalsSectionProps) {
   }
 
   return (
-    <section className={`bg-white rounded-lg shadow-sm p-6 border border-gray-200 ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-          <svg className="w-6 h-6 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          Financial Goals ({goals.length})
-        </h2>
-        
-        <button 
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-        >
-          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Add Goal
-        </button>
-      </div>
+    <section className={`relative overflow-hidden bg-gradient-to-br from-white via-gray-50 to-emerald-50/30 rounded-2xl shadow-xl backdrop-blur-sm border border-white/60 p-6 lg:p-8 ${className}`}>
+      {/* Decorative Elements */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-emerald-400/10 to-green-400/10 rounded-full blur-2xl"></div>
+      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-tr from-blue-400/10 to-indigo-400/10 rounded-full blur-2xl"></div>
+      
+      <div className="relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-emerald-800 to-green-900 bg-clip-text text-transparent flex items-center">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 mr-3 lg:mr-4 bg-gradient-to-br from-emerald-600 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+              <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            Financial Goals ({goals.length})
+          </h2>
+          
+          <button 
+            onClick={() => setShowForm(!showForm)}
+            className="group relative overflow-hidden bg-gradient-to-br from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <svg className="w-5 h-5 mr-2 relative z-10" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            <span className="relative z-10">Add Goal</span>
+          </button>
+        </div>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -519,17 +501,6 @@ export function GoalsSection({ className = '' }: GoalsSectionProps) {
         </div>
       )}
 
-      {/* Refresh Button */}
-      <div className="mt-6 text-center">
-        <button
-          onClick={fetchGoals}
-          className="text-gray-500 hover:text-gray-700 text-sm font-medium flex items-center mx-auto"
-        >
-          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-          </svg>
-          Refresh
-        </button>
       </div>
     </section>
   );

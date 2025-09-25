@@ -10,7 +10,7 @@ import { categorizeTransaction, getSuggestions, EXPENSE_CATEGORY_RULES, INCOME_C
 
 interface TransactionManagerProps {
   transactions: Transaction[];
-  onAdd: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => Promise<void>;
+  onAdd: (transaction: Omit<Transaction, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
   onUpdate: (id: string, updates: Partial<Transaction>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   loading: LoadingState;
@@ -43,7 +43,6 @@ export function TransactionManager({
 
     try {
       await onAdd({
-        userId: 'temp-user-id', // This will be set by the parent component
         amount: parseFloat(formData.amount),
         description: formData.description,
         category: formData.category,
@@ -63,37 +62,46 @@ export function TransactionManager({
       setShowSuggestions(false);
       setShowForm(false);
     } catch (error) {
-      console.error('Failed to add transaction:', error);
+      // Error is handled by parent component
     }
   };
 
   const recentTransactions = transactions.slice(0, 10);
 
   return (
-    <section className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-          <svg className="w-6 h-6 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h6zM4 14a2 2 0 002 2h8a2 2 0 002-2v-2H4v2z" />
-          </svg>
-          Recent Transactions
-        </h2>
-        
-        <button
-          onClick={() => setShowForm(!showForm)}
-          disabled={loading.creating}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-        >
-          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Add Transaction
-        </button>
-      </div>
+    <section className="relative overflow-hidden bg-gradient-to-br from-white via-gray-50 to-blue-50/30 rounded-2xl shadow-xl backdrop-blur-sm border border-white/60 p-6 lg:p-8">
+      {/* Decorative Elements */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-2xl"></div>
+      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-2xl"></div>
+      
+      <div className="relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent flex items-center">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 mr-3 lg:mr-4 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h6zM4 14a2 2 0 002 2h8a2 2 0 002-2v-2H4v2z" />
+              </svg>
+            </div>
+            Recent Transactions
+          </h2>
+          
+          <button
+            onClick={() => setShowForm(!showForm)}
+            disabled={loading.creating}
+            className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <svg className="w-5 h-5 mr-2 relative z-10" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            <span className="relative z-10">Add Transaction</span>
+          </button>
+        </div>
 
-      {/* Quick Add Form */}
-      {showForm && (
-        <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-lg border">
+        {/* Enhanced Quick Add Form */}
+        {showForm && (
+          <div className="mb-8 p-6 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg">
+            <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -105,7 +113,7 @@ export function TransactionManager({
                 min="0"
                 value={formData.amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
                 placeholder="0.00"
                 required
               />
@@ -118,7 +126,7 @@ export function TransactionManager({
               <select
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'income' | 'expense' }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
               >
                 <option value="expense">Expense</option>
                 <option value="income">Income</option>
@@ -150,7 +158,7 @@ export function TransactionManager({
                     setShowSuggestions(false);
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
                 placeholder="What was this for?"
                 required
               />
@@ -168,7 +176,7 @@ export function TransactionManager({
                   setFormData(prev => ({ ...prev, category: e.target.value }));
                   setShowSuggestions(false);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
                 required
               >
                 <option value="">Select category</option>
@@ -199,27 +207,31 @@ export function TransactionManager({
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-full sm:w-auto"
+              className="px-6 py-3 text-gray-700 bg-white/80 backdrop-blur-sm border border-white/60 rounded-xl hover:bg-white transition-all duration-200 shadow-sm hover:shadow-md w-full sm:w-auto font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading.creating}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md transition-colors w-full sm:w-auto"
+              className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto"
             >
-              {loading.creating ? 'Adding...' : 'Add Transaction'}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10">
+                {loading.creating ? 'Adding...' : 'Add Transaction'}
+              </span>
             </button>
           </div>
-        </form>
-      )}
+            </form>
+          </div>
+        )}
 
-      {/* Transaction List */}
-      <div className="space-y-2">
+        {/* Enhanced Transaction List */}
+        <div className="space-y-3">
         {recentTransactions.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
@@ -232,11 +244,13 @@ export function TransactionManager({
           recentTransactions.map((transaction) => (
             <div
               key={transaction.id}
-              className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="group flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm border border-white/60 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
             >
               <div className="flex items-center space-x-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md ${
+                  transaction.type === 'income' 
+                    ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white' 
+                    : 'bg-gradient-to-br from-red-500 to-rose-600 text-white'
                 }`}>
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     {transaction.type === 'income' ? (
@@ -248,17 +262,19 @@ export function TransactionManager({
                 </div>
                 
                 <div>
-                  <p className="font-medium text-gray-900">{transaction.description}</p>
-                  <p className="text-sm text-gray-500">
-                    {transaction.category} • {formatDate(transaction.date)}
+                  <p className="font-semibold text-gray-900 group-hover:text-gray-800 transition-colors">{transaction.description}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    <span className="font-medium">{transaction.category}</span> • {formatDate(transaction.date)}
                   </p>
                 </div>
               </div>
               
               <div className="text-right">
-                <p className={`font-semibold ${
-                  transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <p className={`text-lg font-bold ${
+                  transaction.type === 'income' 
+                    ? 'bg-gradient-to-r from-emerald-600 to-green-600' 
+                    : 'bg-gradient-to-r from-red-600 to-rose-600'
+                } bg-clip-text text-transparent`}>
                   {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
                 </p>
               </div>
@@ -267,13 +283,20 @@ export function TransactionManager({
         )}
       </div>
 
-      {transactions.length > 10 && (
-        <div className="mt-4 text-center">
-          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-            View all transactions ({transactions.length})
-          </button>
-        </div>
-      )}
+        {transactions.length > 10 && (
+          <div className="mt-6 text-center">
+            <button className="group relative overflow-hidden bg-gradient-to-br from-blue-600/10 to-indigo-600/10 hover:from-blue-600/20 hover:to-indigo-600/20 text-blue-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border border-blue-200/50">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 flex items-center justify-center">
+                View all transactions ({transactions.length})
+                <svg className="w-4 h-4 ml-2 group-hover:translate-x-0.5 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

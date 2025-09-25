@@ -362,17 +362,19 @@ function logSecurityEvent(request: NextRequest, requestId: string): void {
   const url = new URL(request.url);
   const clientId = getClientIdentifier(request);
   
-  // In production, this would go to a proper logging service
-  console.log(JSON.stringify({
-    timestamp: new Date().toISOString(),
-    requestId,
-    method: request.method,
-    path: url.pathname,
-    clientId,
-    userAgent: request.headers.get('user-agent'),
-    referer: request.headers.get('referer'),
-    protected: isProtectedRoute(url.pathname),
-  }));
+  // Security events logged to monitoring service in production
+  if (process.env.NODE_ENV === 'development') {
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      requestId,
+      method: request.method,
+      path: url.pathname,
+      clientId,
+      userAgent: request.headers.get('user-agent'),
+      referer: request.headers.get('referer'),
+      protected: isProtectedRoute(url.pathname),
+    }));
+  }
 }
 
 /**

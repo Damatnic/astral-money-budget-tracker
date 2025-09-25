@@ -1537,7 +1537,10 @@ export class AuditLogger {
       try {
         switch (output.type) {
           case 'console':
-            console.log(this.formatForConsole(event));
+            // Console logging disabled in production
+            if (process.env.NODE_ENV === 'development') {
+              console.log(this.formatForConsole(event));
+            }
             break;
           
           case 'file':

@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        expenses,
+        transactions: expenses,
         pagination: {
           limit,
           offset,
@@ -287,7 +287,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        expense: result.expense,
+        transaction: result.expense,
         newBalance: result.newBalance,
       },
       metadata: {
@@ -461,7 +461,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        expense: result.expense,
+        transaction: result.expense,
         newBalance: result.newBalance,
       },
       metadata: {
