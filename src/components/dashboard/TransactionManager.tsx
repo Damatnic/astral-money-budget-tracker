@@ -93,25 +93,25 @@ export function TransactionManager({
       <form onSubmit={handleSubmit}>
         <div className={`grid ${compact ? 'grid-cols-2' : 'grid-cols-4'} gap-3 mb-3`}>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Amount</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Amount</label>
             <input
               type="number"
               step="0.01"
               min="0"
               value={formData.amount}
               onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-              className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="0.00"
               required
             />
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+            <label className="block text-xs font-medium text-gray-900 mb-1">Type</label>
             <select
               value={formData.type}
               onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'income' | 'expense' }))}
-              className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="expense">Expense</option>
               <option value="income">Income</option>
@@ -121,7 +121,7 @@ export function TransactionManager({
           {!compact && (
             <>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-xs font-medium text-gray-900 mb-1">Description</label>
                 <input
                   type="text"
                   value={formData.description}
@@ -142,18 +142,18 @@ export function TransactionManager({
                       setShowSuggestions(false);
                     }
                   }}
-                  className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Description"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-xs font-medium text-gray-900 mb-1">Category</label>
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select category</option>
@@ -169,23 +169,23 @@ export function TransactionManager({
         {compact && (
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Description</label>
               <input
                 type="text"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="Description"
                 required
               />
             </div>
             
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-xs font-medium text-gray-900 mb-1">Category</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 required
               >
                 <option value="">Select category</option>
@@ -201,7 +201,7 @@ export function TransactionManager({
           <button
             type="button"
             onClick={() => setShowForm(false)}
-            className="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+            className="px-3 py-1.5 text-sm text-gray-800 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
           >
             Cancel
           </button>
@@ -243,7 +243,7 @@ export function TransactionManager({
         
         <div className="space-y-2">
           {filteredTransactions.length === 0 ? (
-            <div className="text-center py-6 text-gray-500">
+            <div className="text-center py-6 text-gray-800">
               <p className="text-sm">No recent transactions</p>
             </div>
           ) : (
@@ -257,7 +257,7 @@ export function TransactionManager({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900 truncate max-w-32">{transaction.description}</p>
-                    <p className="text-xs text-gray-500">{transaction.category}</p>
+                    <p className="text-xs text-gray-800">{transaction.category}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -266,7 +266,7 @@ export function TransactionManager({
                   }`}>
                     {transaction.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
                   </p>
-                  <p className="text-xs text-gray-500">{formatDate(transaction.date)}</p>
+                  <p className="text-xs text-gray-800">{formatDate(transaction.date)}</p>
                 </div>
               </div>
             ))
@@ -327,7 +327,7 @@ export function TransactionManager({
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as any)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="all">All Types</option>
             <option value="income">Income</option>
@@ -337,7 +337,7 @@ export function TransactionManager({
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="all">All Categories</option>
             {categories.map(category => (
@@ -358,18 +358,18 @@ export function TransactionManager({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction</th>
-              <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="text-right py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-              <th className="text-center py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="text-left py-3 px-6 text-xs font-medium text-gray-800 uppercase tracking-wider">Transaction</th>
+              <th className="text-left py-3 px-6 text-xs font-medium text-gray-800 uppercase tracking-wider">Category</th>
+              <th className="text-left py-3 px-6 text-xs font-medium text-gray-800 uppercase tracking-wider">Date</th>
+              <th className="text-right py-3 px-6 text-xs font-medium text-gray-800 uppercase tracking-wider">Amount</th>
+              <th className="text-center py-3 px-6 text-xs font-medium text-gray-800 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filteredTransactions.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-12 text-center">
-                  <div className="text-gray-500">
+                  <div className="text-gray-800">
                     <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4z" clipRule="evenodd" />
                     </svg>
@@ -396,7 +396,7 @@ export function TransactionManager({
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{transaction.description}</p>
-                        <p className="text-sm text-gray-500 capitalize">{transaction.type}</p>
+                        <p className="text-sm text-gray-800 capitalize">{transaction.type}</p>
                       </div>
                     </div>
                   </td>
@@ -407,7 +407,7 @@ export function TransactionManager({
                     </span>
                   </td>
                   
-                  <td className="py-4 px-6 text-sm text-gray-500">
+                  <td className="py-4 px-6 text-sm text-gray-800">
                     {formatDate(transaction.date)}
                   </td>
                   

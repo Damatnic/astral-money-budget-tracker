@@ -220,8 +220,13 @@ export function NotificationSystem({
     });
   }, [transactions, bills, goals, balance, dismissedAlerts]);
 
-  // Check for new alerts periodically
+  // Check for new alerts periodically - DISABLED to prevent notification spam
   useEffect(() => {
+    // Commenting out automatic alert generation to prevent persistent notifications
+    // Users can manually trigger notifications when needed
+    return;
+    
+    /*
     const checkAlerts = () => {
       const alerts = generateAlerts();
       const newAlerts = alerts.filter(alert => 
@@ -251,6 +256,7 @@ export function NotificationSystem({
     const interval = setInterval(checkAlerts, 30000);
 
     return () => clearInterval(interval);
+    */
   }, [generateAlerts, activeAlerts, onNotification]);
 
   // Auto-dismiss alerts
@@ -282,8 +288,16 @@ export function NotificationSystem({
     dismissAlert(alert.id);
   };
 
-  // Load dismissed alerts from localStorage
+  // Load dismissed alerts from localStorage and clear any existing alerts
   useEffect(() => {
+    // Clear all existing alerts on mount
+    setActiveAlerts([]);
+    
+    // Clear localStorage to reset all notifications
+    localStorage.removeItem('astral-money-dismissed-alerts');
+    setDismissedAlerts(new Set());
+    
+    /*
     const stored = localStorage.getItem('astral-money-dismissed-alerts');
     if (stored) {
       try {

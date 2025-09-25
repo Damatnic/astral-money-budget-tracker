@@ -550,7 +550,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
             </div>
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="p-1.5 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
             >
               <svg className={`w-4 h-4 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -599,7 +599,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover-lift ${
                 activeTab === item.id
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                  : 'text-gray-900 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
               title={sidebarCollapsed ? item.label : ''}
             >
@@ -623,7 +623,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
           )}
           <button
             onClick={handleSignOut}
-            className={`w-full flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors ${sidebarCollapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center px-3 py-2 text-sm font-medium text-gray-800 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ${sidebarCollapsed ? 'justify-center' : ''}`}
             title={sidebarCollapsed ? 'Sign Out' : ''}
           >
             <svg className={`w-5 h-5 ${!sidebarCollapsed && 'mr-3'}`} fill="currentColor" viewBox="0 0 20 20">
