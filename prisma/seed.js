@@ -1,48 +1,72 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Create test users with PINs
+  // Hash the PIN for security
+  const hashedPin = await bcrypt.hash('7347', 10);
+
+  // Create Our Monies user (main account)
+  const ourMoniesUser = await prisma.user.upsert({
+    where: { email: 'ourmonies@astral.money' },
+    update: {
+      pin: hashedPin, // Update PIN if user exists
+    },
+    create: {
+      email: 'ourmonies@astral.money',
+      name: 'Our Monies',
+      pin: hashedPin,
+      balance: 11.29,
+    },
+  });
+
+  // Create test users with hashed PINs
   const testUser = await prisma.user.upsert({
     where: { email: 'test@astral.money' },
-    update: {},
+    update: {
+      pin: hashedPin,
+    },
     create: {
       email: 'test@astral.money',
       name: 'Test User',
-      pin: '7347',
+      pin: hashedPin,
       balance: 11.29,
     },
   });
 
   const demoUser = await prisma.user.upsert({
     where: { email: 'demo@astral.money' },
-    update: {},
+    update: {
+      pin: hashedPin,
+    },
     create: {
       email: 'demo@astral.money',
       name: 'Demo User',
-      pin: '7347',
+      pin: hashedPin,
       balance: 11.29,
     },
   });
 
   const sampleUser = await prisma.user.upsert({
     where: { email: 'user@astral.money' },
-    update: {},
+    update: {
+      pin: hashedPin,
+    },
     create: {
       email: 'user@astral.money',
       name: 'Sample User',
-      pin: '7347',
+      pin: hashedPin,
       balance: 11.29,
     },
   });
 
-  console.log('✅ Test users created:', [testUser.email, demoUser.email, sampleUser.email]);
+  console.log('✅ Users created:', [ourMoniesUser.email, testUser.email, demoUser.email, sampleUser.email]);
   
-  // Use test user for budget data
-  const user = testUser;
+  // Use Our Monies user for budget data
+  const user = ourMoniesUser;
 
   // Create October 2025 budget
   const budget = await prisma.budget.upsert({
@@ -82,15 +106,19 @@ async function main() {
 
   // Create recurring bills
   for (const bill of recurringBills) {
-    // Check if bill already exists
+    // Check if bill already exists for this user
     const existing = await prisma.recurringBill.findFirst({
-      where: { name: bill.name }
+      where: { 
+        name: bill.name,
+        userId: user.id
+      }
     });
     
     if (!existing) {
       await prisma.recurringBill.create({
         data: {
           ...bill,
+          userId: user.id,
           startDate: new Date('2025-10-01'),
           isActive: true,
         },
@@ -133,18 +161,29 @@ async function main() {
   ];
 
   for (const billData of octoberBills) {
-    await prisma.bill.create({
-      data: {
+    // Check if bill already exists
+    const existing = await prisma.bill.findFirst({
+      where: {
         userId: user.id,
-        budgetId: budget.id,
         name: billData.name,
-        amount: billData.amount,
-        dueDate: new Date(billData.dueDate),
-        category: billData.category,
-        isIncome: billData.isIncome || false,
-        isRecurring: true,
-      },
+        dueDate: new Date(billData.dueDate)
+      }
     });
+
+    if (!existing) {
+      await prisma.bill.create({
+        data: {
+          userId: user.id,
+          budgetId: budget.id,
+          name: billData.name,
+          amount: billData.amount,
+          dueDate: new Date(billData.dueDate),
+          category: billData.category,
+          isIncome: billData.isIncome || false,
+          isRecurring: true,
+        },
+      });
+    }
   }
 
   console.log('✅ October 2025 bills created');
@@ -178,7 +217,17 @@ async function main() {
   ];
 
   for (const goal of goals) {
-    await prisma.financialGoal.create({ data: goal });
+    // Check if goal already exists
+    const existing = await prisma.financialGoal.findFirst({
+      where: {
+        userId: goal.userId,
+        title: goal.title
+      }
+    });
+
+    if (!existing) {
+      await prisma.financialGoal.create({ data: goal });
+    }
   }
 
   console.log('✅ Financial goals created');

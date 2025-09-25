@@ -178,27 +178,11 @@ export default function SignInPage() {
     }
   };
 
-  const handleQuickSignIn = async () => {
+  const handleQuickAccess = () => {
+    // Set email and show PIN entry screen
+    setFormData({ email: 'ourmonies@astral.money', pin: '' });
+    setShowPinEntry(true);
     setError('');
-    setIsLoading(true);
-    
-    try {
-      const result = await signIn('credentials', {
-        email: 'ourmonies@astral.money',
-        pin: '1234',
-        redirect: false
-      });
-
-      if (result?.ok) {
-        window.location.href = '/';
-      } else {
-        setError('Quick sign-in failed. Please try manual sign-in.');
-      }
-    } catch {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const resetForm = () => {
@@ -402,7 +386,7 @@ export default function SignInPage() {
             {/* Quick Access */}
             <button
               type="button"
-              onClick={handleQuickSignIn}
+              onClick={handleQuickAccess}
               disabled={isLoading}
               style={{
                 width: '100%',
@@ -434,31 +418,6 @@ export default function SignInPage() {
               <span style={{ fontSize: '20px' }}>🏦</span>
               <span>Quick Access: Our Monies Account</span>
             </button>
-            
-            <div style={{
-              marginTop: '12px',
-              padding: '12px',
-              background: 'linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%)',
-              borderRadius: '8px',
-              textAlign: 'center'
-            }}>
-              <p style={{ 
-                fontSize: '13px', 
-                color: '#6b7280', 
-                margin: '0',
-                fontWeight: '500'
-              }}>
-                🔐 Demo PIN: <code style={{
-                  background: 'white',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontFamily: 'monospace',
-                  fontSize: '14px',
-                  color: '#4b5563',
-                  border: '1px solid #e5e7eb'
-                }}>1234</code>
-              </p>
-            </div>
           </>
         ) : (
           /* PIN Entry Screen */
