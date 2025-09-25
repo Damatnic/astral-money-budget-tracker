@@ -270,11 +270,11 @@ export function withErrorBoundary<P extends object>(
 export function useErrorHandler() {
   return {
     captureError: (error: Error, context?: string) => {
-      logger.error(`Manual error capture: ${error.message}`, error, { context });
+      clientLogger.error(`Manual error capture: ${error.message}`, { error: error.message, stack: error.stack, context });
       throw error; // Re-throw to trigger error boundary
     },
     reportError: (error: Error, context?: string) => {
-      logger.error(`Error reported: ${error.message}`, error, { context });
+      clientLogger.error(`Error reported: ${error.message}`, { error: error.message, stack: error.stack, context });
       // Don't re-throw, just report
     },
   };
