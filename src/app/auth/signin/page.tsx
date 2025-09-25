@@ -457,6 +457,48 @@ export default function SignInPage() {
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}>NEW</span>
             </button>
+            
+            {/* Our Monies Account Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({ email: 'ourmonies@astral.money', pin: '7347' });
+                setShowPinEntry(true);
+              }}
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                opacity: isLoading ? 0.7 : 1,
+                transition: 'all 0.3s ease',
+                marginTop: '12px',
+                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(59, 130, 246, 0.5)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(59, 130, 246, 0.4)';
+              }}
+            >
+              <span style={{ fontSize: '20px' }}>💳</span>
+              <span>Our Monies (PIN: 7347)</span>
+            </button>
           </>
         ) : (
           /* PIN Entry Screen */
