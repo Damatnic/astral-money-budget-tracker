@@ -1,23 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/db';
+import { requireAuth } from '@/lib/auth-utils';
 
 export async function GET() {
   try {
+    const user = await requireAuth();
+    
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
         income: [],
         note: 'Database not configured - using fallback data'
-      });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: 'user@astralmoney.com' }
-    });
-
-    if (!user) {
-      return NextResponse.json({
-        income: [],
-        note: 'User not found'
       });
     }
 
@@ -56,6 +48,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const user = await requireAuth();
     const { amount, description, source, date } = await request.json();
 
     // Validation
@@ -94,17 +87,6 @@ export async function POST(request: Request) {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: 'user@astralmoney.com' }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
     // Create income transaction
     const income = await prisma.transaction.create({
       data: {
@@ -141,6 +123,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const user = await requireAuth();
     const { id, amount, description, source, date } = await request.json();
 
     if (!id) {
@@ -157,20 +140,9 @@ export async function PUT(request: Request) {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: 'user@astralmoney.com' }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
     // Get the old income to calculate balance adjustment
     const oldIncome = await prisma.transaction.findUnique({
-      where: { id }
+      where: { id, userId: user.id }
     });
 
     if (!oldIncome) {
@@ -182,7 +154,7 @@ export async function PUT(request: Request) {
 
     // Update income
     const updatedIncome = await prisma.transaction.update({
-      where: { id },
+      where: { id, userId: user.id },
       data: {
         amount: amount || oldIncome.amount,
         description: description || oldIncome.description,
@@ -216,6 +188,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const user = await requireAuth();
     const { id } = await request.json();
 
     if (!id) {
@@ -231,20 +204,9 @@ export async function DELETE(request: Request) {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: 'user@astralmoney.com' }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
     // Get the income to adjust the balance
     const income = await prisma.transaction.findUnique({
-      where: { id }
+      where: { id, userId: user.id }
     });
 
     if (!income) {
@@ -256,7 +218,7 @@ export async function DELETE(request: Request) {
 
     // Delete income
     await prisma.transaction.delete({
-      where: { id }
+      where: { id, userId: user.id }
     });
 
     // Adjust balance (subtract the income)

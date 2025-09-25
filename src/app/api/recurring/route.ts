@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/db';
+import { requireAuth } from '@/lib/auth-utils';
 
 export async function GET() {
   try {
+    const user = await requireAuth();
+    
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
         recurring: [],
@@ -11,7 +14,10 @@ export async function GET() {
     }
 
     const recurringBills = await prisma.recurringBill.findMany({
-      where: { isActive: true },
+      where: { 
+        userId: user.id,
+        isActive: true 
+      },
       include: {
         billHistory: {
           orderBy: { billDate: 'desc' },
@@ -38,6 +44,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const user = await requireAuth();
     const { 
       name, 
       amount, 
@@ -105,6 +112,7 @@ export async function POST(request: Request) {
     // Create recurring bill
     const recurringBill = await prisma.recurringBill.create({
       data: {
+        userId: user.id,
         name,
         amount,
         baseAmount: amount, // Set baseAmount to the initial amount
@@ -141,6 +149,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const user = await requireAuth();
     const { 
       id, 
       name, 
@@ -172,6 +181,18 @@ export async function PUT(request: Request) {
       });
     }
 
+    // Verify ownership
+    const existingBill = await prisma.recurringBill.findUnique({
+      where: { id, userId: user.id }
+    });
+
+    if (!existingBill) {
+      return NextResponse.json(
+        { error: 'Recurring bill not found' },
+        { status: 404 }
+      );
+    }
+
     // Prepare update data
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
@@ -190,7 +211,7 @@ export async function PUT(request: Request) {
 
     // Update recurring bill
     const updatedBill = await prisma.recurringBill.update({
-      where: { id },
+      where: { id, userId: user.id },
       data: updateData
     });
 
@@ -210,6 +231,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const user = await requireAuth();
     const { id } = await request.json();
 
     if (!id) {
@@ -225,9 +247,21 @@ export async function DELETE(request: Request) {
       });
     }
 
+    // Verify ownership before deleting
+    const existingBill = await prisma.recurringBill.findUnique({
+      where: { id, userId: user.id }
+    });
+
+    if (!existingBill) {
+      return NextResponse.json(
+        { error: 'Recurring bill not found' },
+        { status: 404 }
+      );
+    }
+
     // Delete recurring bill
     await prisma.recurringBill.delete({
-      where: { id }
+      where: { id, userId: user.id }
     });
 
     return NextResponse.json({
