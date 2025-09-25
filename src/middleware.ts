@@ -94,18 +94,18 @@ export async function middleware(request: NextRequest) {
     const rateLimitCheck = await checkRateLimit(request);
     if (!rateLimitCheck.allowed) {
       // logger.logSecurity('rate_limit_exceeded', {
-        clientId: getClientIdentifier(request),
-        path,
-        retryAfter: rateLimitCheck.retryAfter,
-      }, {
-        requestId,
-        context: {
-          userAgent: request.headers.get('user-agent') || undefined,
-          ip: getClientIdentifier(request),
-          route: path,
-          method: request.method,
-        },
-      });
+      //   clientId: getClientIdentifier(request),
+      //   path,
+      //   retryAfter: rateLimitCheck.retryAfter,
+      // }, {
+      //   requestId,
+      //   context: {
+      //     userAgent: request.headers.get('user-agent') || undefined,
+      //     ip: getClientIdentifier(request),
+      //     route: path,
+      //     method: request.method,
+      //   },
+      // });
       return createRateLimitResponse(rateLimitCheck.retryAfter);
     }
     
@@ -114,17 +114,17 @@ export async function middleware(request: NextRequest) {
       const authCheck = await checkAuthentication(request);
       if (!authCheck.authenticated) {
         // logger.logSecurity('unauthorized_access_attempt', {
-          path,
-          protected: true,
-        }, {
-          requestId,
-          context: {
-            userAgent: request.headers.get('user-agent') || undefined,
-            ip: getClientIdentifier(request),
-            route: path,
-            method: request.method,
-          },
-        });
+        //   path,
+        //   protected: true,
+        // }, {
+        //   requestId,
+        //   context: {
+        //     userAgent: request.headers.get('user-agent') || undefined,
+        //     ip: getClientIdentifier(request),
+        //     route: path,
+        //     method: request.method,
+        //   },
+        // });
         return createAuthRequiredResponse(path);
       }
       
@@ -166,23 +166,23 @@ export async function middleware(request: NextRequest) {
       // Log API requests with advanced logger
       if (path.startsWith('/api/')) {
         // logger.logApiRequest(
-          request.method,
-          path,
-          response.status || 200,
-          // Date.now() - (performanceMonitor.metrics?.startTime || Date.now()),
-          0, // Response time placeholder
-          {
-            requestId,
-            userId: globalAuthCheck.userId,
-            sessionId: globalAuthCheck.userEmail,
-            context: {
-              userAgent: request.headers.get('user-agent') || undefined,
-              ip: getClientIdentifier(request),
-              route: path,
-              method: request.method,
-            },
-          }
-        );
+        //   request.method,
+        //   path,
+        //   response.status || 200,
+        //   // Date.now() - (performanceMonitor.metrics?.startTime || Date.now()),
+        //   0, // Response time placeholder
+        //   {
+        //     requestId,
+        //     userId: globalAuthCheck.userId,
+        //     sessionId: globalAuthCheck.userEmail,
+        //     context: {
+        //       userAgent: request.headers.get('user-agent') || undefined,
+        //       ip: getClientIdentifier(request),
+        //       route: path,
+        //       method: request.method,
+        //     },
+        //   }
+        // );
       }
     }
     
