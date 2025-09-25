@@ -225,26 +225,8 @@ export default function SignInPage() {
         left: '-50%',
         width: '200%',
         height: '200%',
-        background: 'radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
-        animation: 'float 20s ease-in-out infinite'
+        background: 'radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)'
       }} />
-
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          25% { transform: translate(-20px, -20px) rotate(1deg); }
-          50% { transform: translate(20px, -10px) rotate(-1deg); }
-          75% { transform: translate(-10px, 20px) rotate(1deg); }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-      `}</style>
 
       <div style={{
         background: 'rgba(255, 255, 255, 0.98)',
@@ -254,8 +236,7 @@ export default function SignInPage() {
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         width: '100%',
         maxWidth: '440px',
-        position: 'relative',
-        animation: 'slideUp 0.6s ease-out'
+        position: 'relative'
       }}>
         {/* Logo and Header */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
@@ -280,7 +261,7 @@ export default function SignInPage() {
               fontSize: '36px', 
               fontWeight: 'bold',
               transform: 'rotate(5deg)'
-            }}>₹</span>
+            }}>$</span>
           </div>
           
           <h1 style={{ 
@@ -314,8 +295,7 @@ export default function SignInPage() {
             marginBottom: '24px',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            animation: 'slideUp 0.3s ease-out'
+            gap: '10px'
           }}>
             <span style={{ fontSize: '18px' }}>⚠️</span>
             <span style={{ color: '#dc2626', fontSize: '14px', fontWeight: '500' }}>
@@ -482,7 +462,7 @@ export default function SignInPage() {
           </>
         ) : (
           /* PIN Entry Screen */
-          <div style={{ animation: 'slideUp 0.3s ease-out' }}>
+          <div>
             <div style={{ 
               marginBottom: '24px',
               textAlign: 'center'
@@ -602,22 +582,15 @@ export default function SignInPage() {
               height: '48px',
               border: '3px solid #e5e7eb',
               borderTop: '3px solid #6366f1',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
+              borderRadius: '50%'
             }} />
             <p style={{ 
               color: '#6b7280', 
               fontSize: '14px',
-              fontWeight: '500',
-              animation: 'pulse 2s ease-in-out infinite'
+              fontWeight: '500'
             }}>
               Authenticating...
             </p>
-            <style jsx>{`
-              @keyframes spin {
-                to { transform: rotate(360deg); }
-              }
-            `}</style>
           </div>
         )}
       </div>
