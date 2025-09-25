@@ -167,7 +167,7 @@ export function exampleCompleteSecuritySetup() {
   // Initialize all security components
   RateLimiter.initialize();
   CSRFProtection.initialize();
-  AuditLogger.initialize();
+  AuditLogger.initialize({ environment: 'test' });
   
   // Simulate a secure request handling
   const handleSecureRequest = (req: any, res: any) => {
