@@ -49,7 +49,7 @@ export function FinancialSummary({ transactions, balance }: FinancialSummaryProp
       <div className="flex items-center space-x-2">
         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
         <div>
-          <p className="text-xs text-gray-600">Income</p>
+          <p className="text-xs text-gray-800 dark:text-gray-300">Income</p>
           <p className="text-sm font-semibold text-green-600">{formatCurrency(summary.totalIncome)}</p>
         </div>
       </div>
@@ -58,7 +58,7 @@ export function FinancialSummary({ transactions, balance }: FinancialSummaryProp
       <div className="flex items-center space-x-2">
         <div className="w-3 h-3 bg-red-500 rounded-full"></div>
         <div>
-          <p className="text-xs text-gray-600">Expenses</p>
+          <p className="text-xs text-gray-800 dark:text-gray-300">Expenses</p>
           <p className="text-sm font-semibold text-red-600">{formatCurrency(summary.totalExpenses)}</p>
         </div>
       </div>
@@ -67,7 +67,7 @@ export function FinancialSummary({ transactions, balance }: FinancialSummaryProp
       <div className="flex items-center space-x-2">
         <div className={`w-3 h-3 rounded-full ${summary.netFlow >= 0 ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
         <div>
-          <p className="text-xs text-gray-600">Net</p>
+          <p className="text-xs text-gray-800 dark:text-gray-300">Net</p>
           <p className={`text-sm font-semibold ${summary.netFlow >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
             {formatCurrency(summary.netFlow)}
           </p>
@@ -78,7 +78,7 @@ export function FinancialSummary({ transactions, balance }: FinancialSummaryProp
       <div className="flex items-center space-x-2">
         <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
         <div>
-          <p className="text-xs text-gray-600">Transactions</p>
+          <p className="text-xs text-gray-800 dark:text-gray-300">Transactions</p>
           <p className="text-sm font-semibold text-purple-600">{summary.transactionCount}</p>
         </div>
       </div>

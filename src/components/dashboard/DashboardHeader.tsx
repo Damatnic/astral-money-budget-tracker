@@ -60,8 +60,8 @@ export function DashboardHeader({
               </span>
             )}
           </h1>
-          <p className="text-gray-700 mt-2 font-medium">Welcome back, {displayName}</p>
-          <p className="text-gray-600 text-sm mt-1">{currentDate}</p>
+          <p className="text-gray-700 dark:text-gray-300 mt-2 font-medium">Welcome back, {displayName}</p>
+          <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">{currentDate}</p>
         </div>
 
         <div className="flex flex-col sm:items-end space-y-6">
@@ -69,8 +69,8 @@ export function DashboardHeader({
           {session && onSignOut && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
               <div className="text-left sm:text-right order-2 sm:order-1">
-                <p className="text-sm font-semibold text-gray-800">{session.user?.name}</p>
-                <p className="text-xs text-gray-600">{session.user?.email}</p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{session.user?.name}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">{session.user?.email}</p>
               </div>
               <div className="relative order-1 sm:order-2">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white/50">
@@ -84,7 +84,7 @@ export function DashboardHeader({
                 <CompactThemeToggle />
                 <button
                   onClick={onSignOut}
-                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white/80 backdrop-blur-sm rounded-lg hover:bg-white transition-all duration-200 border border-gray-200 shadow-sm hover:shadow-md w-full sm:w-auto"
+                  className="px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white/80 backdrop-blur-sm rounded-lg hover:bg-white transition-all duration-200 border border-gray-200 shadow-sm hover:shadow-md w-full sm:w-auto"
                   title="Sign out"
                 >
                   Sign Out
@@ -97,7 +97,7 @@ export function DashboardHeader({
           <div className="text-left sm:text-right w-full">
             <div className="inline-block sm:block">
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/60 shadow-lg">
-                <p className="text-sm font-medium text-gray-600 uppercase tracking-wider mb-2">Current Balance</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">Current Balance</p>
                 <div className="flex items-center justify-start sm:justify-end space-x-2 mb-2">
                   <div className={`w-3 h-3 rounded-full ${balance >= 0 ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
                   <p className={`text-4xl lg:text-5xl font-bold ${balance >= 0 ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-red-600 to-rose-600'} bg-clip-text text-transparent`}>
@@ -137,7 +137,7 @@ export function DashboardHeader({
                 </svg>
               </div>
               <p className="text-sm font-semibold text-blue-700 mb-1">This Month</p>
-              <p className="text-lg font-bold text-gray-800">Track Progress</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-200">Track Progress</p>
             </div>
           </div>
           
@@ -150,7 +150,7 @@ export function DashboardHeader({
                 </svg>
               </div>
               <p className="text-sm font-semibold text-emerald-700 mb-1">Savings Goal</p>
-              <p className="text-lg font-bold text-gray-800">Stay on Track</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-200">Stay on Track</p>
             </div>
           </div>
           
@@ -163,7 +163,7 @@ export function DashboardHeader({
                 </svg>
               </div>
               <p className="text-sm font-semibold text-purple-700 mb-1">Budget Status</p>
-              <p className="text-lg font-bold text-gray-800">Monitor Spending</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-200">Monitor Spending</p>
             </div>
           </div>
         </div>
