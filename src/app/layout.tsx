@@ -19,14 +19,14 @@ export const metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://astral-money.vercel.app'),
+  metadataBase: new URL('https://astral-budget.vercel.app'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: '🌟 Astral Money - Ultimate Budget Tracker 2025',
     description: 'Professional budget tracking with AI-powered insights, real-time financial health scoring, and smart bill management.',
-    url: 'https://astral-money.vercel.app',
+    url: 'https://astral-budget.vercel.app',
     siteName: 'Astral Money',
     images: [
       {
