@@ -52,7 +52,9 @@
       "Bash(PORT=3014 npm run dev)",
       "Bash(PORT=3020 npm run dev)",
       "Bash(PORT=3025 npm run dev)",
-      "Bash(npx tailwindcss init:*)"
+      "Bash(npx tailwindcss init:*)",
+      "WebFetch(domain:vercel.com)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
