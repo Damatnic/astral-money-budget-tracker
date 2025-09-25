@@ -484,7 +484,7 @@ function Home() {
       if (filters.dateRange !== 'all') {
         const now = new Date();
         const transactionDate = transaction.date;
-        let cutoffDate = new Date();
+        const cutoffDate = new Date();
 
         switch (filters.dateRange) {
           case 'today':
@@ -1732,7 +1732,7 @@ function Home() {
   const getCurrentMonthData = () => {
     const now = new Date();
     let targetMonth = 9; // October (0-indexed)
-    let targetYear = now.getFullYear();
+    const targetYear = now.getFullYear();
     
     switch(currentMonth) {
       case 'october':
@@ -1777,7 +1777,7 @@ function Home() {
       // Calculate the next due date for this bill in the target month
       const getNextDueDate = (bill: any, targetMonth: number, targetYear: number) => {
         const startDate = new Date(bill.startDate);
-        let dueDate = new Date(startDate);
+        const dueDate = new Date(startDate);
         
         // Move to target month/year
         dueDate.setFullYear(targetYear);
@@ -4065,7 +4065,7 @@ function Home() {
                     const getNextDueDate = (bill: any) => {
                       const startDate = new Date(bill.startDate || bill.createdAt);
                       const now = new Date();
-                      let nextDue = new Date(startDate);
+                      const nextDue = new Date(startDate);
 
                       while (nextDue <= now) {
                         switch (bill.frequency) {

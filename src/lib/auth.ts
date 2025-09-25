@@ -39,8 +39,9 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Invalid email or PIN');
           }
 
-          // Verify PIN (simple comparison for now)
-          if (credentials.pin !== user.pin) {
+          // Verify PIN using bcrypt hashing
+          const isPinValid = await compare(credentials.pin, user.pin);
+          if (!isPinValid) {
             throw new Error('Invalid email or PIN');
           }
 
@@ -84,17 +85,17 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
 
-  // Session configuration
+  // Session configuration - Secure settings for financial app
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60,    // 24 hours
+    maxAge: parseInt(process.env.SESSION_MAX_AGE || '3600'), // 1 hour default, configurable
+    updateAge: 15 * 60, // 15 minutes - frequent session updates for security
   },
 
   // JWT configuration
   jwt: {
     secret: process.env.NEXTAUTH_SECRET,
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: parseInt(process.env.SESSION_MAX_AGE || '3600'), // Match session timeout
   },
 
   // Callbacks for customizing behavior
