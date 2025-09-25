@@ -469,102 +469,119 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
       />
 
       {/* Main Content */}
-      <div className="relative z-10">
-        <div className="container mx-auto px-4 py-6 lg:py-12 space-y-6 lg:space-y-10">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <DashboardHeader 
-            balance={balance}
-            isOffline={isOffline}
-            session={session}
-            onSignOut={handleSignOut}
-          />
-          
-          <DataExporter
-            transactions={transactions}
-            bills={bills}
-            goals={goals}
-            balance={balance}
-          />
-        </div>
-
-        <FinancialSummary 
-          transactions={transactions}
-          balance={balance}
-        />
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
-          {/* Left Column - Transaction Manager */}
-          <div className="xl:col-span-2">
-            <TransactionManager
-              transactions={transactions}
-              onAdd={handleAddTransaction}
-              onUpdate={handleUpdateTransaction}
-              onDelete={handleDeleteTransaction}
-              loading={loading}
-            />
+      <div className="relative z-10 flex h-screen">
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-white/60 shadow-sm">
+            <div className="px-6 py-4">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <DashboardHeader 
+                  balance={balance}
+                  isOffline={isOffline}
+                  session={session}
+                  onSignOut={handleSignOut}
+                />
+                
+                <DataExporter
+                  transactions={transactions}
+                  bills={bills}
+                  goals={goals}
+                  balance={balance}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Right Column - Goals and Bills */}
-          <div className="space-y-6">
-            <GoalsSection goals={goals} loading={loading.goals} onUpdate={(updatedGoals) => setGoals(updatedGoals)} />
-
-            <BillsSection 
-              bills={bills}
-              loading={loading.recurringBills}
-              onAdd={handleAddBill}
-              onUpdate={handleUpdateBill}
-              onDelete={handleDeleteBill}
-            />
-          </div>
-        </div>
-
-        {/* Budget Manager Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-          <BudgetManager 
-            transactions={transactions}
-            bills={bills}
-            monthlyIncome={transactions
-              .filter(t => t.type === 'income' && 
-                new Date(t.date).getMonth() === new Date().getMonth())
-              .reduce((sum, t) => sum + t.amount, 0)}
-          />
-          
-          <BudgetTracker
-            transactions={transactions}
-            bills={bills}
-            monthlyIncome={transactions
-              .filter(t => t.type === 'income' && 
-                new Date(t.date).getMonth() === new Date().getMonth())
-              .reduce((sum, t) => sum + t.amount, 0)}
-            budgetMethod="50/30/20"
-          />
-        </div>
-
-        {/* Analytics Section */}
-        <div className="space-y-6 lg:space-y-8">
-          <SpendingAnalytics
-            transactions={transactions}
-            monthlyIncome={transactions
-              .filter(t => t.type === 'income' && 
-                new Date(t.date).getMonth() === new Date().getMonth())
-              .reduce((sum, t) => sum + t.amount, 0)}
-          />
-          
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-            <FinancialHealthScore
+          {/* Financial Summary */}
+          <div className="flex-shrink-0 px-6 py-4 bg-gradient-to-r from-white/60 to-blue-50/60 backdrop-blur-sm">
+            <FinancialSummary 
               transactions={transactions}
-              bills={bills}
-              goals={goals}
               balance={balance}
-              monthlyIncome={transactions
-                .filter(t => t.type === 'income' && 
-                  new Date(t.date).getMonth() === new Date().getMonth())
-                .reduce((sum, t) => sum + t.amount, 0)}
             />
-            
-            <NetWorthTracker />
           </div>
-        </div>
+
+          {/* Main Dashboard Content */}
+          <div className="flex-1 overflow-auto">
+            <div className="p-6 grid grid-cols-1 2xl:grid-cols-12 gap-6 h-full">
+              {/* Left Column - Main Actions */}
+              <div className="2xl:col-span-7 space-y-6">
+                <TransactionManager
+                  transactions={transactions}
+                  onAdd={handleAddTransaction}
+                  onUpdate={handleUpdateTransaction}
+                  onDelete={handleDeleteTransaction}
+                  loading={loading}
+                />
+                
+                {/* Budget & Analytics Row */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <BudgetManager 
+                    transactions={transactions}
+                    bills={bills}
+                    monthlyIncome={transactions
+                      .filter(t => t.type === 'income' && 
+                        new Date(t.date).getMonth() === new Date().getMonth())
+                      .reduce((sum, t) => sum + t.amount, 0)}
+                  />
+                  
+                  <BudgetTracker
+                    transactions={transactions}
+                    bills={bills}
+                    monthlyIncome={transactions
+                      .filter(t => t.type === 'income' && 
+                        new Date(t.date).getMonth() === new Date().getMonth())
+                      .reduce((sum, t) => sum + t.amount, 0)}
+                    budgetMethod="50/30/20"
+                  />
+                </div>
+              </div>
+
+              {/* Right Column - Goals, Bills & Analytics */}
+              <div className="2xl:col-span-5 space-y-6">
+                {/* Goals and Bills - Compact Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-1 gap-6">
+                  <GoalsSection 
+                    goals={goals} 
+                    loading={loading.goals} 
+                    onUpdate={(updatedGoals) => setGoals(updatedGoals)} 
+                  />
+
+                  <BillsSection 
+                    bills={bills}
+                    loading={loading.recurringBills}
+                    onAdd={handleAddBill}
+                    onUpdate={handleUpdateBill}
+                    onDelete={handleDeleteBill}
+                  />
+                </div>
+
+                {/* Analytics - Stacked */}
+                <div className="space-y-6">
+                  <SpendingAnalytics
+                    transactions={transactions}
+                    monthlyIncome={transactions
+                      .filter(t => t.type === 'income' && 
+                        new Date(t.date).getMonth() === new Date().getMonth())
+                      .reduce((sum, t) => sum + t.amount, 0)}
+                  />
+                  
+                  <FinancialHealthScore
+                    transactions={transactions}
+                    bills={bills}
+                    goals={goals}
+                    balance={balance}
+                    monthlyIncome={transactions
+                      .filter(t => t.type === 'income' && 
+                        new Date(t.date).getMonth() === new Date().getMonth())
+                      .reduce((sum, t) => sum + t.amount, 0)}
+                  />
+                  
+                  <NetWorthTracker />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -69,16 +69,12 @@ export function TransactionManager({
   const recentTransactions = transactions.slice(0, 10);
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-white via-gray-50 to-blue-50/30 rounded-2xl shadow-xl backdrop-blur-sm border border-white/60 p-6 lg:p-8">
-      {/* Decorative Elements */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-2xl"></div>
-      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-2xl"></div>
-      
-      <div className="relative z-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h2 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent flex items-center">
-            <div className="w-8 h-8 lg:w-10 lg:h-10 mr-3 lg:mr-4 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+    <section className="bg-white/60 backdrop-blur-sm rounded-xl shadow-lg border border-white/60 overflow-hidden">
+      <div className="p-4">
+        <div className="flex flex-row items-center justify-between gap-4 mb-4">
+          <h2 className="text-lg font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent flex items-center">
+            <div className="w-6 h-6 mr-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h6zM4 14a2 2 0 002 2h8a2 2 0 002-2v-2H4v2z" />
               </svg>
             </div>
@@ -88,23 +84,23 @@ export function TransactionManager({
           <button
             onClick={() => setShowForm(!showForm)}
             disabled={loading.creating}
-            className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center"
+            className="group relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <svg className="w-5 h-5 mr-2 relative z-10" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-3 h-3 mr-1.5 relative z-10" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
-            <span className="relative z-10">Add Transaction</span>
+            <span className="relative z-10">Add</span>
           </button>
         </div>
 
-        {/* Enhanced Quick Add Form */}
+        {/* Compact Quick Add Form */}
         {showForm && (
-          <div className="mb-8 p-6 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg">
+          <div className="mb-4 p-4 bg-white/70 backdrop-blur-sm rounded-lg border border-white/60 shadow-md">
             <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Amount
               </label>
               <input
@@ -113,20 +109,20 @@ export function TransactionManager({
                 min="0"
                 value={formData.amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                className="w-full px-3 py-2 bg-white/80 backdrop-blur-sm border border-white/60 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
                 placeholder="0.00"
                 required
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Type
               </label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'income' | 'expense' }))}
-                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
+                className="w-full px-3 py-2 bg-white/80 backdrop-blur-sm border border-white/60 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all duration-200"
               >
                 <option value="expense">Expense</option>
                 <option value="income">Income</option>

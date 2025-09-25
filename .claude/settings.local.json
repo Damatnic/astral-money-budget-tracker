@@ -61,7 +61,10 @@
       "Bash(gh repo view:*)",
       "WebFetch(domain:github.com)",
       "Bash(npx vercel:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:astral-money-budget-tracker.vercel.app)",
+      "WebFetch(domain:astral-money.vercel.app)",
+      "WebFetch(domain:astral-budget-702r0u5r7-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []
