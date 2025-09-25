@@ -508,12 +508,10 @@ class AdvancedLogger {
       }
     }
 
-    // Track alert in monitoring
-    MonitoringService.trackMetric('alert_triggered', 1, {
-      rule: rule.name,
-      level: entry.level,
-      component: entry.component,
-    });
+    // Track alert in monitoring (disabled for Edge Runtime compatibility)
+    if (MonitoringService) {
+      MonitoringService.trackMetric();
+    }
   }
 
   private async executeAlertAction(action: AlertAction, rule: AlertRule, entry: LogEntry): Promise<void> {
