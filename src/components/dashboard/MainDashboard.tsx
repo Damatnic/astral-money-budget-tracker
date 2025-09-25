@@ -13,7 +13,7 @@ import { Toast } from '@/components/common/Toast';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { NotificationOverlay } from './NotificationOverlay';
 import { DashboardHeader } from './DashboardHeader';
-import { FinancialSummary } from './FinancialSummary';
+import { FinancialSummary, DetailedFinancialSummary } from './FinancialSummary';
 import { TransactionManager } from './TransactionManager';
 import { GoalsSection } from './GoalsSection';
 import { BillsSection } from './BillsSection';
@@ -23,6 +23,8 @@ import { SpendingAnalytics } from '@/components/analytics/SpendingAnalytics';
 import { NetWorthTracker } from '@/components/wealth/NetWorthTracker';
 import { FinancialHealthScore } from '@/components/insights/FinancialHealthScore';
 import { DataExporter } from '@/components/export/DataExporter';
+import { formatCurrency } from '@/utils/formatters';
+import { CompactThemeToggle } from '@/components/common/ThemeToggle';
 
 interface MainDashboardProps {
   initialData?: {
@@ -443,15 +445,20 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
     );
   }
 
+  // Navigation state management
+  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'budget' | 'goals' | 'bills' | 'analytics' | 'export'>('overview');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Calculate monthly income for components
+  const monthlyIncome = transactions
+    .filter(t => t.type === 'income' && 
+      new Date(t.date).getMonth() === new Date().getMonth())
+    .reduce((sum, t) => sum + t.amount, 0);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Background Elements */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="w-full h-full bg-gradient-to-br from-blue-600/5 to-indigo-600/5"></div>
-      </div>
-      
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
       {/* Toast Notifications */}
-      <div className="toast-container relative z-50">
+      <div className="toast-container fixed top-4 right-4 z-[100]">
         {toasts.map(toast => (
           <Toast 
             key={toast.id} 
@@ -468,21 +475,245 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
         errors={errors}
       />
 
-      {/* Main Content */}
-      <div className="relative z-10 flex h-screen">
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-white/60 shadow-sm">
-            <div className="px-6 py-4">
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                <DashboardHeader 
+      {/* Sidebar Navigation */}
+      <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shadow-sm`}>
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" />
+                </svg>
+              </div>
+              {!sidebarCollapsed && (
+                <span className="ml-3 font-bold text-gray-900">Astral Money</span>
+              )}
+            </div>
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <svg className={`w-4 h-4 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* User Info */}
+        {!sidebarCollapsed && session && (
+          <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">
+                  {session.user?.name?.[0] || 'U'}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{session.user?.name}</p>
+                <p className="text-xs text-gray-500 truncate">{session.user?.email}</p>
+              </div>
+            </div>
+            <div className="mt-3 p-2 bg-white rounded-lg">
+              <p className="text-xs text-gray-600 mb-1">Current Balance</p>
+              <p className={`text-lg font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(balance)}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Menu */}
+        <nav className="flex-1 p-4 space-y-1">
+          {[
+            { id: 'overview', label: 'Overview', icon: 'M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z' },
+            { id: 'transactions', label: 'Transactions', icon: 'M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h6zM4 14a2 2 0 002 2h8a2 2 0 002-2v-2H4v2z' },
+            { id: 'budget', label: 'Budget', icon: 'M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z' },
+            { id: 'goals', label: 'Goals', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+            { id: 'bills', label: 'Bills', icon: 'M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1z' },
+            { id: 'analytics', label: 'Analytics', icon: 'M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z' },
+            { id: 'export', label: 'Export', icon: 'M4 16v1a3 3 0 003 3h6a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' }
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id as any)}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === item.id
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              } ${sidebarCollapsed ? 'justify-center' : ''}`}
+              title={sidebarCollapsed ? item.label : ''}
+            >
+              <svg className={`w-5 h-5 ${!sidebarCollapsed && 'mr-3'}`} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d={item.icon} clipRule="evenodd" />
+              </svg>
+              {!sidebarCollapsed && item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-gray-200">
+          {!sidebarCollapsed && isOffline && (
+            <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse mr-2"></div>
+                <span className="text-xs text-orange-800">Offline Mode</span>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleSignOut}
+            className={`w-full flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors ${sidebarCollapsed ? 'justify-center' : ''}`}
+            title={sidebarCollapsed ? 'Sign Out' : ''}
+          >
+            <svg className={`w-5 h-5 ${!sidebarCollapsed && 'mr-3'}`} fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+            </svg>
+            {!sidebarCollapsed && 'Sign Out'}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Header Bar */}
+        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-semibold text-gray-900 capitalize">{activeTab}</h1>
+              <FinancialSummary transactions={transactions} balance={balance} />
+            </div>
+            <div className="flex items-center space-x-3">
+              <CompactThemeToggle />
+              {activeTab !== 'export' && (
+                <DataExporter
+                  transactions={transactions}
+                  bills={bills}
+                  goals={goals}
                   balance={balance}
-                  isOffline={isOffline}
-                  session={session}
-                  onSignOut={handleSignOut}
                 />
-                
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="flex-1 overflow-auto bg-gray-50 p-6">
+          {activeTab === 'overview' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
+              {/* Quick Stats */}
+              <div className="lg:col-span-2 2xl:col-span-3">
+                <DetailedFinancialSummary transactions={transactions} balance={balance} />
+              </div>
+              
+              {/* Recent Transactions */}
+              <div className="lg:col-span-1">
+                <TransactionManager
+                  transactions={transactions.slice(0, 5)}
+                  onAdd={handleAddTransaction}
+                  onUpdate={handleUpdateTransaction}
+                  onDelete={handleDeleteTransaction}
+                  loading={loading}
+                  compact={true}
+                />
+              </div>
+              
+              {/* Goals Progress */}
+              <div className="lg:col-span-1">
+                <GoalsSection 
+                  goals={goals} 
+                  loading={loading.goals} 
+                  onUpdate={(updatedGoals) => setGoals(updatedGoals)} 
+                  compact={true}
+                />
+              </div>
+              
+              {/* Upcoming Bills */}
+              <div className="lg:col-span-1 2xl:col-span-1">
+                <BillsSection 
+                  bills={bills.slice(0, 5)}
+                  loading={loading.recurringBills}
+                  onAdd={handleAddBill}
+                  onUpdate={handleUpdateBill}
+                  onDelete={handleDeleteBill}
+                  compact={true}
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'transactions' && (
+            <div className="max-w-7xl mx-auto">
+              <TransactionManager
+                transactions={transactions}
+                onAdd={handleAddTransaction}
+                onUpdate={handleUpdateTransaction}
+                onDelete={handleDeleteTransaction}
+                loading={loading}
+              />
+            </div>
+          )}
+
+          {activeTab === 'budget' && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-7xl mx-auto">
+              <BudgetManager 
+                transactions={transactions}
+                bills={bills}
+                monthlyIncome={monthlyIncome}
+              />
+              <BudgetTracker
+                transactions={transactions}
+                bills={bills}
+                monthlyIncome={monthlyIncome}
+                budgetMethod="50/30/20"
+              />
+            </div>
+          )}
+
+          {activeTab === 'goals' && (
+            <div className="max-w-4xl mx-auto">
+              <GoalsSection 
+                goals={goals} 
+                loading={loading.goals} 
+                onUpdate={(updatedGoals) => setGoals(updatedGoals)} 
+              />
+            </div>
+          )}
+
+          {activeTab === 'bills' && (
+            <div className="max-w-4xl mx-auto">
+              <BillsSection 
+                bills={bills}
+                loading={loading.recurringBills}
+                onAdd={handleAddBill}
+                onUpdate={handleUpdateBill}
+                onDelete={handleDeleteBill}
+              />
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div className="space-y-6 max-w-7xl mx-auto">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <SpendingAnalytics transactions={transactions} monthlyIncome={monthlyIncome} />
+                <FinancialHealthScore
+                  transactions={transactions}
+                  bills={bills}
+                  goals={goals}
+                  balance={balance}
+                  monthlyIncome={monthlyIncome}
+                />
+              </div>
+              <NetWorthTracker />
+            </div>
+          )}
+
+          {activeTab === 'export' && (
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Export Data</h2>
                 <DataExporter
                   transactions={transactions}
                   bills={bills}
@@ -491,99 +722,20 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Financial Summary */}
-          <div className="flex-shrink-0 px-6 py-4 bg-gradient-to-r from-white/60 to-blue-50/60 backdrop-blur-sm">
-            <FinancialSummary 
-              transactions={transactions}
-              balance={balance}
-            />
-          </div>
-
-          {/* Main Dashboard Content */}
-          <div className="flex-1 overflow-auto">
-            <div className="p-6 grid grid-cols-1 2xl:grid-cols-12 gap-6 h-full">
-              {/* Left Column - Main Actions */}
-              <div className="2xl:col-span-7 space-y-6">
-                <TransactionManager
-                  transactions={transactions}
-                  onAdd={handleAddTransaction}
-                  onUpdate={handleUpdateTransaction}
-                  onDelete={handleDeleteTransaction}
-                  loading={loading}
-                />
-                
-                {/* Budget & Analytics Row */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  <BudgetManager 
-                    transactions={transactions}
-                    bills={bills}
-                    monthlyIncome={transactions
-                      .filter(t => t.type === 'income' && 
-                        new Date(t.date).getMonth() === new Date().getMonth())
-                      .reduce((sum, t) => sum + t.amount, 0)}
-                  />
-                  
-                  <BudgetTracker
-                    transactions={transactions}
-                    bills={bills}
-                    monthlyIncome={transactions
-                      .filter(t => t.type === 'income' && 
-                        new Date(t.date).getMonth() === new Date().getMonth())
-                      .reduce((sum, t) => sum + t.amount, 0)}
-                    budgetMethod="50/30/20"
-                  />
-                </div>
-              </div>
-
-              {/* Right Column - Goals, Bills & Analytics */}
-              <div className="2xl:col-span-5 space-y-6">
-                {/* Goals and Bills - Compact Layout */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-1 gap-6">
-                  <GoalsSection 
-                    goals={goals} 
-                    loading={loading.goals} 
-                    onUpdate={(updatedGoals) => setGoals(updatedGoals)} 
-                  />
-
-                  <BillsSection 
-                    bills={bills}
-                    loading={loading.recurringBills}
-                    onAdd={handleAddBill}
-                    onUpdate={handleUpdateBill}
-                    onDelete={handleDeleteBill}
-                  />
-                </div>
-
-                {/* Analytics - Stacked */}
-                <div className="space-y-6">
-                  <SpendingAnalytics
-                    transactions={transactions}
-                    monthlyIncome={transactions
-                      .filter(t => t.type === 'income' && 
-                        new Date(t.date).getMonth() === new Date().getMonth())
-                      .reduce((sum, t) => sum + t.amount, 0)}
-                  />
-                  
-                  <FinancialHealthScore
-                    transactions={transactions}
-                    bills={bills}
-                    goals={goals}
-                    balance={balance}
-                    monthlyIncome={transactions
-                      .filter(t => t.type === 'income' && 
-                        new Date(t.date).getMonth() === new Date().getMonth())
-                      .reduce((sum, t) => sum + t.amount, 0)}
-                  />
-                  
-                  <NetWorthTracker />
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
+
+      {/* Quick Add Floating Button */}
+      <button
+        onClick={() => setActiveTab('transactions')}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 group"
+        title="Quick Add Transaction"
+      >
+        <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+        </svg>
+      </button>
     </div>
   );
 }

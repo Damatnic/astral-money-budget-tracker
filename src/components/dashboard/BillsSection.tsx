@@ -14,6 +14,7 @@ interface BillsSectionProps {
   onAdd: (bill: Omit<RecurringBill, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
   onUpdate: (id: string, updates: Partial<RecurringBill>) => void;
   onDelete: (id: string) => void;
+  compact?: boolean;
 }
 
 interface BillFormData {
@@ -25,7 +26,7 @@ interface BillFormData {
   notes?: string;
 }
 
-export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete }: BillsSectionProps) {
+export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete, compact = false }: BillsSectionProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingBill, setEditingBill] = useState<string | null>(null);
   const [formData, setFormData] = useState<BillFormData>({
@@ -141,6 +142,75 @@ export function BillsSection({ bills, loading = false, onAdd, onUpdate, onDelete
           <LoadingSpinner size="medium" />
         </div>
       </section>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-gray-900 flex items-center">
+            <div className="w-5 h-5 mr-2 bg-blue-600 rounded flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            Upcoming Bills
+          </h3>
+        </div>
+        
+        <div className="space-y-2">
+          {activeBills.length === 0 ? (
+            <div className="text-center py-6 text-gray-500">
+              <p className="text-sm">No upcoming bills</p>
+            </div>
+          ) : (
+            activeBills.slice(0, 3).map((bill) => {
+              const dueDate = getNextDueDate(bill);
+              const daysUntil = getDaysUntilDue(dueDate);
+              const isOverdue = daysUntil < 0;
+              const isDueSoon = daysUntil <= 3 && daysUntil >= 0;
+              
+              return (
+                <div key={bill.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white ${
+                      isOverdue ? 'bg-red-500' : isDueSoon ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}>
+                      {isOverdue ? '!' : isDueSoon ? daysUntil : '✓'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 truncate max-w-32">{bill.name}</p>
+                      <p className="text-xs text-gray-500">{bill.frequency}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(bill.amount)}</p>
+                    <p className={`text-xs ${
+                      isOverdue ? 'text-red-600' : isDueSoon ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                      {isOverdue 
+                        ? `${Math.abs(daysUntil)}d overdue`
+                        : daysUntil === 0 
+                        ? 'Due today'
+                        : `${daysUntil}d left`
+                      }
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+        
+        {bills.length > 3 && (
+          <div className="mt-4 text-center">
+            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+              View all ({bills.length})
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 
