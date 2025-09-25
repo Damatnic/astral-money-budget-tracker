@@ -60,7 +60,8 @@
       "Bash(npm update:*)",
       "Bash(gh repo view:*)",
       "WebFetch(domain:github.com)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

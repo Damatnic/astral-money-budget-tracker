@@ -6,6 +6,7 @@
 import { useMemo } from 'react';
 import { Transaction } from '@/types';
 import { formatCurrency } from '@/utils/formatters';
+import { PieChart, LineChart, ProgressRing } from '@/components/charts/SimpleCharts';
 
 interface FinancialSummaryProps {
   transactions: Transaction[];
@@ -33,11 +34,41 @@ export function FinancialSummary({ transactions, balance }: FinancialSummaryProp
 
     const netFlow = totalIncome - totalExpenses;
     
+    // Calculate spending by category for pie chart
+    const categorySpending = thisMonthTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((acc, t) => {
+        const category = t.category || 'Other';
+        acc[category] = (acc[category] || 0) + t.amount;
+        return acc;
+      }, {} as Record<string, number>);
+
+    // Calculate daily spending trend for last 7 days
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date;
+    });
+    
+    const dailySpending = last7Days.map(date => {
+      const dayTransactions = transactions.filter(t => {
+        const tDate = new Date(t.date);
+        return tDate.toDateString() === date.toDateString() && t.type === 'expense';
+      });
+      
+      return {
+        date: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        value: dayTransactions.reduce((sum, t) => sum + t.amount, 0)
+      };
+    });
+
     return {
       totalIncome,
       totalExpenses,
       netFlow,
-      transactionCount: thisMonthTransactions.length
+      transactionCount: thisMonthTransactions.length,
+      categorySpending,
+      dailySpending
     };
   }, [transactions]);
 
@@ -51,7 +82,7 @@ export function FinancialSummary({ transactions, balance }: FinancialSummaryProp
         This Month Summary
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-green-600 font-medium text-sm">Income</span>
@@ -103,9 +134,98 @@ export function FinancialSummary({ transactions, balance }: FinancialSummaryProp
         </div>
       </div>
 
+      {/* Charts Section */}
+      <div className="mt-6 lg:mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+        {/* Spending by Category */}
+        <div className="lg:col-span-1">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Spending Breakdown</h3>
+          {Object.keys(summary.categorySpending).length > 0 ? (
+            <div className="flex justify-center">
+              <PieChart 
+                data={Object.entries(summary.categorySpending).map(([category, amount]) => ({
+                  label: category,
+                  value: amount
+                }))}
+                size={180}
+                showLabels={false}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p className="text-sm">No expense data available</p>
+            </div>
+          )}
+        </div>
+
+        {/* Daily Spending Trend */}
+        <div className="lg:col-span-1">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">7-Day Spending Trend</h3>
+          {summary.dailySpending.some(d => d.value > 0) ? (
+            <LineChart 
+              data={summary.dailySpending}
+              height={160}
+              color="#EF4444"
+            />
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p className="text-sm">No spending data available</p>
+            </div>
+          )}
+        </div>
+
+        {/* Savings Goal Progress */}
+        <div className="lg:col-span-1">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Monthly Savings Goal</h3>
+          <div className="flex justify-center">
+            <ProgressRing
+              value={Math.max(0, summary.netFlow)}
+              max={summary.totalIncome * 0.2}
+              size={120}
+              color={summary.netFlow >= 0 ? '#10B981' : '#EF4444'}
+              label="of 20% goal"
+            />
+          </div>
+          <div className="mt-2 text-center">
+            <p className="text-sm text-gray-600">
+              Target: {formatCurrency(summary.totalIncome * 0.2)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {summary.netFlow >= 0 ? 'Great job!' : 'Need to reduce expenses'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Category Legend */}
+      {Object.keys(summary.categorySpending).length > 0 && (
+        <div className="mt-6">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Category Breakdown</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {Object.entries(summary.categorySpending).map(([category, amount], index) => {
+              const total = Object.values(summary.categorySpending).reduce((sum, val) => sum + val, 0);
+              const percentage = ((amount / total) * 100).toFixed(1);
+              const color = `hsl(${(index * 360) / Object.keys(summary.categorySpending).length}, 70%, 50%)`;
+              
+              return (
+                <div key={category} className="flex items-center space-x-2 text-sm">
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="text-gray-700 truncate">{category}</span>
+                  <span className="font-medium text-gray-900 ml-auto">
+                    {formatCurrency(amount)} ({percentage}%)
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Quick Insights */}
       {summary.netFlow < 0 && (
-        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-center">
             <svg className="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />

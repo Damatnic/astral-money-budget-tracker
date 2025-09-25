@@ -3,9 +3,10 @@
  * Handles transaction creation, editing, and listing
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Transaction, LoadingState } from '@/types';
 import { formatCurrency, formatDate } from '@/utils/formatters';
+import { categorizeTransaction, getSuggestions, EXPENSE_CATEGORY_RULES, INCOME_CATEGORY_RULES } from '@/utils/categorization';
 
 interface TransactionManagerProps {
   transactions: Transaction[];
@@ -30,6 +31,8 @@ export function TransactionManager({
     date: new Date().toISOString().split('T')[0],
     type: 'expense' as 'income' | 'expense'
   });
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +59,8 @@ export function TransactionManager({
         date: new Date().toISOString().split('T')[0],
         type: 'expense'
       });
+      setSuggestions([]);
+      setShowSuggestions(false);
       setShowForm(false);
     } catch (error) {
       console.error('Failed to add transaction:', error);
@@ -89,7 +94,7 @@ export function TransactionManager({
       {/* Quick Add Form */}
       {showForm && (
         <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 rounded-lg border">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Amount
@@ -127,48 +132,85 @@ export function TransactionManager({
               <input
                 type="text"
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData(prev => ({ ...prev, description: value }));
+                  
+                  // Auto-categorize and show suggestions
+                  if (value.length > 2) {
+                    const autoCategory = categorizeTransaction(value, parseFloat(formData.amount) || 0, formData.type);
+                    if (autoCategory && autoCategory !== 'Other Income' && autoCategory !== 'Other Expenses') {
+                      setFormData(prev => ({ ...prev, category: autoCategory }));
+                    }
+                    
+                    const newSuggestions = getSuggestions(value, formData.type);
+                    setSuggestions(newSuggestions);
+                    setShowSuggestions(newSuggestions.length > 0);
+                  } else {
+                    setShowSuggestions(false);
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="What was this for?"
                 required
               />
             </div>
             
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category
+                Category {formData.category && (
+                  <span className="text-xs text-green-600">✓ Auto-detected</span>
+                )}
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, category: e.target.value }));
+                  setShowSuggestions(false);
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
                 <option value="">Select category</option>
-                <option value="food">Food & Dining</option>
-                <option value="transport">Transportation</option>
-                <option value="entertainment">Entertainment</option>
-                <option value="shopping">Shopping</option>
-                <option value="bills">Bills & Utilities</option>
-                <option value="healthcare">Healthcare</option>
-                <option value="income">Income</option>
-                <option value="other">Other</option>
+                {(formData.type === 'expense' ? EXPENSE_CATEGORY_RULES : INCOME_CATEGORY_RULES).map(rule => (
+                  <option key={rule.category} value={rule.category}>{rule.category}</option>
+                ))}
               </select>
+              
+              {/* Suggestions dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                  <div className="p-2 text-xs text-gray-500 border-b">Suggestions based on description:</div>
+                  {suggestions.map(suggestion => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, category: suggestion }));
+                        setShowSuggestions(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           
-          <div className="flex justify-end space-x-2">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors w-full sm:w-auto"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading.creating}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-md transition-colors w-full sm:w-auto"
             >
               {loading.creating ? 'Adding...' : 'Add Transaction'}
             </button>

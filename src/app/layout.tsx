@@ -4,6 +4,7 @@ import './globals.css'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { AppProvider } from '@/contexts/AppContext'
 import SessionProvider from '@/components/providers/SessionProvider'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
@@ -106,17 +107,19 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen antialiased`}>
         <ErrorBoundary>
-          <SessionProvider>
-            <AppProvider>
-              <Suspense fallback={
-                <div className="flex items-center justify-center min-h-screen">
-                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 border-t-blue-600"></div>
-                </div>
-              }>
-                {children}
-              </Suspense>
-            </AppProvider>
-          </SessionProvider>
+          <ThemeProvider>
+            <SessionProvider>
+              <AppProvider>
+                <Suspense fallback={
+                  <div className="flex items-center justify-center min-h-screen">
+                    <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 border-t-blue-600"></div>
+                  </div>
+                }>
+                  {children}
+                </Suspense>
+              </AppProvider>
+            </SessionProvider>
+          </ThemeProvider>
         </ErrorBoundary>
         <div id="modal-root"></div>
         <div id="tooltip-root"></div>

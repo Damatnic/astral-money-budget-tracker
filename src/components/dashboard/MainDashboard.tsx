@@ -17,6 +17,12 @@ import { FinancialSummary } from './FinancialSummary';
 import { TransactionManager } from './TransactionManager';
 import { GoalsSection } from './GoalsSection';
 import { BillsSection } from './BillsSection';
+import { BudgetManager } from '@/components/budget/BudgetManager';
+import { BudgetTracker } from '@/components/analytics/BudgetTracker';
+import { SpendingAnalytics } from '@/components/analytics/SpendingAnalytics';
+import { NetWorthTracker } from '@/components/wealth/NetWorthTracker';
+import { FinancialHealthScore } from '@/components/insights/FinancialHealthScore';
+import { DataExporter } from '@/components/export/DataExporter';
 
 interface MainDashboardProps {
   initialData?: {
@@ -376,20 +382,29 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
       />
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 space-y-8">
-        <DashboardHeader 
-          balance={balance}
-          isOffline={isOffline}
-          session={session}
-          onSignOut={handleSignOut}
-        />
+      <div className="container mx-auto px-4 py-4 lg:py-8 space-y-4 lg:space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <DashboardHeader 
+            balance={balance}
+            isOffline={isOffline}
+            session={session}
+            onSignOut={handleSignOut}
+          />
+          
+          <DataExporter
+            transactions={transactions}
+            bills={bills}
+            goals={[]} // Will be populated when goals are integrated
+            balance={balance}
+          />
+        </div>
 
         <FinancialSummary 
           transactions={transactions}
           balance={balance}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
           <TransactionManager
             transactions={transactions}
             onAdd={handleAddTransaction}
@@ -409,6 +424,52 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
               onDelete={handleDeleteBill}
             />
           </div>
+        </div>
+
+        {/* Budget Manager Section */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-8 mt-8">
+          <BudgetManager 
+            transactions={transactions}
+            bills={bills}
+            monthlyIncome={transactions
+              .filter(t => t.type === 'income' && 
+                new Date(t.date).getMonth() === new Date().getMonth())
+              .reduce((sum, t) => sum + t.amount, 0)}
+          />
+          
+          <BudgetTracker
+            transactions={transactions}
+            bills={bills}
+            monthlyIncome={transactions
+              .filter(t => t.type === 'income' && 
+                new Date(t.date).getMonth() === new Date().getMonth())
+              .reduce((sum, t) => sum + t.amount, 0)}
+            budgetMethod="50/30/20"
+          />
+        </div>
+
+        {/* Analytics Section */}
+        <div className="space-y-6 lg:space-y-8 mt-6 lg:mt-8">
+          <SpendingAnalytics
+            transactions={transactions}
+            monthlyIncome={transactions
+              .filter(t => t.type === 'income' && 
+                new Date(t.date).getMonth() === new Date().getMonth())
+              .reduce((sum, t) => sum + t.amount, 0)}
+          />
+          
+          <FinancialHealthScore
+            transactions={transactions}
+            bills={bills}
+            goals={[]} // Will be populated when goals are integrated
+            balance={balance}
+            monthlyIncome={transactions
+              .filter(t => t.type === 'income' && 
+                new Date(t.date).getMonth() === new Date().getMonth())
+              .reduce((sum, t) => sum + t.amount, 0)}
+          />
+          
+          <NetWorthTracker />
         </div>
       </div>
     </div>
