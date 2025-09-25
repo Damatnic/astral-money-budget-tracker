@@ -47,7 +47,7 @@ export interface RecurringBill {
   name: string;
   amount: number; // Keep existing amount field
   baseAmount: number | null; // Base/estimated amount
-  frequency: string; // "monthly", "weekly", "biweekly"
+  frequency: string; // "monthly", "weekly", "biweekly", "quarterly", "yearly"
   category: string;
   startDate: Date;
   endDate: Date | null;
@@ -61,6 +61,7 @@ export interface RecurringBill {
   notes: string | null;
   provider: string | null;
   billType: string; // "expense", "income"
+  billHistory?: BillHistory[]; // Optional bill history
   createdAt: Date;
   updatedAt: Date;
 }
