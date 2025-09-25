@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Transaction, FinancialGoal, RecurringBill, Notification, LoadingState, ErrorState } from '@/types';
@@ -90,13 +90,7 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
   };
 
   // Fetch user data on mount
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      fetchUserData();
-    }
-  }, [status, session]);
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       // Fetch all data in parallel
       const [balanceRes, billsRes, goalsRes, transactionsRes] = await Promise.allSettled([
@@ -156,7 +150,13 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
         goals: false 
       }));
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      fetchUserData();
+    }
+  }, [status, session, fetchUserData]);
 
   // Offline detection
   useEffect(() => {
