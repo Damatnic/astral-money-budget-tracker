@@ -119,7 +119,7 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white animate-slide-in-right">
                 {greeting}, {firstName}!
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 animate-slide-in-right animate-stagger-1">
+              <p className="text-sm text-gray-800 dark:text-gray-700 mt-1 animate-slide-in-right animate-stagger-1">
                 {getMotivationalMessage()}
               </p>
             </div>
@@ -127,7 +127,7 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
             <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg p-3 backdrop-blur-sm animate-slide-in-bottom animate-stagger-1">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-700 mb-1">
                 Current Balance
               </p>
               <AnimatedCounter
@@ -143,7 +143,7 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
             </div>
 
             <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg p-3 backdrop-blur-sm animate-slide-in-bottom animate-stagger-2">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-700 mb-1">
                 Today's Spending
               </p>
               <AnimatedCounter
@@ -155,7 +155,7 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
             </div>
 
             <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg p-3 backdrop-blur-sm animate-slide-in-bottom animate-stagger-3">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-700 mb-1">
                 This Week
               </p>
               <AnimatedCounter
@@ -167,7 +167,7 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
             </div>
 
             <div className="bg-white/80 dark:bg-gray-800/80 rounded-lg p-3 backdrop-blur-sm animate-slide-in-bottom animate-stagger-4">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-700 mb-1">
                 Month Savings
               </p>
               <AnimatedCounter
@@ -187,7 +187,7 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
 
       {/* Quick insights bar */}
       <div className="mt-4 pt-4 border-t border-blue-200/50 dark:border-gray-700">
-        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+        <div className="flex items-center justify-between text-xs text-gray-800 dark:text-gray-700">
           <div className="flex items-center space-x-4">
             <span className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -203,7 +203,7 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
             )}
           </div>
           <div className="text-right">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-xs text-gray-700 dark:text-gray-700">
               Last updated: {new Date().toLocaleTimeString('en-US', { 
                 hour: '2-digit', 
                 minute: '2-digit' 

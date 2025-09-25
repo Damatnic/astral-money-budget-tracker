@@ -497,7 +497,7 @@ export default function SignInPage() {
               }}
             >
               <span style={{ fontSize: '20px' }}>💳</span>
-              <span>Our Monies (PIN: 7347)</span>
+              <span>Our Monies</span>
             </button>
           </>
         ) : (

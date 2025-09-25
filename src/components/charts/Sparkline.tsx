@@ -78,7 +78,7 @@ export function Sparkline({
         className={`inline-flex items-center justify-center ${className}`}
         style={{ width, height }}
       >
-        <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+        <div className={`text-xs ${isDark ? 'text-gray-700' : 'text-gray-700'}`}>
           No data
         </div>
       </div>
@@ -228,7 +228,7 @@ export function SparklineCard({
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300 ${className}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
+        <h3 className="text-sm font-medium text-gray-800 dark:text-gray-300">
           {title}
         </h3>
         <div className={`flex items-center space-x-1 text-xs ${
@@ -236,7 +236,7 @@ export function SparklineCard({
             ? 'text-green-600 dark:text-green-400' 
             : trend === 'down'
               ? 'text-red-600 dark:text-red-400'
-              : 'text-gray-500'
+              : 'text-gray-700'
         }`}>
           {trend === 'up' && (
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">

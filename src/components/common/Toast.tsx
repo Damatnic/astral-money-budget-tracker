@@ -52,7 +52,7 @@ export function Toast({ notification, onClose, autoHideDuration = 5000 }: ToastP
         </div>
         <button
           onClick={onClose}
-          className="ml-4 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+          className="ml-4 text-gray-700 hover:text-gray-900 transition-colors flex-shrink-0"
           aria-label="Close notification"
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

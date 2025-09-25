@@ -126,7 +126,7 @@ export function AnimatedPercentage({
       />
       {showChange && previousValue !== undefined && change !== 0 && (
         <div className={`flex items-center text-sm ${
-          isPositive ? positiveColor : isNegative ? negativeColor : 'text-gray-500'
+          isPositive ? positiveColor : isNegative ? negativeColor : 'text-gray-700'
         }`}>
           <svg
             className={`w-3 h-3 mr-1 transition-transform duration-300 ${
@@ -241,7 +241,7 @@ export function QuickStatsCard({
                 duration={2000}
               />
             </span>
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-gray-700 dark:text-gray-400">
               vs last period
             </span>
           </div>
