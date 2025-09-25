@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../lib/db';
+import { requireAuth } from '@/lib/auth-utils';
 
 export async function GET() {
   try {
@@ -10,16 +11,7 @@ export async function GET() {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: 'user@astralmoney.com' }
-    });
-
-    if (!user) {
-      return NextResponse.json({
-        expenses: [],
-        note: 'User not found'
-      });
-    }
+    const user = await requireAuth();
 
     // Get recent expenses (last 30 days)
     const thirtyDaysAgo = new Date();
@@ -44,7 +36,13 @@ export async function GET() {
       source: 'database'
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Authentication required') {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
     console.error('Expenses API error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch expenses' },
@@ -93,16 +91,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: 'user@astralmoney.com' }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
+    const user = await requireAuth();
 
     // Create expense
     const expense = await prisma.transaction.create({
@@ -129,7 +118,13 @@ export async function POST(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Authentication required') {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
     console.error('Expense creation error:', error);
     return NextResponse.json(
       { error: 'Failed to create expense' },
@@ -156,16 +151,7 @@ export async function PUT(request: Request) {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: 'user@astralmoney.com' }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
+    const user = await requireAuth();
 
     // Get the old expense to calculate balance adjustment
     const oldExpense = await prisma.transaction.findUnique({
@@ -204,7 +190,13 @@ export async function PUT(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Authentication required') {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
     console.error('Expense update error:', error);
     return NextResponse.json(
       { error: 'Failed to update expense' },
@@ -230,16 +222,7 @@ export async function DELETE(request: Request) {
       });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: 'user@astralmoney.com' }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
+    const user = await requireAuth();
 
     // Get the expense to refund the balance
     const expense = await prisma.transaction.findUnique({
@@ -271,7 +254,13 @@ export async function DELETE(request: Request) {
       source: 'database'
     });
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Authentication required') {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
     console.error('Expense deletion error:', error);
     return NextResponse.json(
       { error: 'Failed to delete expense' },
