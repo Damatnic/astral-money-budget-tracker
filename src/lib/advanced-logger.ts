@@ -288,14 +288,9 @@ class AdvancedLogger {
     // Check alert rules
     this.checkAlerts(entry);
 
-    // Send to monitoring service
-    if (level === 'error' || level === 'fatal') {
-      MonitoringService.trackError(new Error(message), {
-        level,
-        service: this.config.service,
-        component: context?.component,
-        data,
-      });
+    // Send to monitoring service (disabled for Edge Runtime compatibility)
+    if (MonitoringService && (level === 'error' || level === 'fatal')) {
+      MonitoringService.trackError();
     }
   }
 
