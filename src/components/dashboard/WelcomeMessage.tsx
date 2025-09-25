@@ -183,14 +183,6 @@ export function WelcomeMessage({ transactions, balance, className = '' }: Welcom
             </div>
           </div>
         </div>
-
-        <div className="ml-4 flex-shrink-0 hidden sm:block">
-          <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center animate-bounce">
-            <span className="text-2xl">
-              {insights.savingsThisMonth > 0 ? '🎯' : '💰'}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Quick insights bar */}
