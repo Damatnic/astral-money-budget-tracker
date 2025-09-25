@@ -23,9 +23,10 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations for financial data
-  budgets      Budget[]
-  bills        Bill[]
-  transactions Transaction[]
+  budgets       Budget[]
+  bills         Bill[]
+  transactions  Transaction[]
+  recurringBills RecurringBill[]
 
   // NextAuth.js relations
   accounts Account[]
@@ -151,6 +152,7 @@ model FinancialGoal {
 
 model RecurringBill {
   id                    String   @id @default(cuid())
+  userId                String
   name                  String
   amount                Float    // Keep existing amount field for now
   baseAmount            Float?   // Base/estimated amount (initially nullable for migration)
@@ -171,6 +173,7 @@ model RecurringBill {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   billHistory BillHistory[]
 
   @@map("recurring_bills")
