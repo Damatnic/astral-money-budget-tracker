@@ -25,6 +25,14 @@ import { FinancialHealthScore } from '@/components/insights/FinancialHealthScore
 import { DataExporter } from '@/components/export/DataExporter';
 import { formatCurrency } from '@/utils/formatters';
 import { CompactThemeToggle } from '@/components/common/ThemeToggle';
+import { CommandPalette } from '@/components/ui/CommandPalette';
+import { WelcomeMessage } from './WelcomeMessage';
+import { SmartInsights } from '@/components/insights/SmartInsights';
+import { SpendingTrendsChart, CategoryBreakdownChart, MonthlyComparisonChart, GoalsProgressChart, FinancialHealthRadar } from '@/components/charts/AdvancedCharts';
+import { FinancialSparkline, SparklineCard } from '@/components/charts/Sparkline';
+import { QuickStatsCard, AnimatedCounter, AnimatedPercentage } from '@/components/ui/AnimatedCounter';
+import { SkeletonWrapper, DashboardStatsSkeleton, ChartSkeleton, SparklineCardSkeleton } from '@/components/ui/Skeleton';
+import { NotificationSystem } from '@/components/notifications/NotificationSystem';
 
 interface MainDashboardProps {
   initialData?: {
@@ -448,12 +456,51 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
   // Navigation state management
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'budget' | 'goals' | 'bills' | 'analytics' | 'export'>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [pageTransition, setPageTransition] = useState(false);
 
   // Calculate monthly income for components
   const monthlyIncome = transactions
     .filter(t => t.type === 'income' && 
       new Date(t.date).getMonth() === new Date().getMonth())
     .reduce((sum, t) => sum + t.amount, 0);
+
+  // Command palette handlers
+  const handleNavigateToTab = (tab: string) => {
+    setPageTransition(true);
+    setTimeout(() => {
+      setActiveTab(tab as any);
+      setPageTransition(false);
+    }, 150);
+  };
+
+  const handleQuickAddTransaction = () => {
+    setActiveTab('transactions');
+    // Could trigger a modal or form focus here
+  };
+
+  const handleQuickAddGoal = () => {
+    setActiveTab('goals');
+    // Could trigger goal creation modal
+  };
+
+  const handleQuickAddBill = () => {
+    setActiveTab('bills');
+    // Could trigger bill creation modal
+  };
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div className="h-screen bg-slate-50 flex overflow-hidden">
@@ -474,6 +521,17 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
         loading={loading}
         errors={errors}
       />
+
+      {/* Smart Notification System */}
+      <div className="fixed top-20 right-4 z-[90] max-w-sm">
+        <NotificationSystem
+          transactions={transactions}
+          bills={bills}
+          goals={goals}
+          balance={balance}
+          onNotification={addToast}
+        />
+      </div>
 
       {/* Sidebar Navigation */}
       <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shadow-sm`}>
@@ -537,11 +595,11 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id as any)}
-              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+              onClick={() => handleNavigateToTab(item.id)}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover-lift ${
                 activeTab === item.id
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
               } ${sidebarCollapsed ? 'justify-center' : ''}`}
               title={sidebarCollapsed ? item.label : ''}
             >
@@ -600,16 +658,124 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-auto bg-gray-50 p-6">
+        <div className={`flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 p-6 transition-opacity duration-150 ${
+          pageTransition ? 'opacity-0' : 'opacity-100'
+        }`}>
           {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
-              {/* Quick Stats */}
-              <div className="lg:col-span-2 2xl:col-span-3">
-                <DetailedFinancialSummary transactions={transactions} balance={balance} />
-              </div>
+            <div className="space-y-6 animate-fade-in">
+              {/* Welcome Message */}
+              <WelcomeMessage 
+                transactions={transactions}
+                balance={balance}
+                className="animate-slide-in-top"
+              />
               
-              {/* Recent Transactions */}
-              <div className="lg:col-span-1">
+              {/* Quick Stats Cards */}
+              <SkeletonWrapper
+                loading={loading.userData}
+                skeleton={<DashboardStatsSkeleton />}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <QuickStatsCard
+                    title="Total Balance"
+                    value={balance}
+                    isCurrency={true}
+                    trend={balance >= 0 ? 'up' : 'down'}
+                    icon={
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h6zM4 14a2 2 0 002 2h8a2 2 0 002-2v-2H4v2z" />
+                      </svg>
+                    }
+                    className="animate-slide-in-bottom animate-stagger-1"
+                  />
+                  
+                  <QuickStatsCard
+                    title="Monthly Income"
+                    value={monthlyIncome}
+                    isCurrency={true}
+                    trend="up"
+                    icon={
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414 6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    }
+                    className="animate-slide-in-bottom animate-stagger-2"
+                  />
+                  
+                  <QuickStatsCard
+                    title="Active Goals"
+                    value={goals.length}
+                    suffix=" goals"
+                    icon={
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clipRule="evenodd" />
+                      </svg>
+                    }
+                    className="animate-slide-in-bottom animate-stagger-3"
+                  />
+                  
+                  <QuickStatsCard
+                    title="Recurring Bills"
+                    value={bills.length}
+                    suffix=" bills"
+                    icon={
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    }
+                    className="animate-slide-in-bottom animate-stagger-4"
+                  />
+                </div>
+              </SkeletonWrapper>
+
+              {/* Sparkline Charts */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <SkeletonWrapper
+                  loading={loading.userData}
+                  skeleton={<SparklineCardSkeleton />}
+                >
+                  <FinancialSparkline
+                    transactions={transactions}
+                    period="month"
+                    type="income"
+                  />
+                </SkeletonWrapper>
+                
+                <SkeletonWrapper
+                  loading={loading.userData}
+                  skeleton={<SparklineCardSkeleton />}
+                >
+                  <FinancialSparkline
+                    transactions={transactions}
+                    period="month"
+                    type="expense"
+                  />
+                </SkeletonWrapper>
+                
+                <SkeletonWrapper
+                  loading={loading.userData}
+                  skeleton={<SparklineCardSkeleton />}
+                >
+                  <FinancialSparkline
+                    transactions={transactions}
+                    period="month"
+                    type="balance"
+                  />
+                </SkeletonWrapper>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {/* Smart Insights */}
+                <SmartInsights
+                  transactions={transactions}
+                  bills={bills}
+                  goals={goals}
+                  balance={balance}
+                  monthlyIncome={monthlyIncome}
+                  className="animate-slide-in-left"
+                />
+                
+                {/* Recent Transactions */}
                 <TransactionManager
                   transactions={transactions.slice(0, 5)}
                   onAdd={handleAddTransaction}
@@ -620,18 +786,16 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
                 />
               </div>
               
-              {/* Goals Progress */}
-              <div className="lg:col-span-1">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {/* Goals Progress */}
                 <GoalsSection 
                   goals={goals} 
                   loading={loading.goals} 
                   onUpdate={(updatedGoals) => setGoals(updatedGoals)} 
                   compact={true}
                 />
-              </div>
-              
-              {/* Upcoming Bills */}
-              <div className="lg:col-span-1 2xl:col-span-1">
+                
+                {/* Upcoming Bills */}
                 <BillsSection 
                   bills={bills.slice(0, 5)}
                   loading={loading.recurringBills}
@@ -695,17 +859,81 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
           )}
 
           {activeTab === 'analytics' && (
-            <div className="space-y-6 max-w-7xl mx-auto">
+            <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
+              {/* Advanced Charts Grid */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <SpendingAnalytics transactions={transactions} monthlyIncome={monthlyIncome} />
-                <FinancialHealthScore
-                  transactions={transactions}
-                  bills={bills}
-                  goals={goals}
-                  balance={balance}
-                  monthlyIncome={monthlyIncome}
-                />
+                <SkeletonWrapper
+                  loading={loading.userData}
+                  skeleton={<ChartSkeleton height={350} />}
+                >
+                  <SpendingTrendsChart 
+                    transactions={transactions} 
+                    period="month"
+                    className="animate-slide-in-left"
+                  />
+                </SkeletonWrapper>
+                
+                <SkeletonWrapper
+                  loading={loading.userData}
+                  skeleton={<ChartSkeleton height={400} />}
+                >
+                  <CategoryBreakdownChart 
+                    transactions={transactions}
+                    type="expense"
+                    className="animate-slide-in-right"
+                  />
+                </SkeletonWrapper>
               </div>
+              
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <SkeletonWrapper
+                  loading={loading.userData}
+                  skeleton={<ChartSkeleton height={400} />}
+                >
+                  <MonthlyComparisonChart 
+                    transactions={transactions}
+                    className="animate-slide-in-left animate-stagger-1"
+                  />
+                </SkeletonWrapper>
+                
+                <SkeletonWrapper
+                  loading={loading.goals}
+                  skeleton={<ChartSkeleton height={350} />}
+                >
+                  <GoalsProgressChart 
+                    goals={goals}
+                    className="animate-slide-in-right animate-stagger-1"
+                  />
+                </SkeletonWrapper>
+              </div>
+              
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <SkeletonWrapper
+                  loading={loading.userData}
+                  skeleton={<ChartSkeleton height={350} />}
+                >
+                  <FinancialHealthRadar
+                    transactions={transactions}
+                    bills={bills}
+                    goals={goals}
+                    balance={balance}
+                    monthlyIncome={monthlyIncome}
+                    className="animate-slide-in-left animate-stagger-2"
+                  />
+                </SkeletonWrapper>
+                
+                <div className="space-y-6 animate-slide-in-right animate-stagger-2">
+                  <SpendingAnalytics transactions={transactions} monthlyIncome={monthlyIncome} />
+                  <FinancialHealthScore
+                    transactions={transactions}
+                    bills={bills}
+                    goals={goals}
+                    balance={balance}
+                    monthlyIncome={monthlyIncome}
+                  />
+                </div>
+              </div>
+              
               <NetWorthTracker />
             </div>
           )}
@@ -726,16 +954,43 @@ export function MainDashboard({ initialData }: MainDashboardProps) {
         </div>
       </div>
 
-      {/* Quick Add Floating Button */}
-      <button
-        onClick={() => setActiveTab('transactions')}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 group"
-        title="Quick Add Transaction"
-      >
-        <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-        </svg>
-      </button>
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        transactions={transactions}
+        goals={goals}
+        bills={bills}
+        onNavigate={handleNavigateToTab}
+        onAddTransaction={handleQuickAddTransaction}
+        onAddGoal={handleQuickAddGoal}
+        onAddBill={handleQuickAddBill}
+      />
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col space-y-3 z-50">
+        {/* Command Palette Button */}
+        <button
+          onClick={() => setCommandPaletteOpen(true)}
+          className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover-lift"
+          title="Command Palette (Cmd+K)"
+        >
+          <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+          </svg>
+        </button>
+        
+        {/* Quick Add Transaction Button */}
+        <button
+          onClick={handleQuickAddTransaction}
+          className="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover-lift btn-pulse"
+          title="Quick Add Transaction"
+        >
+          <svg className="w-6 h-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
