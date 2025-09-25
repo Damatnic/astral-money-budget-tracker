@@ -40,6 +40,7 @@ export function TransactionManager({
 
     try {
       await onAdd({
+        userId: 'temp-user-id', // This will be set by the parent component
         amount: parseFloat(formData.amount),
         description: formData.description,
         category: formData.category,
